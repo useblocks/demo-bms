@@ -1,0 +1,37 @@
+{
+  "agent": "claude-code",
+  "axes": {
+    "atomicity": {
+      "reason": "One obligation - hold the contactor-open command and release it only on one named event; the second sentence restates the same obligation's consequence.",
+      "score": 2
+    },
+    "comprehensibility": {
+      "reason": "Self-contained: it names the triggering fault class, the held output and the single release event.",
+      "score": 2
+    },
+    "feasibility": {
+      "reason": "A two-state latch with a diagnostic-service exit, exactly as the supervising architecture element describes; contradicts nothing else stated.",
+      "score": 2
+    },
+    "parent_fit": {
+      "reason": "Directly implements the parent story's statement that the pack stays disconnected until a qualified technician clears the fault and that an intermittent condition cannot silently re-close the circuit.",
+      "score": 2
+    },
+    "unambiguity": {
+      "reason": "It is not stated whether a diagnostic service reset releases the hold while the violating measurement is still outside its limit, so a competent reader can take the reset as unconditional or as gated on the condition having cleared - a safety-relevant difference.",
+      "score": 1,
+      "suggestion": "State explicitly whether a reset received while a limit is still violated is rejected (or immediately re-latches), and what the contactor state is on release."
+    },
+    "verifiability": {
+      "reason": "Testable end to end: trigger a fault, return measurements into range and confirm the hold persists, then send the reset and confirm release.",
+      "score": 2
+    }
+  },
+  "criteria": "requirement",
+  "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
+  "model": "claude-opus-5[1m]",
+  "need": "REQ_FAULT_LATCH",
+  "reviewed_fingerprint": "0b18556a59b866aaec20962de26f7c16dab976bfcda211665dc65d843d3c28cf",
+  "schema": 2,
+  "summary": "Correctly captures the parent's 'stays disconnected until a technician clears it' promise; the one gap is whether a reset is honoured while a limit is still violated."
+}

@@ -1,0 +1,32 @@
+{
+  "agent": "claude-code",
+  "axes": {
+    "completeness": {
+      "reason": "Every externally-visible obligation is addressed - the timing obligation is covered as an explicit end-to-end budget split (10 ms here, 40 ms to acquisition and evaluation), and the hold-until-service-reset obligation is covered by obeying the supervisor's FAULT_LATCHED state with close requests ignored.",
+      "score": 2
+    },
+    "consistency": {
+      "reason": "Cleanly reconciled with ARCH_SAFETY_SUPERVISOR, its sibling on REQ_FAULT_LATCH: the supervisor owns the latched state and its only exit, this element only enforces it, and the 10 ms cycle matches the supervisor's and acquisition's cycle.",
+      "score": 2
+    },
+    "design_clarity": {
+      "reason": "Names the actual choices: two coil drivers as a dual-channel low-side pair, de-energise-to-open so either channel opening suffices, a one-cycle (10 ms) command-to-de-energise latency, and unconditional off with close requests ignored while latched.",
+      "score": 2
+    },
+    "implementability": {
+      "reason": "Realisable by one bounded implementation: a fixed set of two coil drivers, a resolved drive polarity, a stated worst-case latency, and a single unambiguous override rule while the supervisor reports FAULT_LATCHED.",
+      "score": 2
+    },
+    "parent_fit": {
+      "reason": "Substantively addresses both parents: it claims one 10 ms cycle of REQ_FAULT_REACTION_TIME's 50 ms budget and explicitly allocates the other 40 ms, and it enforces REQ_FAULT_LATCH at the coil by driving both channels off unconditionally while FAULT_LATCHED.",
+      "score": 2
+    }
+  },
+  "criteria": "arch",
+  "criteria_fingerprint": "48337dfa0b294b1882460a938500fa11eb3e8fd873d5cd9afa31ff1f7923f377",
+  "model": "claude-opus-5[1m]",
+  "need": "ARCH_CONTACTOR_ACTUATOR",
+  "reviewed_fingerprint": "dce60acf1e1a7ac483cf41a12c37b408e3c3b20e8e08755568d305966c32f6fd",
+  "schema": 2,
+  "summary": "Crisp actuator element. It names the concrete drive topology, takes an explicit slice of the 50 ms reaction budget and explicitly allocates the remainder, and enforces the latch without duplicating the supervisor's state machine."
+}

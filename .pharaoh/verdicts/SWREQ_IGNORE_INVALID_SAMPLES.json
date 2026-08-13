@@ -1,0 +1,36 @@
+{
+  "agent": "claude-code",
+  "axes": {
+    "atomicity": {
+      "reason": "One obligation (exclude invalid-flagged samples from limit evaluation); the all-invalid sentence is an edge case of the same rule.",
+      "score": 2
+    },
+    "comprehensibility": {
+      "reason": "The obligation is intelligible without the limit table's contents; the invalid flag and limit table are named descriptively.",
+      "score": 2
+    },
+    "feasibility": {
+      "reason": "A per-sample flag check before comparison is trivial and contradicts nothing else stated.",
+      "score": 2
+    },
+    "parent_fit": {
+      "reason": "ARCH_SAFETY_SUPERVISOR states it ignores measurements tagged invalid; this requirement turns that into the testable rule that such samples can never produce a limit-violation event.",
+      "score": 2
+    },
+    "unambiguity": {
+      "reason": "One reading: any sample with the flag set is skipped, and the all-invalid cycle case is stated explicitly rather than left to inference.",
+      "score": 2
+    },
+    "verifiability": {
+      "reason": "A concrete test can feed samples with the invalid flag set at values beyond every limit and assert that no limit-violation event is emitted.",
+      "score": 2
+    }
+  },
+  "criteria": "requirement",
+  "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
+  "model": "claude-opus-5[1m]",
+  "need": "SWREQ_IGNORE_INVALID_SAMPLES",
+  "reviewed_fingerprint": "51773443767ce9d3f7a0ddd52b796cf99cd625255ff17dbd4029fdb877eb2bbd",
+  "schema": 2,
+  "summary": "Full marks on the rubric. Flagging for the stage (not scored against this need): unconditional exclusion of invalid samples leaves an unbounded protection blind spot for a stuck-invalid channel, and no swreq in this set bounds how long a channel may stay invalid."
+}

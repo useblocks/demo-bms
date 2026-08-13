@@ -1,0 +1,38 @@
+{
+  "agent": "claude-code",
+  "axes": {
+    "atomicity": {
+      "reason": "One obligation (map a voltage to a state of charge); the below-first-point and above-last-point sentences are edge cases of the same mapping.",
+      "score": 2
+    },
+    "comprehensibility": {
+      "reason": "The bracket-and-interpolate rule plus both saturation cases are intelligible without reading adjacent requirements.",
+      "score": 2
+    },
+    "feasibility": {
+      "reason": "A 21-point table lookup with linear interpolation is standard and contradicts nothing else stated.",
+      "score": 2
+    },
+    "parent_fit": {
+      "reason": "ARCH_OCV_CORRECTOR owns a 21-point open-circuit-voltage table interpolated linearly on the mean cell voltage; this requirement specifies that lookup and its out-of-range behaviour.",
+      "score": 2
+    },
+    "unambiguity": {
+      "reason": "Two terms are open: 'mean cell voltage' does not say which cells it averages (all, or only those with a cleared invalid flag), and 'the first point' presumes an ordering the requirement never states.",
+      "score": 1,
+      "suggestion": "State that the table is ordered by ascending voltage and define the mean's population, e.g. 'the arithmetic mean of the cell voltage samples carrying a cleared invalid flag'."
+    },
+    "verifiability": {
+      "reason": "The interpolation rule is testable in principle, but the table's 21 (voltage, state-of-charge) pairs are neither given nor referenced, so the expected output for any given voltage is not derivable from the requirement.",
+      "score": 1,
+      "suggestion": "Cite the artefact that defines the table (a data need, calibration document or parameter id) and state its size, so a reviewer or test can compute the expected state of charge."
+    }
+  },
+  "criteria": "requirement",
+  "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
+  "model": "claude-opus-5[1m]",
+  "need": "SWREQ_OCV_TABLE_LOOKUP",
+  "reviewed_fingerprint": "909aae911150cffef81ffb064ad957f31340acdd64673c0fedee8ad2e8f31fe1",
+  "schema": 2,
+  "summary": "The interpolation and clamping rules are correct, but the body never identifies the table it interpolates in, so no test can compute an expected state of charge from this requirement alone."
+}

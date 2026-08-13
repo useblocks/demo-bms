@@ -1,0 +1,36 @@
+{
+  "agent": "claude-code",
+  "axes": {
+    "atomicity": {
+      "reason": "A single obligation - drive both coil outputs de-energised within a stated deadline - with no second clause that would stand alone.",
+      "score": 2
+    },
+    "comprehensibility": {
+      "reason": "Intelligible on its own; open command, coil channel outputs and de-energised level need no adjacent requirement.",
+      "score": 2
+    },
+    "feasibility": {
+      "reason": "A 10 ms output drive is far above the switching time of low-side coil drivers and is consistent with the 50 ms reaction budget the parent cites.",
+      "score": 2
+    },
+    "parent_fit": {
+      "reason": "ARCH_CONTACTOR_ACTUATOR owns translating the supervisor's open command into a coil de-energise within one 10 ms cycle; this requirement pins exactly that latency on both coil channels.",
+      "score": 2
+    },
+    "unambiguity": {
+      "reason": "One reading: both channels, de-energised level, 10 ms from assertion, with the start and end of the interval defined.",
+      "score": 2
+    },
+    "verifiability": {
+      "reason": "The requirement names its own measurement method (asserting-call timestamp to the timestamp at which both outputs read de-energised), so the test needs no interpretation.",
+      "score": 2
+    }
+  },
+  "criteria": "requirement",
+  "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
+  "model": "claude-opus-5[1m]",
+  "need": "SWREQ_CONTACTOR_DEENERGISE",
+  "reviewed_fingerprint": "53ecd9936d9350a8b817da5b849586b0ec6385b7dbe4db22d691cd228dec4cd5",
+  "schema": 2,
+  "summary": "Full marks: one obligation, an explicit deadline, and the measurement method for that deadline spelled out. Note for the stage as a whole that the parent's FAULT_LATCHED behaviour (unconditional off, ignore close requests) has no swreq of its own."
+}

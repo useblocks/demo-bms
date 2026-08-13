@@ -1,0 +1,39 @@
+{
+  "agent": "claude-code",
+  "axes": {
+    "atomicity": {
+      "reason": "One obligation — drive max-minus-min cell voltage to a bound within a deadline; the rest-state, temperature range, and settled-voltage clauses are preconditions and measurement qualifiers, none of which would stand alone as a separate requirement.",
+      "score": 2
+    },
+    "comprehensibility": {
+      "reason": "Self-contained: it spells out cell voltage spread as the difference between the highest and lowest cell voltage rather than relying on the term, uses no undefined abbreviation or forward reference, and its second sentence explains why relaxation time falls inside the window.",
+      "score": 2
+    },
+    "feasibility": {
+      "reason": "Achievable with adequate balancing hardware, but with no bound on the initial spread an 8-hour deadline pushes against a known constraint — passive shunt balancing at the usual tens of milliamps moves well under a percent of SoC on a large-format cell in 8 hours, which is only a few millivolts, so an arbitrary starting spread would force active balancing or much higher shunt currents with the attendant cost and heat-dissipation budget.",
+      "score": 1,
+      "suggestion": "Flag and resolve the hardware implication — either bound the initial spread the 8-hour window applies to, or record a decision that the balancing topology and shunt current are sized for the worst-case spread this deadline implies."
+    },
+    "parent_fit": {
+      "reason": "Directly quantifies the parent story's central observable — US_CELL_BALANCING asks that per-cell voltages converge into a narrow band after standing rather than fan out, and this requirement fixes that band at 20 mV and the window at 8 hours after a charge session.",
+      "score": 2
+    },
+    "unambiguity": {
+      "reason": "The core reading is single-valued, but the disturbed-window edge case is unspecified — if the pack is driven, recharged, or leaves the 15-45 degC band partway through the 8 hours, the text does not say whether the clock pauses, restarts, or the obligation lapses.",
+      "score": 1,
+      "suggestion": "State the behaviour when a precondition breaks mid-window (e.g. 'the 8 hour window restarts at the end of any subsequent charge or discharge, and time spent outside 15-45 degC does not count toward it')."
+    },
+    "verifiability": {
+      "reason": "Threshold (20 mV), unit, deadline (8 h), and environmental window (15-45 degC, at rest) are all given, but the entry condition is not: nothing bounds the cell voltage spread present when the charge session ends, and 'at rest' carries no current limit, so two testers could build a trivially passing and an unpassable test from the same text.",
+      "score": 1,
+      "suggestion": "Add the entry condition and quantify the rest state, e.g. 'starting from a spread of up to 80 mV at the end of the charge session' and 'at rest (pack current below 0.5 A)', and state whether 20 mV must be reached once within the window or held at the 8-hour mark."
+    }
+  },
+  "criteria": "requirement",
+  "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
+  "model": "claude-opus-5[1m]",
+  "need": "REQ_CELL_BALANCING_WINDOW",
+  "reviewed_fingerprint": "e53623ec8ffb8c11fbb577300347604be3f5793b238b7e1c85eb524ec96505ab",
+  "schema": 2,
+  "summary": "A single, well-quantified balancing obligation that squarely serves its parent story, but it fixes no entry condition (the spread present when the charge session ends) and no quantified definition of 'at rest', leaves the disturbed-window edge case open, and an unbounded initial spread against an 8-hour deadline pushes against real balancing-current limits."
+}

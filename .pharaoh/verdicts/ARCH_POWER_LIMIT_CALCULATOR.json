@@ -1,0 +1,33 @@
+{
+  "agent": "claude-code",
+  "axes": {
+    "completeness": {
+      "reason": "Every externally-visible obligation is addressed - the ramp endpoints and linearity, the 30 % fallback value, the fact that a single limit is published, and the combination behaviour when both causes are active; the 2 s detection interval is explicitly owned by ARCH_COOLANT_ACTUATOR_IF.",
+      "score": 2
+    },
+    "consistency": {
+      "reason": "Cleanly reconciled with its sibling ARCH_COOLANT_ACTUATOR_IF on REQ_THERMAL_ACTUATOR_FAILSAFE: that element declares it never decides a power limit and only reports the unconfirmed verdict, which this element consumes.",
+      "score": 2
+    },
+    "design_clarity": {
+      "reason": "Names the actual choices rather than the goal: a linear ramp with both endpoints given, a flat 30 % actuator-driven limit, and taking the minimum of the two with the reason the minimum was chosen over any other combination.",
+      "score": 2
+    },
+    "implementability": {
+      "reason": "Realisable and bounded, but the published quantity needs a judgement call: the element works in percentages while the requirement speaks of a permitted discharge power, and neither the base value of 'full permitted discharge power' nor the publication cycle/interface is named. It also drops the parent's 'valid' qualifier on highest cell temperature.",
+      "score": 1,
+      "suggestion": "State whether the element publishes a percentage or an absolute power, where the 100 % base comes from, on what cycle it publishes, and that the ramp input is the highest VALID cell temperature from ARCH_THERMAL_STATE_EVALUATOR."
+    },
+    "parent_fit": {
+      "reason": "Substantively addresses both parents: REQ_POWER_DERATING's linear 55-60 degC ramp and REQ_THERMAL_ACTUATOR_FAILSAFE's 30 % fallback, and it owns the published permitted discharge power that both requirements speak about.",
+      "score": 2
+    }
+  },
+  "criteria": "arch",
+  "criteria_fingerprint": "48337dfa0b294b1882460a938500fa11eb3e8fd873d5cd9afa31ff1f7923f377",
+  "model": "claude-opus-5[1m]",
+  "need": "ARCH_POWER_LIMIT_CALCULATOR",
+  "reviewed_fingerprint": "e680f14870a764a27c9d600d8d230f24ff0c75ea4a1f7baba4f7eba3fd871c10",
+  "schema": 2,
+  "summary": "Strong element: both derating causes are specified at their own numbers and the min-of-two combination rule is stated with its rationale. The only softness is the published quantity itself - percentages of an unnamed 'full permitted discharge power', with no publication cycle."
+}

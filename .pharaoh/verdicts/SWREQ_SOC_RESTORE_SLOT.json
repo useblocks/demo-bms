@@ -1,0 +1,37 @@
+{
+  "agent": "claude-code",
+  "axes": {
+    "atomicity": {
+      "reason": "One obligation (return the state of charge of the winning slot at initialisation); the neither-valid sentence is an edge case of the same rule.",
+      "score": 2
+    },
+    "comprehensibility": {
+      "reason": "Self-contained: both slots, the checksum verification, the selection criterion and the failure report are all stated.",
+      "score": 2
+    },
+    "feasibility": {
+      "reason": "Reading two slots and comparing checksums and counters at initialisation is trivial and consistent with the write requirement.",
+      "score": 2
+    },
+    "parent_fit": {
+      "reason": "ARCH_SOC_STORE states it hands the higher-counter valid slot to the corrector on wake-up; this requirement specifies that selection including the checksum verification.",
+      "score": 2
+    },
+    "unambiguity": {
+      "reason": "'whichever checksum-valid slot carries the higher write counter' has no defined outcome when both valid slots carry equal counters, and 'higher' is undefined once the counter wraps.",
+      "score": 1,
+      "suggestion": "Define the tie case (e.g. 'on equal counters the slot written last by convention, or slot 0') and either state the counter's width with a wrap-safe comparison or declare that it never wraps within the service life."
+    },
+    "verifiability": {
+      "reason": "A test can seed the two slots with chosen counters and checksums and assert which value is returned, including the no-valid-slot report.",
+      "score": 2
+    }
+  },
+  "criteria": "requirement",
+  "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
+  "model": "claude-opus-5[1m]",
+  "need": "SWREQ_SOC_RESTORE_SLOT",
+  "reviewed_fingerprint": "8c352319609a333c8212cd0a0f0c2c33ebab91d712c91d65a76dd4271a21a9ef",
+  "schema": 2,
+  "summary": "Clean restore rule with the no-valid-slot case handled; the tie case and write-counter wrap-around are left undefined."
+}

@@ -1,0 +1,28 @@
+{
+  "agent": "claude-code",
+  "axes": {
+    "alternatives_listed": {
+      "reason": "Chosen compiled-in static table plus two rejected options (calibratable parameter area; read from the diagnostic interface at start-up) are distinguishable, each with its own defect -- shared write-protection with ordinary calibration data, and additionally a start-up dependency on a possibly silent bus.",
+      "score": 2
+    },
+    "consequences_present": {
+      "reason": "States what changes (a limit change becomes a full software release through the review and test chain), the trade-off accepted (bench experiments now need a dedicated engineering build), and the benefit gained (no field tool can move the shipped limits, no start-up dependency on external data).",
+      "score": 2
+    },
+    "context_present": {
+      "reason": "Context names the problem (the four protection limits decide when the pack disconnects) and the conflicting constraints that drove the choice (they are exactly what a bench engineer wants to tune and exactly what must not be tunable in a shipped vehicle).",
+      "score": 2
+    },
+    "rationale_quality": {
+      "reason": "The rationale is explicit and non-circular -- a value that decides disconnection belongs in the artefact that passes the safety review chain, not the one designed to be rewritten in the field -- and it directly discriminates against both rejected options' shared weakness.",
+      "score": 2
+    }
+  },
+  "criteria": "decision",
+  "criteria_fingerprint": "acde53ac62d0cfe944e6386d68e527c7fa5d3bb77a28dbc43b53d9f34a092293",
+  "model": "claude-opus-5[1m]",
+  "need": "DEC_SUPERVISOR_LIMIT_TABLE",
+  "reviewed_fingerprint": "f84f008cb7f4c047b4cdd50a0124f750c8914658732c8169b2b6638da460ca04",
+  "schema": 2,
+  "summary": "A tight decision record: the tuning-versus-immutability tension is stated as the driving constraint, both rejected storage options are attacked on the same threat model, and the consequences own the bench-workflow cost rather than hiding it. Consistent with ARCH_SAFETY_SUPERVISOR's static four-entry limit table."
+}

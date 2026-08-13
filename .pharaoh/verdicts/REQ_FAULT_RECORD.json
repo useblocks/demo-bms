@@ -1,0 +1,38 @@
+{
+  "agent": "claude-code",
+  "axes": {
+    "atomicity": {
+      "reason": "Three related aspects in one requirement: writing one record per fault to non-volatile memory, the three mandated content fields, and readability over the diagnostic interface after a power cycle. The retrieval path is separable from the write, though all three are facets of one recording obligation.",
+      "score": 1,
+      "suggestion": "Keep the write obligation and its mandated fields here, and move post-power-cycle read-back over the diagnostic interface into its own requirement."
+    },
+    "comprehensibility": {
+      "reason": "Self-contained - it names the storage, the three fields and the retrieval path without relying on an adjacent requirement.",
+      "score": 2
+    },
+    "feasibility": {
+      "reason": "A small non-volatile record per fault with a diagnostic read service; standard practice and consistent with the fault-memory architecture element.",
+      "score": 2
+    },
+    "parent_fit": {
+      "reason": "Delivers the parent story's observable that the workshop sees a stored fault entry naming the cell and the limit it crossed, and adds the measured value.",
+      "score": 2
+    },
+    "unambiguity": {
+      "reason": "'one fault record per cell-protection fault' does not settle repeated violations of the same limit, nor what happens when the memory is full, so the expected record count for a recurring fault has more than one reading.",
+      "score": 1,
+      "suggestion": "Define what constitutes one fault occurrence (e.g. one record per entry into the latched state) and the overflow policy when non-volatile memory is full."
+    },
+    "verifiability": {
+      "reason": "Concrete test: force a fault, power-cycle, read the record back and check the three named fields against the injected values.",
+      "score": 2
+    }
+  },
+  "criteria": "requirement",
+  "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
+  "model": "claude-opus-5[1m]",
+  "need": "REQ_FAULT_RECORD",
+  "reviewed_fingerprint": "f9128368b2ddb4ecd3ff298c35a08abc5dfa1072530ada077cb998fb98a3edf8",
+  "schema": 2,
+  "summary": "Content fields are well chosen and match the parent's workshop observable, but the requirement bundles the retrieval path with the write, and leaves repeat-fault and memory-full behaviour open."
+}

@@ -1,0 +1,36 @@
+{
+  "agent": "claude-code",
+  "axes": {
+    "atomicity": {
+      "reason": "One obligation - the state of a single heating request signal, whose raise and withdraw edges define one behaviour.",
+      "score": 2
+    },
+    "comprehensibility": {
+      "reason": "Self-contained; the closing sentence is motivation, not a hidden obligation.",
+      "score": 2
+    },
+    "feasibility": {
+      "reason": "A thresholded request on the existing thermal interface, with a band that cannot overlap the cooling request's.",
+      "score": 2
+    },
+    "parent_fit": {
+      "reason": "Delivers the 'warm itself when it is cold' half of the parent story, which is the precondition for the promised cold-morning charging power.",
+      "score": 2
+    },
+    "unambiguity": {
+      "reason": "One reading; the hysteresis band fixes the behaviour between 5 C and 10 C, and the lowest-cell scope is explicit.",
+      "score": 2
+    },
+    "verifiability": {
+      "reason": "Both thresholds (below 5 C to raise, 10 C or above to withdraw) carry values and units and the request is observable on the thermal interface.",
+      "score": 2
+    }
+  },
+  "criteria": "requirement",
+  "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
+  "model": "claude-opus-5[1m]",
+  "need": "REQ_HEATING_REQUEST",
+  "reviewed_fingerprint": "e6e835a654e98f4c10f671a9f4296fa2530d48556d1293f4d463838970f911c6",
+  "schema": 2,
+  "summary": "Mirror image of the cooling request, equally complete: both thresholds quantified and the request observable. No axis-level defect found."
+}

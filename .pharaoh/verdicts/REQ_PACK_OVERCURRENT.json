@@ -1,0 +1,36 @@
+{
+  "agent": "claude-code",
+  "axes": {
+    "atomicity": {
+      "reason": "One obligation - open the contactors on one debounced current condition; the second sentence restates the same condition's boundary.",
+      "score": 2
+    },
+    "comprehensibility": {
+      "reason": "Self-contained - threshold, direction, duration and reaction are all in the requirement.",
+      "score": 2
+    },
+    "feasibility": {
+      "reason": "A debounced threshold on an existing shunt or Hall measurement within the 10 ms acquisition cycle.",
+      "score": 2
+    },
+    "parent_fit": {
+      "reason": "Addresses the current arm of the parent story's safe-window promise, disconnecting the pack when the current leaves it.",
+      "score": 2
+    },
+    "unambiguity": {
+      "reason": "One reading; the explicit statement that sub-100 ms excursions do not trigger removes the transient question entirely.",
+      "score": 2
+    },
+    "verifiability": {
+      "reason": "350 A, the discharge direction, the 100 ms continuity condition and the observable contactor reaction are all concrete.",
+      "score": 2
+    }
+  },
+  "criteria": "requirement",
+  "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
+  "model": "claude-opus-5[1m]",
+  "need": "REQ_PACK_OVERCURRENT",
+  "reviewed_fingerprint": "5b077788f163b2a9fbf1183632fb0f4ccb945e24daba70c0c6721d0134bbd53c",
+  "schema": 2,
+  "summary": "Fully quantified overcurrent protection with an explicit debounce and an explicit non-trigger case; no axis-level defect found. Set-level note: only the discharge direction is covered, so charge-direction overcurrent is unaddressed by any requirement in this set."
+}

@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ubc --version)",
+      "Bash(ubc agent next:*)",
+      "Bash(ubc agent status:*)",
+      "Bash(ubc agent trace:*)",
+      "Bash(ubc agent gaps:*)",
+      "Bash(ubc agent doctor:*)",
+      "Bash(ubc agent audit:*)",
+      "Bash(ubc agent context:*)",
+      "Bash(ubc agent impact:*)",
+      "Bash(ubc agent prompt:*)",
+      "Bash(ubc agent review-brief:*)",
+      "Bash(ubc agent config-validate:*)",
+      "Bash(ubc build needs:*)",
+      "Bash(ubc query:*)",
+      "Bash(ubc check:*)",
+      "Bash(ubc config:*)"
+    ]
+  }
+}

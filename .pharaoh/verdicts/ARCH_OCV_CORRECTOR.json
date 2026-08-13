@@ -1,0 +1,34 @@
+{
+  "agent": "claude-code",
+  "axes": {
+    "completeness": {
+      "reason": "REQ_SOC_REST_CORRECTION is fully covered, but REQ_SOC_ACCURACY's 3 % obligation is covered only by assertion ('what keeps the fused estimate inside its accuracy band') - the 21-point table takes no temperature argument although the requirement's reference is a 25 degC-conditioned pack, and the 10-90 % validity band is never mentioned.",
+      "score": 1,
+      "suggestion": "Address the accuracy obligation quantitatively: state the OCV table's temperature handling (a temperature-indexed table or an explicit assumption that corrections are only accepted in a stated temperature window) and the error contribution the correction is budgeted to bound within the 10-90 % band."
+    },
+    "consistency": {
+      "reason": "Cleanly reconciled with its sibling ARCH_COULOMB_COUNTER on REQ_SOC_ACCURACY - the counter holds no absolute reference and this element owns the anchor and the published fusion - and with ARCH_SOC_STORE, which hands it the wake-up anchor.",
+      "score": 2
+    },
+    "design_clarity": {
+      "reason": "Names concrete choices throughout: a monotonic rest timer over |current| < 1 A, a 21-point OCV table, linear interpolation on the mean cell voltage, and anchor-plus-counter-delta reporting between corrections.",
+      "score": 2
+    },
+    "implementability": {
+      "reason": "Realisable, but one consequential choice is unresolved: converting the counter's ampere-second delta into a percentage needs a capacity figure, and the element does not say whether that is rated capacity or the faded capacity reported by ARCH_SOH_TRACKER - the two give different published values.",
+      "score": 1,
+      "suggestion": "State which capacity figure scales the counter delta into percent (rated capacity vs the SOH tracker's current remaining capacity), and whether an interrupted rest resets the 30 minute timer to zero."
+    },
+    "parent_fit": {
+      "reason": "Substantively addresses both parents: REQ_SOC_REST_CORRECTION is covered at its own numbers (|current| < 1 A, 30 minutes, counted value replaced by the OCV-derived value), and it owns the anchor-plus-delta fusion that REQ_SOC_ACCURACY's reported value comes out of.",
+      "score": 2
+    }
+  },
+  "criteria": "arch",
+  "criteria_fingerprint": "48337dfa0b294b1882460a938500fa11eb3e8fd873d5cd9afa31ff1f7923f377",
+  "model": "claude-opus-5[1m]",
+  "need": "ARCH_OCV_CORRECTOR",
+  "reviewed_fingerprint": "7768ffa11b480d451ecc455d93ea1b56d52a0291b1c2f4414018c704beeed2aa",
+  "schema": 2,
+  "summary": "The rest-correction parent is covered essentially completely and concretely. The accuracy parent is engaged only by assertion: no error budget, no temperature argument on the OCV table (the requirement's reference is a pack conditioned to 25 degC), and no statement of which capacity figure scales the counter's delta into a percentage."
+}

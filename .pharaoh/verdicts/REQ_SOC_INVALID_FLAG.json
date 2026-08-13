@@ -1,0 +1,37 @@
+{
+  "agent": "claude-code",
+  "axes": {
+    "atomicity": {
+      "reason": "One obligation - the state of a single unreliable flag, whose set and clear conditions together define one behaviour.",
+      "score": 2
+    },
+    "comprehensibility": {
+      "reason": "Self-contained; it spells out open-circuit-voltage rather than relying on the abbreviation.",
+      "score": 2
+    },
+    "feasibility": {
+      "reason": "Implementable, but making the next open-circuit-voltage correction the only clear path couples it to REQ_SOC_REST_CORRECTION's 30-minutes-below-1 A gate, so a five-second current-sensor dropout in traffic keeps the state of charge marked unreliable for the rest of the driving day even after measurements return.",
+      "score": 1,
+      "suggestion": "Add a second clear path - e.g. valid current measurements for a stated time together with a bounded accumulated charge uncertainty - or bound how long the flag may persist once measurements are healthy again."
+    },
+    "parent_fit": {
+      "reason": "Serves the parent story's headline obligation to report a TRUSTWORTHY charge level, by telling the consumer when the value can no longer be trusted so no unsupported range prediction is shown.",
+      "score": 2
+    },
+    "unambiguity": {
+      "reason": "One reading - the 5 s absence window and the single clear event are both stated, with 'only after' making the clear condition exclusive.",
+      "score": 2
+    },
+    "verifiability": {
+      "reason": "Concrete test: remove the pack current measurement for more than 5 s and confirm the flag is set, then confirm it stays set until an open-circuit-voltage correction occurs.",
+      "score": 2
+    }
+  },
+  "criteria": "requirement",
+  "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
+  "model": "claude-opus-5[1m]",
+  "need": "REQ_SOC_INVALID_FLAG",
+  "reviewed_fingerprint": "fffe19b6f183a00248e5c4fc1b96e8cd5c1639d00310d74cc76ab4b382f7fe13",
+  "schema": 2,
+  "summary": "Well-formed signalling requirement; the concern is the clear condition, which routes the only exit through a 30-minute rest and so can keep the flag set for a whole driving day after a five-second dropout."
+}

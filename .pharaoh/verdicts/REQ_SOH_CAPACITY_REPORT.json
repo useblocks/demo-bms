@@ -1,0 +1,38 @@
+{
+  "agent": "claude-code",
+  "axes": {
+    "atomicity": {
+      "reason": "One obligation - monotonic non-increase of the reported figure; the discard sentence is the same obligation expressed as its mechanism.",
+      "score": 2
+    },
+    "comprehensibility": {
+      "reason": "Self-contained - it states the reported quantity, its unit and the monotonic rule with its mechanism.",
+      "score": 2
+    },
+    "feasibility": {
+      "reason": "Implementable as a discard rule, but permanently discarding higher measurements means a repaired or recalibrated pack can never report its true capacity; and because no accuracy bound is stated anywhere, a constant figure would conform while telling the fleet operator nothing.",
+      "score": 1,
+      "suggestion": "Pair the monotonic rule with an accuracy bound on the reported capacity (against a bench full-discharge reference) and a defined service reset for pack repairs."
+    },
+    "parent_fit": {
+      "reason": "Directly delivers the parent story's observable that the fleet report shows a remaining-capacity figure that only decreases over the life of the pack.",
+      "score": 2
+    },
+    "unambiguity": {
+      "reason": "Clear for a pack in continuous service but silent on legitimate increases - module replacement or a service recalibration - so it is open whether the never-increase rule survives a repair or applies only to one pack configuration.",
+      "score": 1,
+      "suggestion": "State the exceptions explicitly, e.g. the reported value may be reset on a documented pack repair, and scope the monotonic rule to an unchanged pack configuration."
+    },
+    "verifiability": {
+      "reason": "Directly checkable against a sequence of reported values: any increase between successive values is a failure.",
+      "score": 2
+    }
+  },
+  "criteria": "requirement",
+  "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
+  "model": "claude-opus-5[1m]",
+  "need": "REQ_SOH_CAPACITY_REPORT",
+  "reviewed_fingerprint": "2d09dd28f7d5837c51201c5cbe43f63095e57bd6ab485e165421cc9f9dd12ce5",
+  "schema": 2,
+  "summary": "Faithful to the parent's monotonic-capacity observable, but the never-increase rule has no exception for a repaired pack and the requirement sets no accuracy bound at all, so a constant reported value would satisfy it."
+}

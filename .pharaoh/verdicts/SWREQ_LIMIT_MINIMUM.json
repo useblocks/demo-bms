@@ -1,0 +1,40 @@
+{
+  "agent": "claude-code",
+  "axes": {
+    "atomicity": {
+      "reason": "Two obligations: publish the minimum of two shares, and define the actuator-driven share as 30 % / 100 % - the latter is a complete requirement in its own right, and the parent treats it as a distinct computation.",
+      "score": 1,
+      "suggestion": "Move the actuator-driven share definition into its own requirement (mirroring SWREQ_TEMP_DERATE_RAMP for the temperature-driven share) and keep only the minimum-selection obligation here."
+    },
+    "comprehensibility": {
+      "reason": "The temperature-driven share cannot be determined from this requirement at all - the reader must find SWREQ_TEMP_DERATE_RAMP to know what is being compared.",
+      "score": 1,
+      "suggestion": "Name the source of the temperature-driven share (reference SWREQ_TEMP_DERATE_RAMP or restate 'the ramp from 100 % at 55 degC to 0 % at 60 degC')."
+    },
+    "feasibility": {
+      "reason": "Taking the minimum of two derating factors is trivial and consistent with the parent's rationale of not letting the two causes cancel.",
+      "score": 2
+    },
+    "parent_fit": {
+      "reason": "ARCH_POWER_LIMIT_CALCULATOR owns publishing the minimum of the temperature-driven and actuator-driven limits; this requirement states that selection substantively.",
+      "score": 2
+    },
+    "unambiguity": {
+      "reason": "'publish, as the permitted discharge power, the smaller of the ... shares' conflates a percentage with a power, so the output reads either as a percentage or as an absolute power value.",
+      "score": 1,
+      "suggestion": "Fix the output's type and unit explicitly, e.g. 'shall publish the permitted discharge power as the smaller share expressed in percent of rated discharge power'."
+    },
+    "verifiability": {
+      "reason": "The percentages have no stated reference quantity and no publication period is given, so a test cannot compute the expected permitted discharge power or its required update rate.",
+      "score": 1,
+      "suggestion": "State the base the percentage applies to (e.g. '% of the rated discharge power') and the publication period of the permitted discharge power."
+    }
+  },
+  "criteria": "requirement",
+  "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
+  "model": "claude-opus-5[1m]",
+  "need": "SWREQ_LIMIT_MINIMUM",
+  "reviewed_fingerprint": "3b4030d73f3cd5da01d4c0efdd54a283772292630d3a7fea1808b792879d2d10",
+  "schema": 2,
+  "summary": "The weakest requirement of the set: it states the min-selection the parent owns, but also defines the actuator share in passing, never says what the percentages are a percentage of, and cannot be evaluated without its sibling ramp requirement."
+}

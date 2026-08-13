@@ -1,0 +1,40 @@
+{
+  "agent": "claude-code",
+  "axes": {
+    "atomicity": {
+      "reason": "Two independent triggers (shutdown request and 60 s elapsed) are conjoined; each would stand alone as a complete requirement with different verification and different timing constraints.",
+      "score": 1,
+      "suggestion": "Split into a shutdown-triggered write requirement (with its own completion deadline) and a periodic 60 s write requirement, sharing a separate record-layout requirement."
+    },
+    "comprehensibility": {
+      "reason": "The record's three fields, the alternating two-slot scheme and both triggers are described inline, so the requirement reads on its own.",
+      "score": 2
+    },
+    "feasibility": {
+      "reason": "Feasible but pushes against non-volatile endurance: a 60 s cadence is roughly 30 writes per hour per slot, which over a vehicle service life lands in the 10^5 write range for each slot, close to typical EEPROM/emulated-EEPROM endurance.",
+      "score": 1,
+      "suggestion": "Add an endurance budget or a change-gated write (skip the periodic write when the state of charge has not moved by more than a stated delta), and record the assumed memory endurance."
+    },
+    "parent_fit": {
+      "reason": "ARCH_SOC_STORE owns the two-slot alternating record - value, monotonic write counter and checksum - written on shutdown and every 60 s while awake; this requirement specifies that write.",
+      "score": 2
+    },
+    "unambiguity": {
+      "reason": "Two slot-selection rules are stated - 'the slot not used by the previous write' and 'always the one carrying the lower write counter' - which coincide only while both counters are consistent, and diverge after an interrupted or corrupted write.",
+      "score": 1,
+      "suggestion": "Make one rule normative (the lower write counter is the robust choice) and drop or derive the other, so the interrupted-write case has a single reading."
+    },
+    "verifiability": {
+      "reason": "No deadline is given for completing the shutdown-triggered write and no tolerance for the 60 s period, so the shutdown case - the one that decides whether data survives - has no testable success condition.",
+      "score": 1,
+      "suggestion": "State a completion deadline for the shutdown write (e.g. 'within 50 ms of the shutdown request, before the hold-up time expires') and a tolerance on the 60 s period."
+    }
+  },
+  "criteria": "requirement",
+  "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
+  "model": "claude-opus-5[1m]",
+  "need": "SWREQ_SOC_PERSIST_WRITE",
+  "reviewed_fingerprint": "08fb028af53970bb00e39ca4ebb56cf8614a3a42e89f343e2ca28cd44953c5df",
+  "schema": 2,
+  "summary": "Weakest requirement alongside SWREQ_LIMIT_MINIMUM: two independent write triggers in one requirement, two slot-selection rules that can disagree after an interrupted write, no deadline for the shutdown write, and a 60 s cadence that stresses non-volatile endurance."
+}

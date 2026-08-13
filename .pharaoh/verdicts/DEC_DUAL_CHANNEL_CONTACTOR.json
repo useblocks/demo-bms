@@ -1,0 +1,29 @@
+{
+  "agent": "claude-code",
+  "axes": {
+    "alternatives_listed": {
+      "reason": "Two rejected options (single coil driver with read-back diagnostic; high-side plus low-side pair on the same coil) are each described with a specific failure mode, alongside the chosen dual-channel low-side pair.",
+      "score": 2
+    },
+    "consequences_present": {
+      "reason": "States what changes (either channel de-energising opens the circuit, so no single driver failure removes protection), the costs accepted (second driver stage, second diagnostic path, ~15 % more driver-section board area), and follow-on work (the close path must handle the fact that no single channel can confirm 'closed').",
+      "score": 2
+    },
+    "context_present": {
+      "reason": "Context names the problem (opening the HV circuit is the stream's only reaction, so one stuck driver output silently removes the whole protection effect) and the driving constraint (the reaction must complete inside a 50 ms system budget).",
+      "score": 2
+    },
+    "rationale_quality": {
+      "reason": "The rejection of the high-side/low-side option rests on 'both switches sit in the same current path, so a welded contactor defeats both', which only discriminates against the chosen option if the two channels act on independent series contactors -- the body never says so, and ARCH_CONTACTOR_ACTUATOR's 'two contactor coil drivers ... as a dual-channel low-side pair' leaves it ambiguous (two drivers on one coil versus one driver per contactor), so scored fail-closed.",
+      "score": 1,
+      "suggestion": "State explicitly in Alternatives or Rationale whether the two channels de-energise two independent contactors in series (in which case say that a single welded contactor is still tolerated) or two series switches in one coil path (in which case the welded-contactor argument does not distinguish the chosen option and a different rejection reason is needed for the high-side/low-side pair)."
+    }
+  },
+  "criteria": "decision",
+  "criteria_fingerprint": "acde53ac62d0cfe944e6386d68e527c7fa5d3bb77a28dbc43b53d9f34a092293",
+  "model": "claude-opus-5[1m]",
+  "need": "DEC_DUAL_CHANNEL_CONTACTOR",
+  "reviewed_fingerprint": "4f5fb61a3770c0440d680fb69fc7610dcf04fcd1d91efc6cbea3e8f8ed88463f",
+  "schema": 2,
+  "summary": "Well-structured record with a quantified context and honest cost accounting, but the load-bearing property that separates the chosen dual-channel low-side pair from the rejected high-side/low-side pair is never stated in the body, so the rationale rests on an assumption the reader must supply."
+}

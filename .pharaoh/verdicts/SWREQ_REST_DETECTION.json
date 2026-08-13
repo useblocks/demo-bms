@@ -1,0 +1,36 @@
+{
+  "agent": "claude-code",
+  "axes": {
+    "atomicity": {
+      "reason": "One obligation (report the rest condition when the rest timer reaches 1800 s), with the timer mechanics and the clear event as facets of the same rule.",
+      "score": 2
+    },
+    "comprehensibility": {
+      "reason": "Self-contained: the timer, threshold, duration and clearing behaviour are all present in the requirement.",
+      "score": 2
+    },
+    "feasibility": {
+      "reason": "A 30-minute software timer over the current sample is trivial and consistent with the corrector's stated anchoring behaviour.",
+      "score": 2
+    },
+    "parent_fit": {
+      "reason": "ARCH_OCV_CORRECTOR owns rest detection via a monotonic timer over |current| < 1 A reaching 30 minutes; this requirement specifies exactly that detection.",
+      "score": 2
+    },
+    "unambiguity": {
+      "reason": "The threshold, its 'below' / 'at or above' boundary, the accumulation, the reset and the clear condition each admit only one reading.",
+      "score": 2
+    },
+    "verifiability": {
+      "reason": "The observable behaviour is fully determined - hold |current| below 1 A for 1800 s and assert the rest condition, then apply a 1 A sample and assert it clears - independent of the tick period used internally.",
+      "score": 2
+    }
+  },
+  "criteria": "requirement",
+  "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
+  "model": "claude-opus-5[1m]",
+  "need": "SWREQ_REST_DETECTION",
+  "reviewed_fingerprint": "705e75bd077ce89ec99fd08e9733ece7ab2bf9e02002fd80f4dce83edca9111c",
+  "schema": 2,
+  "summary": "Full marks: the rest timer's increment, reset, threshold and the clear condition are all stated, and the observable behaviour is fully determined regardless of the tick period."
+}

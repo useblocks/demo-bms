@@ -1,0 +1,32 @@
+{
+  "agent": "claude-code",
+  "axes": {
+    "naming_clarity": {
+      "reason": "Title and body are in stakeholder vocabulary (fleet operator, charge, usable capacity, range, workshop) with no undefined abbreviations; the one domain term, cell voltage spread, is made self-evident by the 'fanned out' vs 'narrow band' phrasing.",
+      "score": 2
+    },
+    "no_mechanism_leak": {
+      "reason": "The body names no class, function, module, table, endpoint, or technology choice; it stays on physical/observable quantities (charge, cell voltages, capacity, range) and never hints at how balancing is achieved.",
+      "score": 2
+    },
+    "parent_fit": {
+      "reason": "This user_story is the root of the V for this project (audit shows no outgoing trace, only an incoming traces_to_back from REQ_CELL_BALANCING_WINDOW), so per the pack's scoring guide the axis is fully met by default.",
+      "score": 2
+    },
+    "single_user_capability": {
+      "reason": "Exactly one capability — the pack autonomously equalising charge across its cells to preserve usable capacity — and the closing paragraph explicitly fences out protection, remaining-charge reporting, and thermal regulation as separate stories.",
+      "score": 2
+    },
+    "user_observable": {
+      "reason": "Three externally observable channels are named — a shrinking reported cell voltage spread after a charge session, slower range loss in the fleet report over months, and a workshop reading per-cell voltages converged into a narrow band — none requiring source code or internal logs.",
+      "score": 2
+    }
+  },
+  "criteria": "feat",
+  "criteria_fingerprint": "bb61c1a1cf63adcf67ee69adf932c3812909a595fa4b3037b66f097932231afe",
+  "model": "claude-opus-5[1m]",
+  "need": "US_CELL_BALANCING",
+  "reviewed_fingerprint": "0ac5d1041b8c0101c234383c58f36a69cef0fd1fcb96ce60b01b7c2da8593e10",
+  "schema": 2,
+  "summary": "Root user story with a single automatic-balancing capability, three concrete external observation channels, an explicit out-of-scope fence, and no implementation constructs; meets every axis at max."
+}

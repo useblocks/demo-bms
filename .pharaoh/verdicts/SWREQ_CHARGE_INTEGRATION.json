@@ -1,0 +1,37 @@
+{
+  "agent": "claude-code",
+  "axes": {
+    "atomicity": {
+      "reason": "One obligation (the per-tick accumulator update); the first-tick sentence is an edge case of the same rule.",
+      "score": 2
+    },
+    "comprehensibility": {
+      "reason": "Self-contained: the tick period, the operands, the factor and the accumulator unit are all present.",
+      "score": 2
+    },
+    "feasibility": {
+      "reason": "A two-sample trapezoidal accumulation at 100 Hz is trivial on any BMS microcontroller and matches the parent's 64-bit fixed-point accumulator.",
+      "score": 2
+    },
+    "parent_fit": {
+      "reason": "ARCH_COULOMB_COUNTER owns trapezoidal integration of signed pack current on a fixed 10 ms tick into an ampere-second accumulator; this requirement states that update exactly.",
+      "score": 2
+    },
+    "unambiguity": {
+      "reason": "'the mean of the current sample of this tick and the current sample of the previous tick multiplied by 0.01 seconds' can be parsed with the 0.01 s factor applying to the mean or only to the previous sample.",
+      "score": 1,
+      "suggestion": "Write the formula unambiguously, e.g. 'shall add ((I(n) + I(n-1)) / 2) x 0.01 s to its ampere-second accumulator'."
+    },
+    "verifiability": {
+      "reason": "A closed-form update with a stated tick period and accumulator unit lets a test feed a current sequence and assert the accumulator value.",
+      "score": 2
+    }
+  },
+  "criteria": "requirement",
+  "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
+  "model": "claude-opus-5[1m]",
+  "need": "SWREQ_CHARGE_INTEGRATION",
+  "reviewed_fingerprint": "0bbba9d59576fa0b274be94aad15b247e30745fb310409e3071c2f677f7a8909",
+  "schema": 2,
+  "summary": "Exact trapezoidal update rule matching ARCH_COULOMB_COUNTER, with the initialisation case handled; the prose formula has an operator-precedence ambiguity."
+}

@@ -1,0 +1,38 @@
+{
+  "agent": "claude-code",
+  "axes": {
+    "atomicity": {
+      "reason": "One obligation (publish the cycle's temperature reduction); the three figures are one derived triple and the no-valid-sample sentence is an edge case of the same rule.",
+      "score": 2
+    },
+    "comprehensibility": {
+      "reason": "It filters temperature samples on 'a cleared invalid flag', but no requirement in this set defines how a temperature sample acquires that flag - SWREQ_MODULE_MEDIAN_VALIDITY sets it on cell voltage samples only - so the reader must supply a mechanism that does not exist upstream.",
+      "score": 1,
+      "suggestion": "Reference or add the requirement that sets the invalid flag on temperature samples (e.g. a sensor plausibility or range check in the acquisition component), or restate the filter in terms of a condition this set does define."
+    },
+    "feasibility": {
+      "reason": "A min/max/spread reduction over the temperature samples every 100 ms is trivial and contradicts nothing else stated.",
+      "score": 2
+    },
+    "parent_fit": {
+      "reason": "ARCH_THERMAL_STATE_EVALUATOR owns reducing the valid cell temperatures to highest, lowest and spread once per 100 ms cycle; this requirement specifies exactly that reduction.",
+      "score": 2
+    },
+    "unambiguity": {
+      "reason": "'reports the thermal picture as unavailable' names no concrete output, so a reader cannot tell whether the unavailability is a flag on the published figures, a separate signal, or the absence of a publication.",
+      "score": 1,
+      "suggestion": "Name the concrete output, e.g. 'shall publish the three figures with a validity flag cleared' or 'shall set the thermal-data-unavailable output'."
+    },
+    "verifiability": {
+      "reason": "The cycle, the valid-sample filter, the three figures and the empty-set case are all stated, so a constructed sample set yields a single expected published triple.",
+      "score": 2
+    }
+  },
+  "criteria": "requirement",
+  "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
+  "model": "claude-opus-5[1m]",
+  "need": "SWREQ_TEMP_EXTREMA",
+  "reviewed_fingerprint": "f3b5a2eb8bf16d90263937e2c56b52e7e32bb6d6ba155be39be1e8587fb9d60a",
+  "schema": 2,
+  "summary": "Faithful refinement of the parent's reduction with the no-valid-sample case handled, but it filters temperature samples by an invalid flag that no upstream requirement in this set ever sets - SWREQ_MODULE_MEDIAN_VALIDITY flags cell voltages only - and 'reports the thermal picture as unavailable' is not a named output."
+}

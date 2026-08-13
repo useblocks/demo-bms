@@ -1,0 +1,34 @@
+{
+  "agent": "claude-code",
+  "axes": {
+    "completeness": {
+      "reason": "The percentage unit, the non-increasing sequence and the discard-optimistic-candidate rule are all covered, but the 'over the life of the pack' aspect is covered only shallowly - 'is itself persisted' names no storage mechanism or integrity scheme, and no initial value is given, so the first accepted candidate has no defined reference to be below.",
+      "score": 1,
+      "suggestion": "Name the persistence mechanism and its integrity protection (or reuse ARCH_SOC_STORE's two-slot-plus-checksum scheme explicitly) and state the value reported at first ever power-up (e.g. 100 % of rated capacity) that the clamp compares the first candidate against."
+    },
+    "consistency": {
+      "reason": "No sibling shares REQ_SOH_CAPACITY_REPORT, and the element does not contradict any related element - it consumes the OCV rest anchors that ARCH_OCV_CORRECTOR declares it produces and the counted charge that ARCH_COULOMB_COUNTER exposes.",
+      "score": 2
+    },
+    "design_clarity": {
+      "reason": "Names the actual choices: capacity candidates derived from charge counted between two OCV rest anchors at least 40 % SoC apart, and a monotonic clamp as the acceptance rule - not merely a wish for a non-increasing figure.",
+      "score": 2
+    },
+    "implementability": {
+      "reason": "Realisable and bounded, but an implementer must choose the storage for the persisted figure, the first-boot initial value, and whether a candidate is rejected when the charge between the two anchors was measured across an intervening charge event or a large temperature change.",
+      "score": 1,
+      "suggestion": "State the acceptance preconditions for a candidate beyond the 40 % separation (e.g. temperature window, no intervening correction) so the derivation is not left to implementation judgement."
+    },
+    "parent_fit": {
+      "reason": "Substantively addresses REQ_SOH_CAPACITY_REPORT: it owns the reported remaining-capacity figure as a percentage of rated capacity and implements the never-increasing obligation as a monotonic clamp that only accepts candidates below the current value.",
+      "score": 2
+    }
+  },
+  "criteria": "arch",
+  "criteria_fingerprint": "48337dfa0b294b1882460a938500fa11eb3e8fd873d5cd9afa31ff1f7923f377",
+  "model": "claude-opus-5[1m]",
+  "need": "ARCH_SOH_TRACKER",
+  "reviewed_fingerprint": "b084ea824eea057c4f117df35b23ec42736483d5578207a88640bd39acd2ba0e",
+  "schema": 2,
+  "summary": "The monotonic clamp and the two-anchor derivation with a 40 % SoC separation are concrete and match the parent's intent exactly. Persistence - which is what makes monotonicity hold 'over the life of the pack' - is asserted in three words with no mechanism, and the first-boot initial value is undefined."
+}

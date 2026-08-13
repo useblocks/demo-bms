@@ -1,0 +1,36 @@
+{
+  "agent": "claude-code",
+  "axes": {
+    "atomicity": {
+      "reason": "One obligation - the state of a single cooling request signal; the raise and withdraw edges cannot be separated without leaving the signal's behaviour undefined.",
+      "score": 2
+    },
+    "comprehensibility": {
+      "reason": "Self-contained, and the closing sentence explains why the two thresholds differ rather than adding hidden obligations.",
+      "score": 2
+    },
+    "feasibility": {
+      "reason": "A thresholded request on an existing thermal interface; consistent with the heating request, whose band does not overlap.",
+      "score": 2
+    },
+    "parent_fit": {
+      "reason": "Delivers the 'cool itself when it is hot' half of the parent story, on the interface the story says the workshop reads back.",
+      "score": 2
+    },
+    "unambiguity": {
+      "reason": "One reading: the stated hysteresis band fixes the behaviour between 30 C and 35 C as 'hold the current state'.",
+      "score": 2
+    },
+    "verifiability": {
+      "reason": "Both thresholds (above 35 C to raise, 30 C or below to withdraw) carry values and units and the request is observable on the thermal interface.",
+      "score": 2
+    }
+  },
+  "criteria": "requirement",
+  "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
+  "model": "claude-opus-5[1m]",
+  "need": "REQ_COOLING_REQUEST",
+  "reviewed_fingerprint": "202827e456680873bbda4424029f15cee11229fd3c1118a3b5220ad4c3b6f9fd",
+  "schema": 2,
+  "summary": "Complete hysteretic cooling-request requirement with both thresholds quantified; no axis-level defect found."
+}

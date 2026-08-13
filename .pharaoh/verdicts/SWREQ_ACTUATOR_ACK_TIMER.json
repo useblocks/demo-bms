@@ -1,0 +1,37 @@
+{
+  "agent": "claude-code",
+  "axes": {
+    "atomicity": {
+      "reason": "One obligation (report unconfirmed on acknowledgement timeout); the second sentence only clarifies the same timer rather than adding an independent obligation.",
+      "score": 2
+    },
+    "comprehensibility": {
+      "reason": "Setpoint frame, acknowledgement frame and request identifier are all introduced within the sentence, so the obligation reads on its own.",
+      "score": 2
+    },
+    "feasibility": {
+      "reason": "A per-request 2 s timeout on a frame-based actuator dialogue is standard practice and contradicts nothing else in the set.",
+      "score": 2
+    },
+    "parent_fit": {
+      "reason": "ARCH_COOLANT_ACTUATOR_IF names a 2 s acknowledgement timer per raised request that turns silence into an unconfirmed verdict; this requirement specifies exactly that timer and its matching-identifier rule.",
+      "score": 2
+    },
+    "unambiguity": {
+      "reason": "The raise condition has one reading, but nothing says whether the unconfirmed verdict latches or clears (e.g. on a late matching acknowledgement or a new request), so downstream behaviour has two readings.",
+      "score": 1,
+      "suggestion": "Add the clearing condition explicitly, as the sibling requirements do (SWREQ_CURRENT_STALENESS_TIMER states 'clears only on ...'), e.g. 'The unconfirmed report shall clear when a matching acknowledgement is subsequently received' or state that it holds until the next request is raised."
+    },
+    "verifiability": {
+      "reason": "Concrete test exists: send a setpoint frame, withhold or mismatch the acknowledgement, assert the unconfirmed report once 2 s have elapsed.",
+      "score": 2
+    }
+  },
+  "criteria": "requirement",
+  "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
+  "model": "claude-opus-5[1m]",
+  "need": "SWREQ_ACTUATOR_ACK_TIMER",
+  "reviewed_fingerprint": "5f87ddc25c21e55a4ce37b5934d6e2e167243ef1be45f7e130eefb04155d39bd",
+  "schema": 2,
+  "summary": "Pins the 2 s acknowledgement timer that ARCH_COOLANT_ACTUATOR_IF explicitly owns; only gap is that the requirement never says when the unconfirmed verdict clears, which SWREQ_LIMIT_MINIMUM depends on."
+}

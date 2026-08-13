@@ -1,0 +1,38 @@
+{
+  "agent": "claude-code",
+  "axes": {
+    "atomicity": {
+      "reason": "One obligation - a single latency bound; the second sentence only defines how the interval is measured.",
+      "score": 2
+    },
+    "comprehensibility": {
+      "reason": "Self-contained: the bound, the start point and the end point are all stated in the requirement itself.",
+      "score": 2
+    },
+    "feasibility": {
+      "reason": "Under the 'first sample above 350 A' reading the 50 ms budget is unsatisfiable against REQ_PACK_OVERCURRENT's 100 ms debounce; under the other reading it is comfortably feasible on the 10 ms acquisition cycle. It also stops at the command, so the contactor's own opening time is not budgeted anywhere towards the parent's terminals-dead observable.",
+      "score": 1,
+      "suggestion": "Resolve the start point against REQ_PACK_OVERCURRENT so the budget begins after any debounce, and add a requirement covering the contactor's mechanical opening time so the parent's end-to-end reaction time is actually bounded."
+    },
+    "parent_fit": {
+      "reason": "Addresses a distinct part of the parent story's 'high-voltage terminals go dead within a bounded reaction time' observable by budgeting the detection-to-command latency.",
+      "score": 2
+    },
+    "unambiguity": {
+      "reason": "'the measurement sample that first violated a cell-protection limit' has two readings for the overcurrent limit, which only becomes a violation after 350 A has persisted for 100 ms: either the first sample above 350 A, or the sample at which the 100 ms condition completes.",
+      "score": 1,
+      "suggestion": "Define the start of the 50 ms window per limit - e.g. the first sample at which that limit's full violation condition, including any debounce, is satisfied."
+    },
+    "verifiability": {
+      "reason": "50 ms with both endpoints named (sample timestamp to command timestamp on the contactor interface), which is directly instrumentable.",
+      "score": 2
+    }
+  },
+  "criteria": "requirement",
+  "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
+  "model": "claude-opus-5[1m]",
+  "need": "REQ_FAULT_REACTION_TIME",
+  "reviewed_fingerprint": "0b0cebba5b8b6b182eaeccf1bd1d819ec9bab41295830b919f776ac9bd558752",
+  "schema": 2,
+  "summary": "Cleanly bounded latency with defined start and end points, but 'the sample that first violated a limit' collides with the overcurrent limit's 100 ms debounce, and under one reading the 50 ms budget becomes unsatisfiable."
+}

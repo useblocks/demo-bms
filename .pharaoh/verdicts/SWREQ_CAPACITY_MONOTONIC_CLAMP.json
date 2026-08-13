@@ -1,0 +1,37 @@
+{
+  "agent": "claude-code",
+  "axes": {
+    "atomicity": {
+      "reason": "One obligation (accept only strictly-lower candidates); the closing sentence restates the consequence rather than adding a second obligation.",
+      "score": 2
+    },
+    "comprehensibility": {
+      "reason": "The rule is intelligible from the sentence alone; the reader needs no knowledge of how the candidate was derived to apply the clamp.",
+      "score": 2
+    },
+    "feasibility": {
+      "reason": "A one-sided comparison and conditional store is trivially implementable and contradicts nothing else stated.",
+      "score": 2
+    },
+    "parent_fit": {
+      "reason": "ARCH_SOH_TRACKER owns a monotonic clamp that only accepts a candidate below the currently reported value; this requirement specifies exactly that clamp rule.",
+      "score": 2
+    },
+    "unambiguity": {
+      "reason": "'Strictly below' and 'leave unchanged otherwise' fix the boundary at equality and admit only one reading.",
+      "score": 2
+    },
+    "verifiability": {
+      "reason": "The comparison rule is testable, but the reported capacity's value at initialisation is never stated, so the expected outcome for the first candidate after start-up is undefined.",
+      "score": 1,
+      "suggestion": "State the initial reported capacity (e.g. 'on initialisation the reported capacity is the persisted value, or rated capacity when none is stored') so the first-candidate case is testable."
+    }
+  },
+  "criteria": "requirement",
+  "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
+  "model": "claude-opus-5[1m]",
+  "need": "SWREQ_CAPACITY_MONOTONIC_CLAMP",
+  "reviewed_fingerprint": "4d6d26378514af0304e6fb07a822cf7773dea271cbb1d7fcbc3b6d984cdfb7d5",
+  "schema": 2,
+  "summary": "Clean statement of the monotonic clamp ARCH_SOH_TRACKER owns; the initial value of the reported capacity is never established, so the first candidate after initialisation has no defined expected outcome."
+}

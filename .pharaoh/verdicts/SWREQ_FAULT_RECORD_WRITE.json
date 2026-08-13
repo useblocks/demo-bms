@@ -1,0 +1,39 @@
+{
+  "agent": "claude-code",
+  "axes": {
+    "atomicity": {
+      "reason": "Three separable obligations are conjoined: the 20 ms write deadline, the record payload, and the wrap-around overwrite policy - the last of which would stand alone as a complete requirement.",
+      "score": 1,
+      "suggestion": "Keep the timed append as this requirement and move the ring-full overwrite policy (and optionally the record layout) into their own requirements against ARCH_FAULT_MEMORY."
+    },
+    "comprehensibility": {
+      "reason": "The ring size, record size, fields and trigger event are all stated inline, so the obligation reads on its own.",
+      "score": 2
+    },
+    "feasibility": {
+      "reason": "Feasible but pushes against a real constraint: a 20 ms deadline for a non-volatile append can be exceeded when the write needs a page or sector erase on typical embedded flash.",
+      "score": 1,
+      "suggestion": "State whether the 20 ms budget applies to the non-volatile commit or to a RAM-buffered append that is flushed later, or bound the deadline against the worst-case erase time of the chosen memory."
+    },
+    "parent_fit": {
+      "reason": "ARCH_FAULT_MEMORY owns a 64-entry ring of fixed 16-byte records carrying identifier, limit identifier, measured value and cycle timestamp; this requirement specifies that write substantively.",
+      "score": 2
+    },
+    "unambiguity": {
+      "reason": "'channel identifier' is an overloaded term in this project (the contactor requirement uses 'coil channel', acquisition uses 'configured channel') and diverges from the parent's 'sensor or cell identifier', so the field's content has more than one reading.",
+      "score": 1,
+      "suggestion": "Use the parent's vocabulary: 'the identifier of the cell or temperature sensor whose sample violated the limit'."
+    },
+    "verifiability": {
+      "reason": "A test can inject a limit-violation event and assert that a record with the four named fields appears in the ring within 20 ms, and that entry 65 overwrites the oldest.",
+      "score": 2
+    }
+  },
+  "criteria": "requirement",
+  "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
+  "model": "claude-opus-5[1m]",
+  "need": "SWREQ_FAULT_RECORD_WRITE",
+  "reviewed_fingerprint": "b93b6466d7e0050605c2dc4ef00b58e1f61716ab15ebea7729b42e87a48b4358",
+  "schema": 2,
+  "summary": "Covers the append the fault memory owns, but bundles latency, payload and wrap policy, uses 'channel identifier' where the parent says sensor-or-cell identifier, and puts a 20 ms deadline on a non-volatile write without addressing erase latency."
+}

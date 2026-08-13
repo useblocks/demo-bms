@@ -1,0 +1,39 @@
+{
+  "agent": "claude-code",
+  "axes": {
+    "atomicity": {
+      "reason": "The 100 ms cadence and the frame's three-value payload are separable obligations, each independently verifiable, though both belong to one periodic publication.",
+      "score": 1,
+      "suggestion": "Split into a cadence requirement ('one battery state frame every 100 ms +/- 10 ms while awake') and a frame-content requirement naming the carried values and their encodings."
+    },
+    "comprehensibility": {
+      "reason": "The frame, its three carried values, the period and the non-suppression rule are all named inline, so the obligation reads on its own.",
+      "score": 2
+    },
+    "feasibility": {
+      "reason": "A 100 ms frame from a dedicated cycle with 10 ms jitter is routine on a vehicle bus and contradicts nothing else stated.",
+      "score": 2
+    },
+    "parent_fit": {
+      "reason": "ARCH_STATE_PUBLISHER owns a dedicated 100 ms cycle that always sends the most recent held values rather than skipping when a producer has not updated; this requirement pins that cadence and that non-suppression rule.",
+      "score": 2
+    },
+    "unambiguity": {
+      "reason": "'while the system is awake' names an undefined system state, and 'the last values it holds' has no defined content for the first frame after initialisation before any producer has published.",
+      "score": 1,
+      "suggestion": "Define or reference the awake state (e.g. the power state the publisher runs in) and state the first-frame content, e.g. 'values not yet produced shall be sent as invalid'."
+    },
+    "verifiability": {
+      "reason": "Period and tolerance are exact, but the three carried values have no stated units or encodings, so a test can check timing but not the frame's contents.",
+      "score": 1,
+      "suggestion": "State the units/encodings of state of charge, remaining capacity and the validity verdict, or reference the frame layout artefact that defines them."
+    }
+  },
+  "criteria": "requirement",
+  "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
+  "model": "claude-opus-5[1m]",
+  "need": "SWREQ_STATE_FRAME_PERIOD",
+  "reviewed_fingerprint": "ba86b25f3f3aa58b36eb6ad1d977341a222bb10eced189ab3198bd472338a87d",
+  "schema": 2,
+  "summary": "Correctly captures the publisher's decoupled 100 ms cadence, but bundles cadence with payload, leaves the three carried values' units unstated, and relies on an undefined 'awake' condition plus an undefined first-frame content."
+}

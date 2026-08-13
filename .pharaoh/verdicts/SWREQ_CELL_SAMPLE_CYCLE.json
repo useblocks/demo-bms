@@ -1,0 +1,38 @@
+{
+  "agent": "claude-code",
+  "axes": {
+    "atomicity": {
+      "reason": "Timing (10 ms +/- 1 ms) and payload (per-channel values, units, timestamp, completeness definition) are separable obligations, though both are facets of one periodic publication.",
+      "score": 1,
+      "suggestion": "Split into a cadence requirement ('shall publish one sample set every 10 ms +/- 1 ms') and a content requirement defining the set's channels, units and timestamp, each independently verifiable."
+    },
+    "comprehensibility": {
+      "reason": "Units, cadence and the completeness rule are all stated inline; nothing forward-references another requirement.",
+      "score": 2
+    },
+    "feasibility": {
+      "reason": "A 10 ms readout of a daisy-chained analogue front end with 1 ms jitter is within reach of current BMS front ends.",
+      "score": 2
+    },
+    "parent_fit": {
+      "reason": "ARCH_CELL_MEASUREMENT_ACQ owns the fixed 10 ms cyclic readout converted to millivolts and tenths of a degree with a cycle timestamp; this requirement pins that cycle and its published set.",
+      "score": 2
+    },
+    "unambiguity": {
+      "reason": "'One voltage value ... and one temperature value ... for every configured cell and sensor' reads either as one of each per cell and per sensor, or as one voltage per cell and one temperature per sensor.",
+      "score": 1,
+      "suggestion": "Distribute the mapping explicitly: 'exactly one voltage value in millivolts for every configured cell and exactly one temperature value in tenths of a degree Celsius for every configured temperature sensor'."
+    },
+    "verifiability": {
+      "reason": "Period, tolerance, units and the definition of a complete set are all given, so a concrete test can assert both cadence and payload without judgement.",
+      "score": 2
+    }
+  },
+  "criteria": "requirement",
+  "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
+  "model": "claude-opus-5[1m]",
+  "need": "SWREQ_CELL_SAMPLE_CYCLE",
+  "reviewed_fingerprint": "2771e34749db5850fe92c9f8c7a20e4d8728e8b3849c154e11d03fc431e67d82",
+  "schema": 2,
+  "summary": "Refines the 10 ms acquisition cycle ARCH_CELL_MEASUREMENT_ACQ owns with units and a completeness definition; bundles cadence with payload, and the per-cell/per-sensor mapping of the two values reads two ways."
+}

@@ -1,0 +1,39 @@
+{
+  "agent": "claude-code",
+  "axes": {
+    "atomicity": {
+      "reason": "One obligation - the state of a single warning output as a function of the spread - with set and clear as the two halves of the same rule.",
+      "score": 2
+    },
+    "comprehensibility": {
+      "reason": "'the computed temperature spread' is a reference to a quantity computed in another requirement; the reader cannot tell from this requirement what the spread is a spread of.",
+      "score": 1,
+      "suggestion": "Restate the input inline, e.g. 'the difference between the highest and lowest valid cell temperature', or reference SWREQ_TEMP_EXTREMA explicitly."
+    },
+    "feasibility": {
+      "reason": "A single threshold comparison on an already-computed figure is trivial and contradicts nothing else stated.",
+      "score": 2
+    },
+    "parent_fit": {
+      "reason": "ARCH_THERMAL_STATE_EVALUATOR owns the imbalance verdict raised on a spread above 8 K; this requirement pins that threshold and both output transitions.",
+      "score": 2
+    },
+    "unambiguity": {
+      "reason": "Behaviour is undefined for a cycle in which no spread exists - SWREQ_TEMP_EXTREMA publishes no figures when no valid temperature sample is present - so the output in that cycle reads either as held or as cleared.",
+      "score": 1,
+      "suggestion": "Define the warning's value when the spread is unavailable, e.g. 'when no spread is available the warning shall be reported as unavailable' rather than cleared."
+    },
+    "verifiability": {
+      "reason": "The 8 K threshold and its boundary are exact, but 'in every cycle' names no period, so the required response time of the warning cannot be tested.",
+      "score": 1,
+      "suggestion": "State the cycle explicitly, e.g. 'once per 100 ms cycle', matching SWREQ_TEMP_EXTREMA."
+    }
+  },
+  "criteria": "requirement",
+  "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
+  "model": "claude-opus-5[1m]",
+  "need": "SWREQ_IMBALANCE_WARNING",
+  "reviewed_fingerprint": "76538576bcb99c8a37d445d34180024d4270d4f008141874192871eb688783fc",
+  "schema": 2,
+  "summary": "The 8 K threshold matches the parent, but the requirement leans on a spread it does not define, never names its cycle, and says nothing about the cycle in which SWREQ_TEMP_EXTREMA publishes no spread at all."
+}

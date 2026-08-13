@@ -1,0 +1,33 @@
+{
+  "agent": "claude-code",
+  "axes": {
+    "naming_clarity": {
+      "reason": "Title and body use stakeholder terms (usable temperature band, charging speed, warranty, temperature spread between cells) that a non-implementer could confirm without help.",
+      "score": 2
+    },
+    "no_mechanism_leak": {
+      "reason": "No class, function, module, table, internal endpoint or technology choice appears; cooling and heating requests stay at the level of observable pack behaviour rather than naming any construct.",
+      "score": 2
+    },
+    "parent_fit": {
+      "reason": "user_story is the root stage of this project V and the need carries no outgoing parent link, so per the pack scoring guide this axis is fully met by default.",
+      "score": 2
+    },
+    "single_user_capability": {
+      "reason": "Centred on one capability (keep the pack inside its usable temperature band by warming when cold and cooling when hot), but it also promises that the spread between the warmest and coldest cell stays inside a stated band. Uniformity across cells is a different property from overall band-keeping and could arguably ship separately.",
+      "score": 1,
+      "suggestion": "Move the warmest-to-coldest cell temperature-spread promise into its own story (even temperature distribution across the pack, so no part ages ahead of the rest) and keep this story to holding overall pack temperature in the usable band. If the reduced-but-predictable drive power on a hot day is intended as its own promise rather than a consequence of band-keeping, give thermal power derating a story of its own too."
+    },
+    "user_observable": {
+      "reason": "Observation points are external and concrete: available charging power rising within a stated time on a cold morning, drive power continuing at a reduced but predictable level on a hot day, and a workshop readback of the heating and cooling requests together with the temperatures that caused them.",
+      "score": 2
+    }
+  },
+  "criteria": "feat",
+  "criteria_fingerprint": "bb61c1a1cf63adcf67ee69adf932c3812909a595fa4b3037b66f097932231afe",
+  "model": "claude-opus-5[1m]",
+  "need": "US_THERMAL_MANAGEMENT",
+  "reviewed_fingerprint": "74e704ad75c0e8f37144b951320d7600aa18174b0f25098a4a8113da3e83ccf7",
+  "schema": 2,
+  "summary": "Observable and jargon-free, centred on holding pack temperature in band, but it folds in a separable cell-to-cell temperature-uniformity promise. 9/10."
+}

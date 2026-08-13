@@ -1,0 +1,37 @@
+{
+  "agent": "claude-code",
+  "axes": {
+    "atomicity": {
+      "reason": "One obligation (flag implausible cell voltage samples); the median computation is the means to that decision rather than a separate deliverable, and the complement sentence closes the same rule.",
+      "score": 2
+    },
+    "comprehensibility": {
+      "reason": "Self-contained: the scope, the statistic, the threshold and both flag outcomes are all stated in the requirement.",
+      "score": 2
+    },
+    "feasibility": {
+      "reason": "A per-module median over a handful of samples every 10 ms is well within budget and contradicts nothing else stated.",
+      "score": 2
+    },
+    "parent_fit": {
+      "reason": "ARCH_CELL_MEASUREMENT_ACQ owns the plausibility decision - per-module median of cell voltages, marking any cell deviating by more than 250 mV as invalid - and this requirement states exactly that.",
+      "score": 2
+    },
+    "unambiguity": {
+      "reason": "'the median' is not defined for a module with an even number of cells, where the mean of the two central samples and the lower central sample give different results and therefore different flags near the boundary.",
+      "score": 1,
+      "suggestion": "Define the median for even cell counts, e.g. 'the arithmetic mean of the two central values when the module has an even number of cells'."
+    },
+    "verifiability": {
+      "reason": "The 250 mV threshold, the absolute-difference comparison, the 'exceeds' boundary and the per-module per-cycle scope let a test assert flags for a constructed sample set.",
+      "score": 2
+    }
+  },
+  "criteria": "requirement",
+  "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
+  "model": "claude-opus-5[1m]",
+  "need": "SWREQ_MODULE_MEDIAN_VALIDITY",
+  "reviewed_fingerprint": "aa6b9beb0aa7819f7c6018122c3ad4dd9409ff7273d0c69a07551b842d017417",
+  "schema": 2,
+  "summary": "Tight refinement of the parent's plausibility rule with the complement stated explicitly; only the definition of 'median' for an even cell count is left open."
+}

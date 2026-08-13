@@ -1,0 +1,38 @@
+{
+  "agent": "claude-code",
+  "axes": {
+    "atomicity": {
+      "reason": "Three obligations are bundled: the entry transition on first violation, the exit transition on reset, and the continuous open-command assertion while latched - the last would stand alone as a complete requirement, and the title covers only the exit transition.",
+      "score": 1,
+      "suggestion": "Split the latched output behaviour ('keeps asserting the open command regardless of subsequent sample sets') into its own requirement, and align the title with whatever obligations remain in the body."
+    },
+    "comprehensibility": {
+      "reason": "Both state names are quoted literally and the triggering events are named, so the requirement reads on its own.",
+      "score": 2
+    },
+    "feasibility": {
+      "reason": "A two-state latch with an external reset is trivially implementable and is consistent with the contactor actuator's unconditional-off behaviour while latched.",
+      "score": 2
+    },
+    "parent_fit": {
+      "reason": "ARCH_SAFETY_SUPERVISOR owns the two-state RUN / FAULT_LATCHED machine whose only exit is a diagnostic service reset; this requirement specifies that machine's transitions.",
+      "score": 2
+    },
+    "unambiguity": {
+      "reason": "'shall transition back to RUN only on receipt of a diagnostic service reset request' states a necessary condition, leaving open whether a reset always causes the transition (e.g. while the violation still holds), and the power-up state is not stated.",
+      "score": 1,
+      "suggestion": "Separate necessity from sufficiency, e.g. 'shall transition to RUN when, and only when, a diagnostic service reset request is received', and state the state entered at initialisation."
+    },
+    "verifiability": {
+      "reason": "Both states are named literally and both transitions are event-driven, so a test can drive a violation, assert FAULT_LATCHED and the held open command, then apply a reset and assert RUN.",
+      "score": 2
+    }
+  },
+  "criteria": "requirement",
+  "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
+  "model": "claude-opus-5[1m]",
+  "need": "SWREQ_LATCH_STATE_MACHINE",
+  "reviewed_fingerprint": "1d5913362f29a6b3fd9f1f5ce4303426255a39aead516d68ba047c024838850e",
+  "schema": 2,
+  "summary": "Refines the supervisor's two-state machine faithfully, but the body carries three obligations where the title claims only the exit condition, and 'only on receipt' states a necessary rather than a sufficient condition."
+}

@@ -1,0 +1,39 @@
+{
+  "agent": "claude-code",
+  "axes": {
+    "atomicity": {
+      "reason": "The cadence, the definition of the four limit-table entries and their values, and the event-emission rule are separable obligations conjoined into one requirement.",
+      "score": 1,
+      "suggestion": "Keep the evaluation and emission obligation here and move the limit-table content (2.50 V / 4.25 V / 60 degC / debounced overcurrent) into its own definition requirement or data need that this one references."
+    },
+    "comprehensibility": {
+      "reason": "The thresholds are inline and 'the debounced overcurrent condition' conveys that an already-debounced input arrives from elsewhere, so the requirement is intelligible on its own.",
+      "score": 2
+    },
+    "feasibility": {
+      "reason": "Four comparisons per sample within a 10 ms cycle is well inside any BMS budget and contradicts nothing else stated.",
+      "score": 2
+    },
+    "parent_fit": {
+      "reason": "ARCH_SAFETY_SUPERVISOR owns evaluating every validated measurement against a static four-entry limit table once per 10 ms cycle; this requirement specifies exactly that evaluation and its output event.",
+      "score": 2
+    },
+    "unambiguity": {
+      "reason": "It is not decided whether one event is emitted per cycle or one per violating sample - 'every sample ... and shall emit a limit-violation event' reads both ways, which matters because SWREQ_FAULT_RECORD_WRITE records exactly one channel per event.",
+      "score": 1,
+      "suggestion": "State the event cardinality explicitly, e.g. 'shall emit one limit-violation event per violating sample' or 'at most one event per cycle, naming the first violation found'."
+    },
+    "verifiability": {
+      "reason": "Three thresholds are exact, but 'the first entry that is violated' defines no ordering, so the expected event for a sample violating two limits is not determined.",
+      "score": 1,
+      "suggestion": "State the evaluation order normatively (e.g. 'in the table order undervoltage, overvoltage, overtemperature, overcurrent') so the emitted event is deterministic."
+    }
+  },
+  "criteria": "requirement",
+  "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
+  "model": "claude-opus-5[1m]",
+  "need": "SWREQ_LIMIT_EVALUATION",
+  "reviewed_fingerprint": "c8505333758fdd489752a0c1a3565b2dde5a644b69f25f40a48627ec8ea068d7",
+  "schema": 2,
+  "summary": "Covers the supervisor's central evaluation obligation but bundles cadence, the limit-table values and the event emission, and 'the first entry that is violated' leaves both the ordering and the one-event-per-cycle-versus-per-sample question undecided."
+}

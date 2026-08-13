@@ -1,0 +1,34 @@
+{
+  "agent": "claude-code",
+  "axes": {
+    "completeness": {
+      "reason": "REQ_SOC_ACCURACY's obligation is engaged only through the counting arm and only qualitatively - there is no share of the 3 % error budget allocated to current-measurement offset/quantisation drift, and no statement of how counted charge becomes a percentage of rated capacity.",
+      "score": 1,
+      "suggestion": "Allocate this element's slice of the 3 % accuracy budget explicitly (e.g. maximum tolerated integration drift per hour given the shunt's offset error) so the numeric obligation has a design-level counterpart."
+    },
+    "consistency": {
+      "reason": "Cleanly reconciled with its sibling ARCH_OCV_CORRECTOR on REQ_SOC_ACCURACY: this element explicitly holds no absolute reference and defers the anchor to the corrector, which in turn reports anchor plus this counter's delta.",
+      "score": 2
+    },
+    "design_clarity": {
+      "reason": "Names the concrete choices instead of the goal: trapezoidal integration, a fixed 10 ms tick, ampere-second accumulation in a 64-bit fixed-point accumulator, and the two values it exposes.",
+      "score": 2
+    },
+    "implementability": {
+      "reason": "Realisable, but the current input is loose: ARCH_CURRENT_PATH_MONITOR samples pack current at 1 ms while this element integrates on a 10 ms tick, and the element does not say whether a tick consumes the latest sample or the mean of the ten - a choice that materially affects drift. Behaviour on a missing current sample is also unstated.",
+      "score": 1,
+      "suggestion": "Say which current value each 10 ms tick integrates (latest 1 ms sample vs mean of the ten), and what the accumulator does when no valid current sample is available for a tick."
+    },
+    "parent_fit": {
+      "reason": "Substantively owns a distinct part of REQ_SOC_ACCURACY - the relative charge integral whose drift the accuracy band is spent on - and its representation choices (A.s, 64-bit fixed point) are argued in terms of not losing resolution.",
+      "score": 2
+    }
+  },
+  "criteria": "arch",
+  "criteria_fingerprint": "48337dfa0b294b1882460a938500fa11eb3e8fd873d5cd9afa31ff1f7923f377",
+  "model": "claude-opus-5[1m]",
+  "need": "ARCH_COULOMB_COUNTER",
+  "reviewed_fingerprint": "4af1717fc421068b43acfaec8d3b1fe25e1dc3f749d6417a13e8d9a0529cc548",
+  "schema": 2,
+  "summary": "The numeric core is well chosen and precisely stated, and the split against ARCH_OCV_CORRECTOR is clean. What is missing is any engagement with the 3 % error budget it is supposed to serve, and the relationship between its 10 ms tick and the 1 ms current sampling upstream."
+}

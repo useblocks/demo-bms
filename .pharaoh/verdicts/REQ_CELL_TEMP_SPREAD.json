@@ -1,0 +1,38 @@
+{
+  "agent": "claude-code",
+  "axes": {
+    "atomicity": {
+      "reason": "A single obligation: set one warning on one interface under one condition.",
+      "score": 2
+    },
+    "comprehensibility": {
+      "reason": "Intelligible on its own: it names the two measured extremes, the limit and where the warning appears.",
+      "score": 2
+    },
+    "feasibility": {
+      "reason": "Min/max over readings already acquired for protection; no technology constraint.",
+      "score": 2
+    },
+    "parent_fit": {
+      "reason": "The parent story promises the spread between warmest and coldest cell STAYS inside a stated band; this requirement only raises a warning once 8 K is exceeded, so it makes the condition visible without delivering the containment the parent asks for, and no other requirement in the set bounds the spread.",
+      "score": 1,
+      "suggestion": "Either add a requirement that actually bounds the spread (balancing or thermal control) and keep this one as its diagnostic complement, or correct the parent story's observable so a workshop-visible warning is what is being promised."
+    },
+    "unambiguity": {
+      "reason": "The set condition is precise but no clearing or reset condition is given - unlike the cooling and heating requests, which state their withdraw thresholds - so it is open whether the warning is latched or self-clearing, and whether a momentary spread excursion must set it.",
+      "score": 1,
+      "suggestion": "State the clearing condition and any debounce, e.g. withdraw the warning below 6 K after the spread has been under the limit for a stated time, or hold it until a diagnostic clear."
+    },
+    "verifiability": {
+      "reason": "The quantity (highest minus lowest valid cell temperature), the 8 K threshold and the observable (diagnostic-interface warning) are all concrete.",
+      "score": 2
+    }
+  },
+  "criteria": "requirement",
+  "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
+  "model": "claude-opus-5[1m]",
+  "need": "REQ_CELL_TEMP_SPREAD",
+  "reviewed_fingerprint": "187f9835bcb9e584b573430e0ce98364b3d3f7f3d0db39052a9faf83bd213fc5",
+  "schema": 2,
+  "summary": "Well-quantified diagnostic warning, but it only detects the imbalance the parent story promises to contain, and it states no condition for clearing the warning."
+}

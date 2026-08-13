@@ -1,0 +1,28 @@
+{
+  "agent": "claude-code",
+  "axes": {
+    "alternatives_listed": {
+      "reason": "Three rejected options (EKF over an equivalent-circuit model, pure coulomb counting with full-charge reset, per-cycle voltage-only lookup) are each described concretely with a distinct rejection reason, alongside the chosen fused counter-plus-anchor design.",
+      "score": 2
+    },
+    "consequences_present": {
+      "reason": "States what changes (estimator split into two elements with a narrow interface), the trade-off accepted (absolute accuracy now hinges on a 30-minute rest duty-cycle assumption), and follow-on work (state and monitor the assumption via a validity monitor and unreliable flag; model-based estimation deferred to a later variant).",
+      "score": 2
+    },
+    "context_present": {
+      "reason": "Context states the problem (bounded SoC accuracy) and the driving constraints together: 3 % of rated capacity across 10-90 %, ~5 % of one core and 8 kB RAM, unbounded coulomb drift, and IR-drop corruption of loaded voltage readings.",
+      "score": 2
+    },
+    "rationale_quality": {
+      "reason": "Rationale compares all three options on the two stated axes (accuracy target inside the compute budget, reviewability by the safety team) and is consistent with the affected architecture elements' 30-minute rest anchor and 21-point OCV table.",
+      "score": 2
+    }
+  },
+  "criteria": "decision",
+  "criteria_fingerprint": "acde53ac62d0cfe944e6386d68e527c7fa5d3bb77a28dbc43b53d9f34a092293",
+  "model": "claude-opus-5[1m]",
+  "need": "DEC_COULOMB_PLUS_OCV",
+  "reviewed_fingerprint": "f2b030e8c889289e51d32998ba945b29b7c0a80d05c5a4c42c7789f07c045736",
+  "schema": 2,
+  "summary": "Strong decision record: quantified constraints (3 % accuracy over 10-90 %, ~5 % of one core, 8 kB RAM), three genuinely distinct alternatives with per-option rejection reasons, explicit trade-off plus deferral. Minor traceability nit outside the rubric: the 'separate validity monitor and unreliable flag' invoked in Consequences are not among the affected elements (only ARCH_COULOMB_COUNTER and ARCH_OCV_CORRECTOR)."
+}

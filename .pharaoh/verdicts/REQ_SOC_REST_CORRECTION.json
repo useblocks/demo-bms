@@ -1,0 +1,38 @@
+{
+  "agent": "claude-code",
+  "axes": {
+    "atomicity": {
+      "reason": "One obligation - a single correction action under a single rest condition.",
+      "score": 2
+    },
+    "comprehensibility": {
+      "reason": "Self-contained: it states the trigger, the action and why the correction is placed after a rest.",
+      "score": 2
+    },
+    "feasibility": {
+      "reason": "Implementable, but the replacement is unbounded in magnitude while REQ_SOC_PERSISTENCE caps the change across a power cycle at 2 % of rated capacity - and the rest condition here is exactly the standstill during which a power cycle occurs, so the two requirements can demand different values for the same publication.",
+      "score": 1,
+      "suggestion": "Bound the correction step (e.g. rate-limit it, or cap the shift per correction) and state its precedence over the 2 % restore bound."
+    },
+    "parent_fit": {
+      "reason": "Substantively serves the parent story's trustworthiness obligation by bounding accumulated counting drift, which is what keeps the reported level inside the promised tolerance.",
+      "score": 2
+    },
+    "unambiguity": {
+      "reason": "'the value derived from the measured open-circuit voltage' does not say which voltage is measured (pack terminal, mean cell, lowest cell) nor how it maps to state of charge, and the mapping's temperature dependence is left open - so two implementations can both claim conformance while producing different values.",
+      "score": 1,
+      "suggestion": "Name the measured quantity and the mapping, e.g. per-cell open-circuit voltage averaged over the pack, converted via a temperature-compensated open-circuit-voltage to state-of-charge table."
+    },
+    "verifiability": {
+      "reason": "The rest condition is fully quantified (absolute pack current below 1 A continuously for at least 30 minutes) and the correction is observable by injecting known drift and watching the published value be replaced.",
+      "score": 2
+    }
+  },
+  "criteria": "requirement",
+  "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
+  "model": "claude-opus-5[1m]",
+  "need": "REQ_SOC_REST_CORRECTION",
+  "reviewed_fingerprint": "103d9f09ffae5494f634082c534bcb84fef51b6e1c3adb0519e19c354da4627a",
+  "schema": 2,
+  "summary": "Clear rest-detection condition, but the correction's source quantity and mapping are unspecified, and the unbounded replacement conflicts with REQ_SOC_PERSISTENCE's 2 % post-power-cycle bound."
+}

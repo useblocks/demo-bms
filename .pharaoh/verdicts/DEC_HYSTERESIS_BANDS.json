@@ -1,0 +1,29 @@
+{
+  "agent": "claude-code",
+  "axes": {
+    "alternatives_listed": {
+      "reason": "Two rejected options (one shared hysteresis band for both outputs; one shared linear ramp for both) are each described with the concrete symptom they leave behind (power jump felt as the pack cutting in and out; pump switching around the threshold), alongside the chosen split of two Schmitt bands plus a separate ramp.",
+      "score": 2
+    },
+    "consequences_present": {
+      "reason": "States what changes (evaluator owns the two Schmitt bands, limit calculator owns the ramp, each independently tunable) and the trade-off with its follow-on obligation (the same temperature figure is now interpreted in two places, so any future sensor-set change must be reflected in both elements).",
+      "score": 2
+    },
+    "context_present": {
+      "reason": "The problem (one highest-cell-temperature figure feeding two outputs that need different shaping) and qualitative constraints (no actuator chatter, no power step) are named, but the 'opposite behaviour at the threshold' framing implies one shared switching point, while the affected elements place the Schmitt bands at 35/30 degC and 5/10 degC and the derating ramp at 55-60 degC, and no quantified constraint (tolerable chatter rate or step size, or the requirement imposing them) is given.",
+      "score": 1,
+      "suggestion": "Restate the Context in terms of the actual temperature regions and quantified limits -- e.g. that the cooling/heating requests switch at 35/30 degC and 5/10 degC while the derating ramp spans 55-60 degC, and name the requirement or driveability limit that forbids chatter and forbids a power step -- so the reader can see what the shared-transfer-function option would actually have had to satisfy."
+    },
+    "rationale_quality": {
+      "reason": "The rationale explicitly weighs the duplicated interpretation against the two named alternative outcomes (chatter or power step) and follows from the no-chatter/no-step constraints stated in Context, without circularity.",
+      "score": 2
+    }
+  },
+  "criteria": "decision",
+  "criteria_fingerprint": "acde53ac62d0cfe944e6386d68e527c7fa5d3bb77a28dbc43b53d9f34a092293",
+  "model": "claude-opus-5[1m]",
+  "need": "DEC_HYSTERESIS_BANDS",
+  "reviewed_fingerprint": "bd8a9b69e8e1c8eacf0b66ec457ea67ac874147fd42950b7ccbc920af85d165e",
+  "schema": 2,
+  "summary": "The alternatives, consequences and rationale are clean and mutually consistent, but the Context's framing of a single shared threshold does not survive comparison with the elements it constrains, which place the two behaviours in different temperature regions."
+}

@@ -1,0 +1,37 @@
+{
+  "agent": "claude-code",
+  "axes": {
+    "atomicity": {
+      "reason": "Set condition, clear condition and hold region are the three inseparable facets of one hysteresis obligation.",
+      "score": 2
+    },
+    "comprehensibility": {
+      "reason": "Self-contained: the input (highest cell temperature) and the output (cooling request) are both named in the sentence.",
+      "score": 2
+    },
+    "feasibility": {
+      "reason": "A two-threshold hysteresis comparator is trivial and the band is consistent with the derating ramp starting at 55 degC.",
+      "score": 2
+    },
+    "parent_fit": {
+      "reason": "ARCH_THERMAL_STATE_EVALUATOR owns the 35/30 degC Schmitt band for the cooling request; this requirement states that band and its hold region.",
+      "score": 2
+    },
+    "unambiguity": {
+      "reason": "'above 35 degC' and 'at or below 30 degC' fix both boundaries, and 'unchanged in between' leaves one reading of the hold region.",
+      "score": 2
+    },
+    "verifiability": {
+      "reason": "Thresholds and boundary inclusivity are exact, but no evaluation period is stated (the parent runs on 100 ms) and the request's value at power-up inside the 30-35 degC hold band is undefined, so a start-up test has no expected result.",
+      "score": 1,
+      "suggestion": "Name the cycle the decision runs on (once per 100 ms cycle, as SWREQ_TEMP_EXTREMA does) and state the initial value of the cooling request on initialisation, e.g. 'the request is cleared at initialisation'."
+    }
+  },
+  "criteria": "requirement",
+  "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
+  "model": "claude-opus-5[1m]",
+  "need": "SWREQ_COOLING_HYSTERESIS",
+  "reviewed_fingerprint": "002bf82f674e6d1afce732562181e80c26ba0459cc43b20d69ff1935bc5effec",
+  "schema": 2,
+  "summary": "Correct Schmitt band for cooling with explicit boundary inclusivity; the evaluation cadence and the power-up state of the request are not specified."
+}

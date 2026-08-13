@@ -1,0 +1,39 @@
+{
+  "agent": "claude-code",
+  "axes": {
+    "atomicity": {
+      "reason": "One obligation - publish one fallback limit on one timeout of one actuator interface; the cooling and heating triggers are the same failure mode on the same actuator.",
+      "score": 2
+    },
+    "comprehensibility": {
+      "reason": "Intelligible on its own - it names the trigger, the timeout, the published value and the reason for capping power.",
+      "score": 2
+    },
+    "feasibility": {
+      "reason": "Feasible, but it publishes a second permitted discharge power alongside REQ_POWER_DERATING's characteristic with no precedence rule, so between 55 C and 60 C two requirements demand different values on the same interface (derating gives about 40 % at 58 C against this requirement's 30 %).",
+      "score": 1,
+      "suggestion": "Define a single publishing rule shared by both requirements - e.g. the published permitted discharge power is the minimum of every applicable limit - so the two cannot disagree."
+    },
+    "parent_fit": {
+      "reason": "Serves the parent story's promise of a reduced but predictable power level rather than a cut-out, extending it to the case where the pack can no longer influence its own temperature.",
+      "score": 2
+    },
+    "unambiguity": {
+      "reason": "Two readings for what appears on the interface: the 30 % fallback could replace the thermal derating value or be combined with it, and the requirement does not say. It is also open whether the fallback is released when a confirmation finally arrives.",
+      "score": 1,
+      "suggestion": "State the arbitration (e.g. the published limit is the minimum of all applicable limits) and the condition under which the fallback is withdrawn."
+    },
+    "verifiability": {
+      "reason": "The 2 s timeout is concrete, but 'confirmed by the coolant actuator' names no confirmation signal or acceptance criterion, and '30 % of the full permitted discharge power' rests on a quantity that is defined nowhere, so the expected published value cannot be computed for a test.",
+      "score": 1,
+      "suggestion": "Name the confirmation signal and what counts as a confirmation, and quantify the full permitted discharge power that the 30 % refers to."
+    }
+  },
+  "criteria": "requirement",
+  "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
+  "model": "claude-opus-5[1m]",
+  "need": "REQ_THERMAL_ACTUATOR_FAILSAFE",
+  "reviewed_fingerprint": "c555897b589eb7a0ffd3ac72088a129f5549dd7496f7cfdafe9eb8f486d69678",
+  "schema": 2,
+  "summary": "Sound failsafe intent, but it publishes a second permitted discharge power on the same interface as REQ_POWER_DERATING with no arbitration rule, and neither 'confirmed' nor 'full permitted discharge power' is defined."
+}

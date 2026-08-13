@@ -1,0 +1,37 @@
+{
+  "agent": "claude-code",
+  "axes": {
+    "atomicity": {
+      "reason": "One obligation (report overcurrent once the persistence timer reaches 100 ms), with the timer mechanics as its condition rather than a second requirement.",
+      "score": 2
+    },
+    "comprehensibility": {
+      "reason": "Self-contained: threshold, direction, sample period, timer behaviour and output are all named in the requirement.",
+      "score": 2
+    },
+    "feasibility": {
+      "reason": "1 ms sampling with an integer timer is routine on a shunt-based current path and matches the parent's stated sampling rate.",
+      "score": 2
+    },
+    "parent_fit": {
+      "reason": "ARCH_CURRENT_PATH_MONITOR owns the 100 ms persistence window as a monotonic timer starting above 350 A and resetting at or below it, so the supervisor sees an already-debounced condition; this requirement pins that timer.",
+      "score": 2
+    },
+    "unambiguity": {
+      "reason": "'Until then the output reports no overcurrent condition' covers only the pre-trip phase; whether the reported condition clears when a later sample resets the timer, or latches, is not stated.",
+      "score": 1,
+      "suggestion": "State the post-trip behaviour explicitly, e.g. 'the reported condition shall clear when the timer is reset' or 'shall latch until the supervisor is reset'."
+    },
+    "verifiability": {
+      "reason": "Threshold, sign convention, 1 ms sample period, increment and reset rules and the 100 ms deadline are all exact, so a sampled current sequence yields a single expected output.",
+      "score": 2
+    }
+  },
+  "criteria": "requirement",
+  "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
+  "model": "claude-opus-5[1m]",
+  "need": "SWREQ_OVERCURRENT_DEBOUNCE",
+  "reviewed_fingerprint": "f7d036b265a0d7fd777fad1cf1b0c1b292751928961c7490bd70394d04b2b75b",
+  "schema": 2,
+  "summary": "The most completely specified timer in the set - threshold, direction, sample period, accumulation and reset are all given; only the behaviour of the output after the timer has reset is left open."
+}

@@ -1,0 +1,7 @@
+# `ubc build needs` output — regenerated from the sources, not a source itself.
+/needs.json
+
+# Python bytecode and pytest scratch — regenerated, never a source.
+__pycache__/
+*.py[cod]
+.pytest_cache/

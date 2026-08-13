@@ -1,0 +1,34 @@
+{
+  "agent": "claude-code",
+  "axes": {
+    "completeness": {
+      "reason": "The mechanism covers the restore obligation, but the parent's numeric part - within 2 % of rated capacity of the last published value - is not engaged: after an unexpected power loss the surviving slot can be up to 60 s stale, and nothing bounds the charge that may have moved in that window against the 2 % budget.",
+      "score": 1,
+      "suggestion": "Justify the 60 s period against the 2 % bound, or make the periodic write charge-triggered (write whenever the accumulated charge since the last write corresponds to a stated fraction of rated capacity) so the worst-case restore error is bounded by design."
+    },
+    "consistency": {
+      "reason": "No sibling shares REQ_SOC_PERSISTENCE, and the element does not contradict any related element - it hands the restored value to ARCH_OCV_CORRECTOR as a starting anchor, which is exactly what that element declares it owns.",
+      "score": 2
+    },
+    "design_clarity": {
+      "reason": "Names concrete choices: a two-slot alternating record with value, monotonic write counter and checksum, two explicit write triggers (every shutdown request plus every 60 s awake), and an unambiguous restore rule (highest-counter valid slot).",
+      "score": 2
+    },
+    "implementability": {
+      "reason": "Realisable and bounded, but an implementer must decide the cold-start behaviour when neither slot is valid (first-ever boot or both checksums bad) and must judge the NVM endurance implications of a 60 s write cadence over vehicle life.",
+      "score": 1,
+      "suggestion": "State what is handed to the corrector when no valid slot exists, and name the storage medium/endurance assumption that makes a 60 s write cadence acceptable."
+    },
+    "parent_fit": {
+      "reason": "Substantively addresses REQ_SOC_PERSISTENCE: it owns the non-volatile shadow of the published SoC, writes it around shutdown, and hands the surviving slot back as the wake-up anchor so the first post-power-cycle publication continues from the pre-shutdown value.",
+      "score": 2
+    }
+  },
+  "criteria": "arch",
+  "criteria_fingerprint": "48337dfa0b294b1882460a938500fa11eb3e8fd873d5cd9afa31ff1f7923f377",
+  "model": "claude-opus-5[1m]",
+  "need": "ARCH_SOC_STORE",
+  "reviewed_fingerprint": "af07871e47ed5d54f42eaf46b114b6fcb81b7bdeefe87bbc7cd01c0cab550a45",
+  "schema": 2,
+  "summary": "A well-chosen persistence mechanism - two alternating slots, monotonic counter, checksum, and a stated slot-selection rule. What is missing is the link between the 60 s periodic write and the parent's 2 % bound: charge moved between the last periodic write and an unexpected power loss is unaccounted for."
+}

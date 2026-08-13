@@ -1,0 +1,34 @@
+{
+  "agent": "claude-code",
+  "axes": {
+    "completeness": {
+      "reason": "The 100 ms period and the frame contents are covered, but REQ_SOC_UPDATE_PERIOD's tolerance obligation is not - the element gives no jitter bound, scheduling priority or deadline argument that establishes the +/- 10 ms window and the 110 ms violation limit. What is published before any producer has delivered a first value is also unstated.",
+      "score": 1,
+      "suggestion": "Add the timing argument for the tolerance: the task priority or timer source that bounds send jitter within +/- 10 ms, and state the frame contents at start-up before the first estimator value exists (e.g. publish with the unreliable flag set)."
+    },
+    "consistency": {
+      "reason": "Cleanly reconciled with its sibling ARCH_ESTIMATION_VALIDITY_MONITOR on REQ_SOC_INVALID_FLAG - the monitor owns the verdict, this element only transports it - and with the producers whose cadence it deliberately does not depend on.",
+      "score": 2
+    },
+    "design_clarity": {
+      "reason": "Names the concrete choice and its reason: a dedicated 100 ms send cycle decoupled from the producers, with hold-last-value semantics (resend the previous value rather than skip a cycle) instead of a producer-driven publication.",
+      "score": 2
+    },
+    "implementability": {
+      "reason": "Realisable and bounded, but the frame layout and transport are unnamed and the implementer must choose the scheduling mechanism that meets the tolerance and the start-up contents of the frame.",
+      "score": 1,
+      "suggestion": "Name the frame (interface/identifier and signal layout for state of charge, remaining capacity and the validity flag) and the timer/task mechanism the 100 ms cycle runs on."
+    },
+    "parent_fit": {
+      "reason": "Substantively addresses both parents: it owns the vehicle-facing frame that REQ_SOC_UPDATE_PERIOD's 100 ms publication obligation applies to, and it carries REQ_SOC_INVALID_FLAG's flag alongside the state of charge in that frame.",
+      "score": 2
+    }
+  },
+  "criteria": "arch",
+  "criteria_fingerprint": "48337dfa0b294b1882460a938500fa11eb3e8fd873d5cd9afa31ff1f7923f377",
+  "model": "claude-opus-5[1m]",
+  "need": "ARCH_STATE_PUBLISHER",
+  "reviewed_fingerprint": "6db5abcbfdb54e86b8d32b98929c69f86ee559b5bce1cd9d8feefa119e788c91",
+  "schema": 2,
+  "summary": "The decoupling decision and the hold-last-value rule are exactly the right design content for a periodic publisher, and the ownership split against the validity monitor is clean. But the parent's tolerance is a number (100 ms +/- 10 ms, violated at 110 ms) and the element only says '100 ms cycle' - nothing bounds the jitter."
+}

@@ -1,0 +1,37 @@
+{
+  "agent": "claude-code",
+  "axes": {
+    "atomicity": {
+      "reason": "One obligation - a single accuracy bound over a single stated operating band.",
+      "score": 2
+    },
+    "comprehensibility": {
+      "reason": "Self-contained to an unusual degree - it defines state of charge inline and states its own reference measurement.",
+      "score": 2
+    },
+    "feasibility": {
+      "reason": "3 % over the 10-90 % band is achievable with coulomb counting plus open-circuit-voltage correction, which is exactly the architecture provided.",
+      "score": 2
+    },
+    "parent_fit": {
+      "reason": "Directly delivers the parent story's observable that the displayed charge level stays within a stated tolerance of the energy the vehicle actually delivers, confirmable on a bench.",
+      "score": 2
+    },
+    "unambiguity": {
+      "reason": "One reading: absolute deviation from a named reference value, bounded in percent of rated capacity, for every reported value in the band.",
+      "score": 2
+    },
+    "verifiability": {
+      "reason": "The 3 % bound, the 10-90 % band and the calibrated-bench reference are all concrete, but the discharge current profile of the reference run is unspecified, and state-of-charge error depends strongly on the load applied.",
+      "score": 1,
+      "suggestion": "Specify the reference run's load profile (or an allowed current range and its dynamics), and say whether 25 C is a pre-test soak or held throughout the run."
+    }
+  },
+  "criteria": "requirement",
+  "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
+  "model": "claude-opus-5[1m]",
+  "need": "REQ_SOC_ACCURACY",
+  "reviewed_fingerprint": "b0485c353344bcc5dc4a17b425d9574487832a8501c338115884c1daa68abaeb",
+  "schema": 2,
+  "summary": "The most rigorously specified requirement in the set - it even names its reference measurement - with one gap: the reference run's load profile is unspecified, and coulomb-counting error depends strongly on it."
+}

@@ -1,0 +1,34 @@
+{
+  "agent": "claude-code",
+  "axes": {
+    "completeness": {
+      "reason": "Set and clear conditions are covered, and publication alongside the SoC falls to ARCH_STATE_PUBLISHER, but two aspects are shallow: what counts as a 'valid pack current measurement' resetting the timer, and the verdict's state at wake-up when no current sample has yet arrived and no OCV correction has happened.",
+      "score": 1,
+      "suggestion": "Define the timer reset condition (which incoming signal, and what makes it valid) and the verdict's initialisation after a power cycle - in particular whether the flag starts set until the first valid current sample, which the requirement's clear-only-on-OCV-correction rule would otherwise make sticky until a 30 minute rest."
+    },
+    "consistency": {
+      "reason": "Cleanly reconciled with its sibling ARCH_STATE_PUBLISHER on REQ_SOC_INVALID_FLAG: this element owns the verdict, the publisher only transports it in the state frame, and neither claims the other's responsibility.",
+      "score": 2
+    },
+    "design_clarity": {
+      "reason": "Names the actual mechanism chosen - a 5 s staleness timer on the pack-current signal, verdict raised on expiry, cleared only on notification of a completed OCV correction - and fixes its role as a pure observer that never modifies the estimate.",
+      "score": 2
+    },
+    "implementability": {
+      "reason": "Realisable as one small bounded observer, but the implementer must choose the timer's initial value and reset trigger, and must rely on an OCV-correction notification that ARCH_OCV_CORRECTOR does not declare it emits.",
+      "score": 1,
+      "suggestion": "Name the correction-completed notification as an explicit interface on both sides (this element and ARCH_OCV_CORRECTOR) and state the timer's power-on initial value."
+    },
+    "parent_fit": {
+      "reason": "Directly and substantively addresses REQ_SOC_INVALID_FLAG's decision content: the 5 s staleness condition that raises the unreliable verdict and the OCV-correction event that is its only release.",
+      "score": 2
+    }
+  },
+  "criteria": "arch",
+  "criteria_fingerprint": "48337dfa0b294b1882460a938500fa11eb3e8fd873d5cd9afa31ff1f7923f377",
+  "model": "claude-opus-5[1m]",
+  "need": "ARCH_ESTIMATION_VALIDITY_MONITOR",
+  "reviewed_fingerprint": "bb8507fb99eb615ce77bae54356f31d6e05eed2f458b852e6bddbbc255af3fda",
+  "schema": 2,
+  "summary": "A tight, single-purpose observer that mirrors its parent's set and clear conditions exactly. The gap is the cold-start case: after a power cycle no current sample has ever arrived and the only clear condition is an OCV correction, so the initial verdict and timer state need to be stated."
+}

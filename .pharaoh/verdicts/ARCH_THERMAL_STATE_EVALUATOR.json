@@ -1,0 +1,34 @@
+{
+  "agent": "claude-code",
+  "axes": {
+    "completeness": {
+      "reason": "The cooling and heating obligations are fully covered including both hysteresis edges, but REQ_CELL_TEMP_SPREAD obligates the warning to be set on the diagnostic interface and the element raises only an internal 'imbalance verdict' - no element in this stream publishes it to diagnostics, so that half of the obligation has no owner.",
+      "score": 1,
+      "suggestion": "State how the imbalance verdict reaches the diagnostic interface - either this element writes the diagnostic warning itself, or name the element that publishes it and link that element to REQ_CELL_TEMP_SPREAD."
+    },
+    "consistency": {
+      "reason": "Consistent with its sibling ARCH_COOLANT_ACTUATOR_IF on both request requirements: this element owns the thresholds and derives the requests, that element forwards them and explicitly never re-derives them - the responsibility split is stated on both sides.",
+      "score": 2
+    },
+    "design_clarity": {
+      "reason": "Names concrete choices rather than goals: a 100 ms reduction of valid cell temperatures to highest/lowest/spread, two Schmitt-trigger bands with both edges given numerically, and an imbalance verdict at a stated 8 K threshold.",
+      "score": 2
+    },
+    "implementability": {
+      "reason": "Realisable and bounded, but two boundaries need an implementer judgement call: the claim to be 'the only element in this stream that reads temperature sensors directly' overlaps ARCH_CELL_MEASUREMENT_ACQ, which owns the cyclic readout of all cell temperatures, and nothing defines what makes a cell temperature 'valid' for the extrema reduction.",
+      "score": 1,
+      "suggestion": "Reconcile temperature acquisition with ARCH_CELL_MEASUREMENT_ACQ - either consume its already-acquired, validity-tagged temperatures or state why a second independent readout path exists - and name the source of the validity qualifier used here."
+    },
+    "parent_fit": {
+      "reason": "Substantively addresses all three parents: the 35/30 degC and 5/10 degC Schmitt-trigger bands are exactly REQ_COOLING_REQUEST's and REQ_HEATING_REQUEST's raise/withdraw pairs, and the 8 K spread verdict is REQ_CELL_TEMP_SPREAD's condition.",
+      "score": 2
+    }
+  },
+  "criteria": "arch",
+  "criteria_fingerprint": "48337dfa0b294b1882460a938500fa11eb3e8fd873d5cd9afa31ff1f7923f377",
+  "model": "claude-opus-5[1m]",
+  "need": "ARCH_THERMAL_STATE_EVALUATOR",
+  "reviewed_fingerprint": "5f802f6c8b71fdd4929655b9bc1cf165e5710ffb8578923df83008d720d1946d",
+  "schema": 2,
+  "summary": "All three parents are hit at their own numbers with both hysteresis edges named - very good design content. Two gaps: the imbalance warning is raised only as an internal verdict, while the parent obligates it on the diagnostic interface, and the claim to read temperature sensors directly collides with ARCH_CELL_MEASUREMENT_ACQ's ownership of all cell temperature readout."
+}
