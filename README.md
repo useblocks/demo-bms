@@ -98,10 +98,11 @@ $UBC agent next    --id REQ_CELL_BALANCING_WINDOW -p . # the single next action
 $UBC agent prompt  --id REQ_CELL_BALANCING_WINDOW -p . # ...as an agent briefing
 ```
 
-The tests are plain pytest, no dependencies beyond the standard library:
+The tests are plain pytest, no dependencies beyond the standard library. Two of
+them fail on purpose — see [Two tests are red, on purpose](#two-tests-are-red-on-purpose):
 
 ```bash
-python3 -m pytest -q
+python3 -m pytest -q     # 2 failed, 48 passed
 ```
 
 ## Test results, from a static XML report
@@ -131,6 +132,75 @@ what lets the report be replaced by a newer run without touching a single spec
 file, and what lets a newly added test legitimately exist with no result yet.
 The outcome, runtime and run id are need **fields** (`outcome`, `runtime_s`,
 `test_run`), so they are queryable rather than buried in prose.
+
+### Two tests are red, on purpose
+
+`python3 -m pytest -q` reports **2 failed, 48 passed**, and the committed report
+records those two as `outcome: failed`. The failures are real — the report is not
+hand-edited, so running the suite live during a demo tells the same story the
+graph does.
+
+Each one is a single-operator boundary defect, planted in the production source
+and marked there with a `KNOWN DEFECT` comment:
+
+| Defect | Where | What is wrong |
+|---|---|---|
+| `IMPL_IMBALANCE_WARNING` | [src/thermal_management/evaluator.py](src/thermal_management/evaluator.py) | `>=` where `SWREQ_IMBALANCE_WARNING` says the warning is set only *above* 8 K, so a spread of exactly 8.0 K raises it |
+| `IMPL_CAPACITY_MONOTONIC_CLAMP` | [src/state_estimation/soh_tracker.py](src/state_estimation/soh_tracker.py) | `<=` where `SWREQ_CAPACITY_MONOTONIC_CLAMP` says a candidate is accepted only when *strictly* below, so an equal candidate counts as accepted |
+
+**This is the sharpest beat in the repo.** Both defects leave every structural
+gate fully satisfied: the requirement is traced, the architecture satisfies it,
+the software requirement refines it, an implementation implements it and a test
+verifies it. `ubc agent gaps` is happy. Nothing structural is missing. The only
+thing that says the system does not do what the requirement says is the
+**recorded outcome** — which is exactly the difference between *traced* and
+*verified*, and exactly what a traceability matrix alone cannot tell you.
+
+Ask the graph which requirements have failing evidence and who to blame:
+
+```cypher
+MATCH (tr:test_result)-[:results_for]->(t:test)-[:verifies]->(s:swreq)
+      -[:refines]->(:arch)-[:satisfies]->(r:req)-[:traces_to]->(u:user_story)
+WHERE tr.outcome <> 'passed'
+OPTIONAL MATCH (i:impl)-[:implements]->(s)
+RETURN u.id AS story, r.id AS req, s.id AS swreq,
+       i.id AS impl, tr.outcome AS outcome
+```
+
+Four requirements come back red from two failures — the imbalance defect sits
+under an architecture element that three requirements share, so one operator
+reaches further than it looks. That fan-out is the argument for the graph.
+
+To make the repo fully green instead, flip `>=` back to `>` and `<=` back to
+`<`, then re-run the suite and the importer.
+
+### The coverage report
+
+[reports/traceability_coverage.html.j2](reports/traceability_coverage.html.j2) —
+render it with `ubc report traceability_coverage.html.j2`, or from the VS Code
+Reports view ("Generate & Preview" / "Open in Browser"). Script-free inline SVG,
+so the editor preview, a browser and print all look the same.
+
+It answers two questions: how many system requirements have a full chain down to
+a test, and of those, how many are backed by passing versus failing tests. Right
+now: **18 / 19** with a chain (94.7 %), and **14 verified vs 4 failing** (3.5 : 1).
+The one requirement with no evidence is `REQ_CELL_BALANCING_WINDOW`.
+
+**One thing to know if you write your own report template.** A template *cannot
+walk links.* `ubc report` builds each need in the Jinja context from that need's
+scalar fields — `id`, `type`, `title`, `status`, `tags`, `doctype` and the
+declared `[[needs.extra_options]]`. Every link field (`satisfies`, `refines`,
+`verifies`, `results_for`, …) is **absent**, and incoming links are never
+materialised in `needs.json` at all. Reading `n.verifies` yields undefined, and
+the idiomatic `(n.verifies or [])` guard turns that into an empty list — so a
+link-based coverage template renders perfectly cleanly and reports **0 %
+everywhere**. That failure is silent; nothing errors.
+
+This project works around it by moving the answer from a link into a field:
+`tools/import_test_results.py` resolves `test → swreq → arch → req` from the spec
+sources and stamps the result on each generated `test_result` as `chain_reqs`.
+The template then reads a field, which it can see. Derived data, on a derived
+need, regenerated on every import — nothing hand-maintained.
 
 ### The whole V in one query
 

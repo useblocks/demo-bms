@@ -39,6 +39,12 @@ class SohTracker:
         measured_capacity_as = abs(counted_as) / (spread / 100.0)
         return measured_capacity_as / rated_capacity_as * 100.0
 
+    # KNOWN DEFECT — intentional, see README. The comparison below is `<=` where
+    # SWREQ_CAPACITY_MONOTONIC_CLAMP says a candidate is accepted only when
+    # STRICTLY below the reported capacity, so a candidate equal to the reported
+    # value is counted as accepted instead of rejected. The reported figure still
+    # never increases, which is why this survives a casual read — the rejection
+    # count is what disagrees. TEST_CAPACITY_MONOTONIC_CLAMP catches it and is RED.
     # @Discard every capacity candidate above the reported capacity, IMPL_CAPACITY_MONOTONIC_CLAMP, impl, [SWREQ_CAPACITY_MONOTONIC_CLAMP]
     def offer(self, candidate_pct: float) -> float:
         """Accept a candidate only when it is strictly below the reported value.
@@ -46,7 +52,7 @@ class SohTracker:
         A worn pack must never look healthier than it did, so an optimistic
         single measurement is dropped instead of averaged in.
         """
-        if candidate_pct < self._reported_pct:
+        if candidate_pct <= self._reported_pct:
             self._reported_pct = candidate_pct
         else:
             self._rejected += 1

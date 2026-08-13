@@ -1,0 +1,342 @@
+{#- Traceability coverage — a self-contained report rendered from the needs index.
+
+    Render it with `ubc report traceability_coverage.html.j2`
+    (writes reports/_build/traceability_coverage.html), or from VS Code's
+    Reports view via "Generate & Preview" / "Open in Browser".
+
+    HOW IT READS THE CHAIN — worth knowing before you change it.
+    A report template cannot walk links: `ubc report` builds each need in the
+    Jinja context from that need's scalar FIELDS, so `id`, `type`, `title`,
+    `status`, `tags`, `doctype` and the project's `[[needs.extra_options]]` are
+    reachable while every LINK field (`satisfies`, `refines`, `verifies`,
+    `results_for`, …) is absent. Reading `n.verifies` yields undefined, and the
+    usual `(n.verifies or [])` guard turns that into an empty list — so a
+    link-based coverage report renders clean and reports 0 % everywhere.
+    This template therefore reads the `chain_reqs` extra field that
+    `tools/import_test_results.py` stamps on every generated `test_result`: the
+    requirement ids that result is evidence for, already resolved through
+    `test -> swreq -> arch -> req`. Fields are visible to a template; links are not.
+
+    Script-free by design — pure inline SVG with native <title> tooltips — so it
+    renders identically in the editor preview, a browser, and print.
+
+    Colour: the three requirement states and the two test outcomes are STATUS,
+    not categories, so they use a fixed status palette and are never themed. Every
+    status colour is paired with a glyph and a text label, so colour never carries
+    meaning alone. Chart chrome follows the editor theme via --vscode-* variables.
+-#}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Traceability Coverage</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --font: var(--vscode-font-family, system-ui, -apple-system, "Segoe UI", sans-serif);
+    --surface: var(--vscode-editor-background, #fcfcfb);
+    --ink: var(--vscode-foreground, #0b0b0b);
+    --ink-2: #52514e;
+    --ink-muted: #898781;
+    --border: var(--vscode-panel-border, rgba(11, 11, 11, 0.10));
+    --soft: var(--vscode-editor-inactiveSelectionBackground, #f0efec);
+    /* Status palette — fixed, never themed. */
+    --st-good: #0ca30c;
+    --st-warning: #fab219;
+    --st-serious: #ec835a;
+    --st-critical: #d03b3b;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --surface: var(--vscode-editor-background, #1a1a19);
+      --ink: var(--vscode-foreground, #ffffff);
+      --ink-2: #c3c2b7;
+      --border: var(--vscode-panel-border, rgba(255, 255, 255, 0.10));
+      --soft: var(--vscode-editor-inactiveSelectionBackground, #262c36);
+    }
+  }
+  :root[data-theme="dark"] {
+    --surface: var(--vscode-editor-background, #1a1a19);
+    --ink: var(--vscode-foreground, #ffffff);
+    --ink-2: #c3c2b7;
+    --border: var(--vscode-panel-border, rgba(255, 255, 255, 0.10));
+    --soft: var(--vscode-editor-inactiveSelectionBackground, #262c36);
+  }
+
+  body {
+    font-family: var(--font); background: var(--surface); color: var(--ink);
+    max-width: 940px; margin: 0 auto; padding: 2rem 1rem 4rem; line-height: 1.5;
+  }
+  h1 { font-size: 1.5rem; margin: 0 0 .25rem; }
+  h2 { font-size: 1.05rem; margin: 2.5rem 0 .25rem; }
+  .sub { color: var(--ink-2); font-size: .85rem; margin: 0 0 1rem; }
+  .muted { color: var(--ink-muted); font-size: .8rem; }
+  code { background: var(--soft); padding: 1px 4px; border-radius: 3px; font-size: .85em; }
+
+  .tiles { display: flex; flex-wrap: wrap; gap: .75rem; margin: 1.5rem 0 0; }
+  .tile { flex: 1 1 210px; border: 1px solid var(--border); border-radius: 8px; padding: .85rem 1rem; }
+  .tile .k { font-size: .72rem; color: var(--ink-2); text-transform: uppercase; letter-spacing: .05em; margin: 0; }
+  .tile .v { font-size: 1.9rem; font-weight: 650; line-height: 1.15; margin: .15rem 0 0; }
+  .tile .n { font-size: .8rem; color: var(--ink-muted); margin: .1rem 0 0; }
+
+  figure { margin: 0; }
+  svg { display: block; width: 100%; height: auto; }
+  .bar-value { font-size: 13px; font-weight: 620; fill: #ffffff; }
+
+  .legend { list-style: none; padding: 0; margin: .6rem 0 0; display: flex; flex-wrap: wrap; gap: .3rem 1.4rem; }
+  .legend li { display: flex; align-items: baseline; gap: .4rem; font-size: .83rem; }
+  .legend li.zero { opacity: .55; }
+  .swatch { width: .7rem; height: .7rem; border-radius: 2px; flex: none; transform: translateY(1px); }
+  .glyph { font-weight: 700; width: 1em; text-align: center; flex: none; }
+  .cnt { font-variant-numeric: tabular-nums; font-weight: 620; }
+  .why { color: var(--ink-muted); }
+
+  table { border-collapse: collapse; width: 100%; margin-top: 1rem; font-size: .82rem; }
+  th, td { border-bottom: 1px solid var(--border); padding: .4rem .5rem; text-align: left; vertical-align: top; }
+  th { background: var(--soft); font-weight: 620; white-space: nowrap; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .state { white-space: nowrap; font-weight: 620; }
+  dl.defs { border: 1px solid var(--border); border-radius: 8px; padding: .25rem 1rem 1rem; }
+  dl.defs dt { font-weight: 620; margin-top: .85rem; font-size: .85rem; }
+  dl.defs dd { margin: .15rem 0 0; color: var(--ink-2); font-size: .85rem; }
+  .chain { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .78rem; color: var(--ink-2); }
+</style>
+</head>
+<body>
+
+{#- ── Inputs ──────────────────────────────────────────────────────────────── -#}
+{% set reqs = needs_list | selectattr('type', 'equalto', 'req') | list %}
+{% set results = needs_list | selectattr('type', 'equalto', 'test_result') | list %}
+{% set req_total = reqs | length %}
+
+{#- The three states a requirement can be in, worst first: the reader should meet
+    the problems before the passes. `no_evidence` deliberately merges "no chain at
+    all" with "a chain whose tests have no recorded outcome" — both present as zero
+    results, and `chain_reqs` cannot tell them apart, so claiming otherwise would
+    be a guess. -#}
+{% set bucket_defs = [
+  {'key': 'failing',     'label': 'Failing evidence',  'status': 'critical', 'glyph': '✕',
+   'meaning': 'a recorded outcome reaching this requirement is not `passed`'},
+  {'key': 'no_evidence', 'label': 'No test evidence',  'status': 'serious',  'glyph': '⊘',
+   'meaning': 'no recorded test outcome reaches this requirement at all'},
+  {'key': 'verified',    'label': 'Verified',          'status': 'good',     'glyph': '✓',
+   'meaning': 'outcomes reach this requirement and every one of them passed'}
+] %}
+
+{#- ── Per-requirement roll-up ─────────────────────────────────────────────── -#}
+{% set agg = namespace(rows=[], verified=0, failing=0, no_evidence=0) %}
+{% for r in reqs %}
+  {% set row = namespace(passed=0, failed=0, failing_ids=[]) %}
+  {% for t in results %}
+    {% if r.id in (t.chain_reqs | default('') | split(', ') | list) %}
+      {% if t.outcome == 'passed' %}
+        {% set row.passed = row.passed + 1 %}
+      {% else %}
+        {% set row.failed = row.failed + 1 %}
+        {% set row.failing_ids = row.failing_ids + [t.id] %}
+      {% endif %}
+    {% endif %}
+  {% endfor %}
+  {% if row.failed > 0 %}
+    {% set bucket = 'failing' %}{% set agg.failing = agg.failing + 1 %}
+  {% elif row.passed > 0 %}
+    {% set bucket = 'verified' %}{% set agg.verified = agg.verified + 1 %}
+  {% else %}
+    {% set bucket = 'no_evidence' %}{% set agg.no_evidence = agg.no_evidence + 1 %}
+  {% endif %}
+  {% set agg.rows = agg.rows + [{'id': r.id, 'title': r.title, 'status': r.status,
+                                 'bucket': bucket, 'passed': row.passed,
+                                 'failed': row.failed, 'failing_ids': row.failing_ids}] %}
+{% endfor %}
+
+{% set counts = {'failing': agg.failing, 'no_evidence': agg.no_evidence, 'verified': agg.verified} %}
+{% set with_chain = agg.verified + agg.failing %}
+
+{#- ── Test-level tally, for comparison ────────────────────────────────────── -#}
+{% set tests_passed = results | selectattr('outcome', 'equalto', 'passed') | list | length %}
+{% set tests_other = (results | length) - tests_passed %}
+{% set test_defs = [
+  {'key': 'passed',     'label': 'Passed',     'status': 'good',     'glyph': '✓',
+   'count': tests_passed, 'meaning': 'recorded outcome is `passed`'},
+  {'key': 'not_passed', 'label': 'Not passed', 'status': 'critical', 'glyph': '✕',
+   'count': tests_other, 'meaning': 'recorded outcome is failed, error or skipped'}
+] %}
+
+{#- ── Stacked-bar geometry. Zero-count segments are dropped rather than drawn as
+       a hairline of colour that reads as a real value. ───────────────────────── -#}
+{% set BAR = 720 %}{% set GAP = 2 %}{% set LABEL_MIN = 44 %}
+
+{% macro stacked_bar(items, total, clip_id, aria) %}
+  {% set vis = namespace(list=[]) %}
+  {% for b in items %}{% if b.count > 0 %}{% set vis.list = vis.list + [b] %}{% endif %}{% endfor %}
+  <svg viewBox="0 0 {{ BAR }} 30" role="img" aria-label="{{ aria }}">
+    <defs><clipPath id="{{ clip_id }}"><rect x="0" y="0" width="{{ BAR }}" height="28" rx="4"/></clipPath></defs>
+    {% set cur = namespace(x=0) %}
+    <g clip-path="url(#{{ clip_id }})">
+      {% for b in vis.list %}
+        {% set raw = b.count / total * BAR %}
+        {% set w = BAR - cur.x if loop.last else (raw - GAP if raw > GAP + 1 else 1) %}
+        <rect x="{{ cur.x | round(2) }}" y="0" width="{{ w | round(2) }}" height="28"
+              fill="var(--st-{{ b.status }})">
+          <title>{{ b.label }}: {{ b.count }} of {{ total }} ({{ (b.count / total * 100) | round(1) }} %)</title>
+        </rect>
+        {% if w >= LABEL_MIN %}
+        <text class="bar-value" x="{{ (cur.x + w / 2) | round(2) }}" y="19" text-anchor="middle">{{ b.count }}</text>
+        {% endif %}
+        {% set cur.x = cur.x + raw %}
+      {% endfor %}
+    </g>
+  </svg>
+{% endmacro %}
+
+{% macro legend(items, total) %}
+  <ul class="legend">
+    {% for b in items %}
+    <li{% if b.count == 0 %} class="zero"{% endif %}>
+      <span class="swatch" style="background: var(--st-{{ b.status }})" aria-hidden="true"></span>
+      <span class="glyph" style="color: var(--st-{{ b.status }})" aria-hidden="true">{{ b.glyph }}</span>
+      <span><span class="cnt">{{ b.count }}</span> {{ b.label }}</span>
+      <span class="why">&mdash; {{ b.meaning }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+{% endmacro %}
+
+{#- ── Page ────────────────────────────────────────────────────────────────── -#}
+<h1>Traceability Coverage</h1>
+<p class="sub">
+  {{ req_total }} system requirements &middot; {{ needs | length }} needs in the graph
+  {% if results | length > 0 %}
+  &middot; test evidence from run <code>{{ (results | first).test_run }}</code>
+  {% endif %}
+</p>
+
+{% if req_total == 0 %}
+<p><em>No system requirements found. Index the project and re-run this report.</em></p>
+{% else %}
+
+<div class="tiles">
+  <div class="tile">
+    <p class="k">Full chain to a test</p>
+    <p class="v">{{ with_chain }} / {{ req_total }}</p>
+    <p class="n">
+      {{ (with_chain / req_total * 100) | round(1) }} % of system requirements are reached
+      by at least one recorded test outcome
+    </p>
+  </div>
+  <div class="tile">
+    <p class="k">Passing : non-passing</p>
+    <p class="v">
+      {% if agg.failing > 0 %}{{ (agg.verified / agg.failing) | round(1) }} : 1{% else %}{{ agg.verified }} : 0{% endif %}
+    </p>
+    <p class="n">
+      of the {{ with_chain }} with evidence, {{ agg.verified }} all-passing
+      vs {{ agg.failing }} with a failure
+    </p>
+  </div>
+  <div class="tile">
+    <p class="k">No evidence at all</p>
+    <p class="v">{{ agg.no_evidence }} / {{ req_total }}</p>
+    <p class="n">{{ (agg.no_evidence / req_total * 100) | round(1) }} % have no recorded outcome reaching them</p>
+  </div>
+</div>
+
+<h2>System requirements by evidence state</h2>
+<p class="sub">Each requirement falls in exactly one state. Hover a segment for its share.</p>
+<figure>
+  {% set req_items = [] %}
+  {% set ri = namespace(list=[]) %}
+  {% for b in bucket_defs %}
+    {% set ri.list = ri.list + [{'key': b.key, 'label': b.label, 'status': b.status,
+                                 'glyph': b.glyph, 'meaning': b.meaning, 'count': counts[b.key]}] %}
+  {% endfor %}
+  {{ stacked_bar(ri.list, req_total, 'clip-req', 'System requirements by evidence state') }}
+  {{ legend(ri.list, req_total) }}
+</figure>
+
+<h2>Recorded test outcomes</h2>
+<p class="sub">
+  The test-case level, for comparison: {{ results | length }} recorded results,
+  {% if results | length > 0 %}{{ (tests_passed / (results | length) * 100) | round(1) }} %{% else %}0 %{% endif %}
+  passing.
+</p>
+<figure>
+  {% if results | length > 0 %}
+  {{ stacked_bar(test_defs, results | length, 'clip-test', 'Recorded test outcomes') }}
+  {{ legend(test_defs, results | length) }}
+  {% else %}
+  <p><em>No test results imported. Run <code>tools/import_test_results.py</code>.</em></p>
+  {% endif %}
+</figure>
+
+<h2>What this measures</h2>
+<dl class="defs">
+  <dt>Full chain to a test</dt>
+  <dd>
+    A recorded test outcome reaches the requirement through
+    <span class="chain">req &larr;satisfies&mdash; arch &larr;refines&mdash; swreq &larr;verifies&mdash; test &larr;results_for&mdash; test_result</span>.
+    That chain is resolved by <code>tools/import_test_results.py</code> and stamped on
+    each <code>test_result</code> as its <code>chain_reqs</code> field, because a report
+    template can read fields but cannot follow links.
+  </dd>
+  <dt>Why “no test evidence” merges two cases</dt>
+  <dd>
+    A requirement with no architecture beneath it and a requirement whose tests
+    have never been run both present as zero recorded outcomes.
+    <code>chain_reqs</code> cannot separate them, so they share one state rather
+    than being guessed apart. Use <code>ubc agent gaps</code> to tell which is which:
+    a structural hole shows there, an unrun test does not.
+  </dd>
+  {% for b in bucket_defs %}
+  <dt><span class="glyph" style="color: var(--st-{{ b.status }})" aria-hidden="true">{{ b.glyph }}</span> {{ b.label }}</dt>
+  <dd>{{ b.meaning }}</dd>
+  {% endfor %}
+</dl>
+
+<h2>Every system requirement</h2>
+<p class="sub">Worst state first. This table is also the accessible view of both charts above.</p>
+<table>
+  <thead>
+    <tr>
+      <th>State</th>
+      <th>Requirement</th>
+      <th class="num">passed</th>
+      <th class="num">failed</th>
+      <th>Failing evidence</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for b in bucket_defs %}
+      {% for row in agg.rows %}
+        {% if row.bucket == b.key %}
+        <tr>
+          <td class="state" style="color: var(--st-{{ b.status }})">
+            <span aria-hidden="true">{{ b.glyph }}</span> {{ b.label }}
+          </td>
+          <td>
+            <code>{{ row.id }}</code><br>
+            <span class="muted">{{ row.title }}</span>
+          </td>
+          <td class="num">{{ row.passed }}</td>
+          <td class="num">{% if row.failed > 0 %}{{ row.failed }}{% endif %}</td>
+          <td class="chain">
+            {% for fid in row.failing_ids %}{{ fid }}{% if not loop.last %}, {% endif %}{% endfor %}
+          </td>
+        </tr>
+        {% endif %}
+      {% endfor %}
+    {% endfor %}
+  </tbody>
+</table>
+
+<p class="muted" style="margin-top: 2rem">
+  Rendered from <code>needs.json</code>. Rebuild the graph with <code>ubc build needs</code>;
+  refresh the test evidence with
+  <code>python3 -m pytest -q --junitxml=reports/junit/testresults.xml</code> followed by
+  <code>python3 tools/import_test_results.py</code>.
+</p>
+
+{% endif %}
+</body>
+</html>

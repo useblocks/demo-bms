@@ -33,6 +33,28 @@ description = "Wall-clock runtime of that test case, in seconds, as the report r
 name = "test_run"
 description = "Identifier of the test run the outcome came from: the report's timestamp."
 
+# The chain roll-up, stamped on every generated `test_result`: the ids of the
+# system requirements this result is evidence for, resolved through
+# `test -> swreq -> arch -> req`.
+#
+# It exists because a REPORT TEMPLATE CANNOT WALK LINKS. `ubc report` builds each
+# need in its Jinja context from that need's scalar FIELDS only, so `id`, `type`,
+# `title`, `status`, `tags`, `doctype` and these extra options are reachable while
+# every LINK field (`satisfies`, `refines`, `verifies`, `results_for`, …) is
+# absent. A template that reads `n.verifies` gets undefined, and the usual
+# `(n.verifies or [])` guard silently turns that into an empty list — so a
+# link-based coverage report renders clean and reports 0 % everywhere.
+#
+# Stamping the resolved chain onto the generated artefact is what moves the answer
+# from a link (invisible to a template) into a field (visible), so
+# `reports/traceability_coverage.html.j2` is plain Jinja that `ubc report` and the
+# VS Code Reports view render with no extra tooling. It is DERIVED data on a
+# DERIVED need — `tools/import_test_results.py` resolves it from the spec sources
+# on every run, and nothing hand-maintains it.
+[[needs.extra_options]]
+name = "chain_reqs"
+description = "System requirement ids this test result is evidence for, via test -> swreq -> arch -> req."
+
 # BATTERY MANAGEMENT SYSTEM (BMS) — everything-as-code, MINIMIZED V-MODEL.
 #
 # The mandatory spine is exactly six stages:

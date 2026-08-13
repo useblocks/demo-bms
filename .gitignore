@@ -5,3 +5,7 @@
 __pycache__/
 *.py[cod]
 .pytest_cache/
+
+# Rendered reports are build output, not sources.
+/reports/_build/
+/_build/

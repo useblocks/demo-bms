@@ -96,6 +96,12 @@ class ThermalStateEvaluator:
             self._heating = False
         return self._heating
 
+    # KNOWN DEFECT — intentional, see README. The comparison below is `>=` where
+    # SWREQ_IMBALANCE_WARNING says the warning is set only when the spread
+    # EXCEEDS 8 K, so a spread of exactly 8.0 K raises it. This is a classic
+    # boundary error: the code is one operator away from the requirement, the
+    # trace gate is fully satisfied, and only the recorded test outcome shows it.
+    # TEST_IMBALANCE_WARNING catches it and is RED.
     # @Set the thermal imbalance warning above an 8 K spread, IMPL_IMBALANCE_WARNING, impl, [SWREQ_IMBALANCE_WARNING]
     def update_imbalance(self, spread_dk: int) -> bool:
         """Set or clear the imbalance warning from this cycle's spread alone.
@@ -103,5 +109,5 @@ class ThermalStateEvaluator:
         Deliberately un-hysteresised: this output is a workshop-facing warning,
         not an actuator request, so it should track the measurement directly.
         """
-        self._imbalance = spread_dk > IMBALANCE_LIMIT_DK
+        self._imbalance = spread_dk >= IMBALANCE_LIMIT_DK
         return self._imbalance
