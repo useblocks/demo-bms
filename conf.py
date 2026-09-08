@@ -112,12 +112,12 @@ html_favicon = "_static/bms-logo.svg"
 # -- ubTrace export -------------------------------------------------------------
 # ubt_sphinx writes its output into the ingest layout
 #   _build/ubtrace/<organization>/<project>/<version>/
-# and `upload_ubtrace.sh` packages exactly that directory, so the three values
-# below MUST match the UBTRACE_ORG / UBTRACE_PROJECT / UBTRACE_VERSION in that
-# script. `ubtrace_version` is overridden per build in CI
+# and `upload_ubtrace.sh` DISCOVERS that path rather than re-declaring it, so
+# these three values are the single source for where the artefact is published;
+# changing one here is enough. `ubtrace_version` is overridden per build in CI
 # (`-D ubtrace_version=<tag>`), which is how a release tag publishes as its own
 # version alongside `main`.
-ubtrace_organization = "useblocks"
+ubtrace_organization = "useblocks-rollout"
 ubtrace_project = "rollout-demo-bms"
 ubtrace_version = "main"
 

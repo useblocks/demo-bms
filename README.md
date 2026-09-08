@@ -161,12 +161,15 @@ its `ubt-runtime` dependency) from the private useblocks index declared as
 are yanked, so without that index the extra does not resolve at all. Every other
 dependency falls through to PyPI.
 
-The ingest token needs **Ingest** permission on the target project. What the
-version directory is published as comes from three values that must agree:
-`ubtrace_organization` / `ubtrace_project` / `ubtrace_version` in
-[conf.py](conf.py) and `UBTRACE_ORG` / `UBTRACE_PROJECT` / `UBTRACE_VERSION` in
-[upload_ubtrace.sh](upload_ubtrace.sh) — currently
-`useblocks` / `rollout-demo-bms` / `main`.
+The ingest token needs **Ingest** permission on the target project. *Where* the
+artefact goes is configured in exactly one place, `ubtrace_organization` /
+`ubtrace_project` / `ubtrace_version` in [conf.py](conf.py) — currently
+`useblocks-rollout` / `rollout-demo-bms` / `main`. The builder writes its output
+into `_build/ubtrace/<org>/<project>/<version>/`, and
+[upload_ubtrace.sh](upload_ubtrace.sh) *discovers* that path instead of
+declaring a second copy of the three values: it publishes whatever the build
+produced, and refuses rather than guessing if the build tree holds more than one
+version (`UBTRACE_VERSION` picks one, which is how CI publishes a tag).
 
 [.github/workflows/ubtrace.yml](.github/workflows/ubtrace.yml) does all of this
 on every push to `main` (publishing as `main`) and on every `v*.*.*` tag

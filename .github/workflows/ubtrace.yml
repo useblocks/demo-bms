@@ -9,7 +9,7 @@
 #
 # Required repository secret:
 #   UBTRACE_INGEST_TOKEN — a token with "Ingest" permission on the
-#   useblocks/rollout-demo-bms project at team.useblocks.com.
+#   useblocks-rollout/rollout-demo-bms project at team.useblocks.com.
 name: ubTrace publish
 
 on:
@@ -51,7 +51,7 @@ jobs:
           cache-dependency-glob: uv.lock
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version-file: ".python-version"
 
