@@ -218,9 +218,42 @@ def join(
     return joined, unmapped
 
 
+def _run_label(timestamp: str) -> str:
+    """Format the run identifier so it is NOT a parseable ISO-8601 datetime.
+
+    `test_run` is stamped on every `test_result`, and because extra options are
+    global it is also written as "" on every OTHER need. ubTrace indexes needs
+    into Elasticsearch with dynamic mapping and date detection on, so a value
+    like `2026-08-13T15:35:36.742977+02:00` types the field as `date` for the
+    whole index — and then every need carrying "" is rejected with "cannot
+    parse empty datetime", silently dropping it from the index and from every
+    Elasticsearch-backed view.
+
+    Swapping the ISO `T` for a space is enough: neither
+    `strict_date_optional_time` nor `yyyy/MM/dd HH:mm:ss Z` matches, so the
+    field maps as text and the empty values are accepted. Verified against
+    Elasticsearch 9.3: the `T` form maps to `date` and rejects "" with HTTP
+    400; this form maps to `text` and accepts it.
+
+    Do NOT "restore" the ISO format here without also giving `test_run` an
+    explicit non-date mapping on the ubTrace side.
+    """
+    if timestamp == "unknown":
+        return timestamp
+    # 2026-08-13T15:35:36.742977+02:00 -> 2026-08-13 15:35:36 +02:00
+    date_part, _, time_part = timestamp.partition("T")
+    if not time_part:
+        return timestamp
+    clock, sep, offset = time_part.partition("+")
+    clock = clock.split(".")[0]
+    if sep:
+        return f"{date_part} {clock} +{offset}"
+    return f"{date_part} {clock}"
+
+
 def render(suite: dict[str, str], joined: list[Outcome], report: Path) -> str:
     """Render the generated RST. One `test_result` directive per joined case."""
-    run_id = suite.get("timestamp", "unknown")
+    run_id = _run_label(suite.get("timestamp", "unknown"))
     rel_report = report.relative_to(REPO_ROOT)
     counts: dict[str, int] = {}
     for item in joined:

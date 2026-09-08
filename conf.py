@@ -73,24 +73,32 @@ src_trace_config_from_toml = "ubproject.toml"
 needs_show_link_type = False
 needs_show_link_title = False
 
-# Omit fields that still hold their default from needs.json. This is NOT
-# cosmetic — it is what keeps the ubTrace search index complete.
+# NOTE: do NOT set `needs_json_remove_defaults = True` here.
 #
-# Extra options are global in ubCode and Sphinx-Needs: `test_run` is declared
-# once and therefore written to EVERY need, as "" on the 143 needs that never
-# had a test run. ubTrace indexes needs into Elasticsearch with dynamic mapping
-# and no dynamic template, so the first `test_run` it sees — an ISO-8601
-# timestamp on a `test_result` — types the field as `date` for the whole index,
-# and every later need carrying "" is then rejected with "cannot parse empty
-# datetime". The result was 50 of 193 needs indexed (only the `test_result`
-# ones), a silent 74 % hole in every Elasticsearch-backed view, while the
-# ingest still reported success. Reproduced against a local ubTrace 1.12.0-dev
-# instance; the Postgres graph was complete throughout (193 nodes, 206 links).
+# It looks like the right fix for the Elasticsearch problem described in
+# tools/import_test_results.py (`test_run` written as "" on every need that has
+# no test run), and it does close that hole — but it opens a worse one.
+# ubt-coverage discovers custom link types PER NEED, by looking for a
+# `<name>_back` key on the same need whose outgoing links it is counting
+# (`discover_custom_link_bases` in rust/ubt-coverage/src/needs.rs). Removing
+# defaults strips the empty `affects_back: []` from a `decision`, the empty
+# `mitigates_back` from a `risk` and so on — so their outgoing custom links
+# become invisible to the coverage engine.
 #
-# With defaults removed, a need that has no test run carries no `test_run` key
-# at all, so there is no empty string to reject. It protects `outcome`,
-# `runtime_s` and `chain_reqs` from the same class of collision.
-needs_json_remove_defaults = True
+# Measured with ubt-coverage against this project's own artefact:
+#
+#   remove_defaults OFF: 206 edges, orphan_both = 0 for every type
+#   remove_defaults ON : 123 edges, orphan_both = 5 decisions, 5 risks,
+#                        50 test_results, 1 req
+#
+# The 83 lost edges are exactly the custom outgoing ones (19 traces_to,
+# 50 results_for, 7 affects, 7 mitigates). The graph/tree stays correct either
+# way — the relations extractor discovers link types corpus-wide — but the
+# coverage engine reports most of the project as orphaned.
+#
+# So the empty string is dealt with at the source instead: the run label is
+# formatted so Elasticsearch never types the field as a date. See
+# `_run_label` in tools/import_test_results.py.
 
 # sphinx-needs reads `[[needs.extra_options]]` out of ubproject.toml and maps it
 # onto its own deprecated `needs_extra_options` config, so IT emits the
