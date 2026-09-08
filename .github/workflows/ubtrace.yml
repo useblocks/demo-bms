@@ -1,0 +1,110 @@
+# Build this project's ubTrace artefact and publish it to team.useblocks.com.
+#
+# Triggers:
+#   push to main    -> builds and publishes as version "main" (overwriting it).
+#   push of a tag   -> builds and publishes under the tag name, alongside "main".
+#   pull request     -> builds only, no upload: the gate that a change keeps the
+#                       ubTrace export building warning-free before it lands.
+#   workflow_dispatch -> republish "main", or re-publish an old tag by name.
+#
+# Required repository secret:
+#   UBTRACE_INGEST_TOKEN — a token with "Ingest" permission on the
+#   useblocks/rollout-demo-bms project at team.useblocks.com.
+name: ubTrace publish
+
+on:
+  push:
+    branches: [main]
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+*"
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'Git ref to build and publish (tag name, or "main")'
+        required: true
+        default: "main"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publish ubTrace artefact
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.inputs.ref || github.ref }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version-file: ".python-version"
+
+      - name: Install mermaid-cli
+        # The three `.. mermaid::` component diagrams are pre-rendered to SVG
+        # when `mmdc` is on PATH (see conf.py) — scripts do not run in the
+        # ubTrace export, so a browser-rendered diagram would be blank there.
+        # Non-blocking: if the install fails, conf.py falls back to the raw
+        # output and only those three diagrams degrade.
+        continue-on-error: true
+        run: npm install -g @mermaid-js/mermaid-cli
+
+      - name: Install Python dependencies
+        run: uv sync --extra ubtrace
+
+      - name: Compute UBTRACE_VERSION
+        id: vars
+        run: |
+          set -euo pipefail
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            ref="${INPUT_REF}"
+          elif [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
+            ref="$GITHUB_REF_NAME"
+          else
+            ref="main"
+          fi
+          # Defence in depth: the tag trigger already filters to
+          # `v[0-9]+.[0-9]+.[0-9]+*`, but git tag names may contain shell
+          # metacharacters that the trailing glob accepts, and the dispatch
+          # input is free text. Reject anything outside "main" / a SemVer-ish
+          # tag before it becomes a version segment in a URL and a path.
+          if [[ "$ref" != "main" && ! "$ref" =~ ^v[0-9]+\.[0-9]+\.[0-9]+[A-Za-z0-9.+-]*$ ]]; then
+            echo "::error::Refusing to publish: ref '$ref' is neither 'main' nor v<MAJOR>.<MINOR>.<PATCH>[suffix]" >&2
+            exit 1
+          fi
+          echo "version=$ref" >> "$GITHUB_OUTPUT"
+        env:
+          INPUT_REF: ${{ github.event.inputs.ref }}
+
+      - name: Build ubTrace artefact
+        env:
+          UBTRACE_VERSION: ${{ steps.vars.outputs.version }}
+        # `-W --keep-going` is the gate: the export must build warning-free.
+        # `-D ubtrace_version` overrides conf.py so a tag publishes as its own
+        # version; it must stay in sync with what upload_ubtrace.sh packages,
+        # which is why the same value is exported to that script below.
+        run: |
+          uv run --extra ubtrace sphinx-build -b ubtrace -W --keep-going \
+            -D "ubtrace_version=${UBTRACE_VERSION}" \
+            . _build/ubtrace
+
+      - name: Upload to team.useblocks.com
+        # Pull requests build the artefact but never publish it.
+        if: github.event_name != 'pull_request'
+        env:
+          UBTRACE_INGEST_TOKEN: ${{ secrets.UBTRACE_INGEST_TOKEN }}
+          UBTRACE_VERSION: ${{ steps.vars.outputs.version }}
+        run: bash upload_ubtrace.sh

@@ -24,3 +24,35 @@ package = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+# --- ubTRACE EXPORT ------------------------------------------------------------
+# The ubTrace export is a SECOND consumer of the same sources: `ubc build needs`
+# compiles the graph for the CLI and the IDE, and `sphinx-build -b ubtrace`
+# compiles the SAME `specs/*.rst` (plus the two `.. src-trace::` pages that
+# materialise the code-marker needs) into the artefact `upload_ubtrace.sh` ships
+# to team.useblocks.com. Both read their ontology out of `ubproject.toml`, so the
+# need types, links and extra options are declared exactly once.
+#
+# It lives in an EXTRA, not in `dependencies`, so the documented setup
+# (`uv sync` -> interpreter + pytest) stays lean; the export build runs
+# `uv run --extra ubtrace sphinx-build ...`.
+[project.optional-dependencies]
+ubtrace = [
+    "sphinx>=8.0,<9",
+    "sphinx-needs>=8.3,<9",     # reads [needs] from ubproject.toml
+    "sphinx-codelinks>=1.2",    # reads [codelinks] from ubproject.toml
+    "sphinxcontrib-mermaid>=1.0",
+    "furo>=2024.8",
+    "ubt-sphinx==0.8.1",        # the `ubtrace` builder itself
+    "beautifulsoup4",           # ubt-sphinx imports it without declaring it
+]
+
+# `ubt-sphinx` (and its `ubt-runtime` dependency) are published to the PRIVATE
+# useblocks index; the public PyPI copies are yanked ("new package location"), so
+# a plain PyPI resolve of the `ubtrace` extra fails. Listing the index here —
+# ahead of the implicit PyPI default — is what makes `uv sync --extra ubtrace`
+# work: uv resolves `ubt-*` from pypi.useblocks.com and every other dependency
+# falls through to PyPI.
+[[tool.uv.index]]
+name = "useblocks"
+url = "https://pypi.useblocks.com/"

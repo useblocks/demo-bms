@@ -96,7 +96,10 @@ modules import the production sources as `src.<stream>.<module>` from the
 repository root.
 
 The `ubc` CLI is **not** part of this environment. It ships with the ubCode IDE
-extension — see [Commands](#commands).
+extension — see [Commands](#commands). The Sphinx / ubTrace export toolchain is
+not part of it either: it lives in the optional `ubtrace` extra, installed with
+`uv sync --extra ubtrace` — see
+[Publishing to ubTrace](#publishing-to-ubtrace).
 
 ## Commands
 
@@ -126,6 +129,58 @@ them fail on purpose — see [Two tests are red, on purpose](#two-tests-are-red-
 ```bash
 uv run pytest -q     # 2 failed, 48 passed
 ```
+
+## Publishing to ubTrace
+
+The sources have a **second consumer**. `ubc build needs` compiles
+`specs/**/*.rst` plus the one-line codelinks markers in `src/` and `tests/` into
+`needs.json` for the CLI and the IDE; [conf.py](conf.py) compiles the *same*
+sources through Sphinx into the artefact that
+[upload_ubtrace.sh](upload_ubtrace.sh) ships to
+[team.useblocks.com](https://team.useblocks.com). Both sides produce the same
+193 needs, because neither side owns the data model: the need types, the link
+types and the extra options are declared once in
+[ubproject.toml](ubproject.toml) and read from there by both — `needs_from_toml`
+for the needs, `src_trace_config_from_toml` for the code markers. There is no
+second copy of the ontology to keep in sync.
+
+```bash
+uv sync --extra ubtrace   # the export toolchain (sphinx-needs, sphinx-codelinks, ubt-sphinx)
+
+uv run --extra ubtrace sphinx-build -b ubtrace -W --keep-going . _build/ubtrace
+UBTRACE_INGEST_TOKEN=<token> bash upload_ubtrace.sh
+```
+
+`uv run --extra ubtrace sphinx-build -b html . _build/html` renders the same
+sources as an ordinary Sphinx site, which is the faster loop while editing.
+
+The `ubtrace` extra is **not** part of the default environment: plain `uv sync`
+still installs only the interpreter and pytest. It resolves `ubt-sphinx` (and
+its `ubt-runtime` dependency) from the private useblocks index declared as
+`[[tool.uv.index]]` in [pyproject.toml](pyproject.toml) — the public PyPI copies
+are yanked, so without that index the extra does not resolve at all. Every other
+dependency falls through to PyPI.
+
+The ingest token needs **Ingest** permission on the target project. What the
+version directory is published as comes from three values that must agree:
+`ubtrace_organization` / `ubtrace_project` / `ubtrace_version` in
+[conf.py](conf.py) and `UBTRACE_ORG` / `UBTRACE_PROJECT` / `UBTRACE_VERSION` in
+[upload_ubtrace.sh](upload_ubtrace.sh) — currently
+`useblocks` / `rollout-demo-bms` / `main`.
+
+[.github/workflows/ubtrace.yml](.github/workflows/ubtrace.yml) does all of this
+on every push to `main` (publishing as `main`) and on every `v*.*.*` tag
+(publishing under the tag name, alongside `main`). A pull request builds the
+artefact but never uploads it, so a change that breaks the export is caught
+before it lands rather than after it publishes. The workflow needs one
+repository secret, `UBTRACE_INGEST_TOKEN`.
+
+One detail worth knowing: **scripts do not run in the ubTrace export**, so the
+three `.. mermaid::` component diagrams cannot be rendered by the browser there.
+When the mermaid CLI (`mmdc`) is on `PATH`, [conf.py](conf.py) pre-renders them
+to SVG images instead; the workflow installs it for exactly that reason, and
+falls back to the raw output — three blank diagrams, everything else intact — if
+that install fails.
 
 ## Test results, from a static XML report
 
