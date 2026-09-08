@@ -43,7 +43,7 @@ jobs:
           ref: ${{ github.event.inputs.ref || github.ref }}
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v10
         with:
           enable-cache: true
           cache-dependency-glob: uv.lock
@@ -53,14 +53,33 @@ jobs:
         with:
           python-version-file: ".python-version"
 
-      - name: Install mermaid-cli
+      - name: Install mermaid-cli, and prove it can render
         # The three `.. mermaid::` component diagrams are pre-rendered to SVG
         # when `mmdc` is on PATH (see conf.py) — scripts do not run in the
         # ubTrace export, so a browser-rendered diagram would be blank there.
-        # Non-blocking: if the install fails, conf.py falls back to the raw
-        # output and only those three diagrams degrade.
+        #
+        # mmdc drives a headless Chromium, which is the fragile part: it broke
+        # the first publish from this workflow with "No usable sandbox!"
+        # (Ubuntu's AppArmor restriction on unprivileged user namespaces), and
+        # under `-W` three failed renders fail the whole build. So this step
+        # RENDERS A PROBE DIAGRAM and, if that does not work, uninstalls mmdc
+        # again — which drops conf.py back to the raw output and keeps the
+        # publish going with three degraded diagrams instead of no artefact.
+        # Never let this step fail the job: the diagrams are a nicety, the
+        # traceability artefact is the point.
         continue-on-error: true
-        run: npm install -g @mermaid-js/mermaid-cli
+        run: |
+          set -uo pipefail
+          if ! npm install -g @mermaid-js/mermaid-cli; then
+            echo "::warning::mermaid-cli install failed — diagrams will not be pre-rendered"
+            exit 0
+          fi
+          printf 'flowchart LR\n    A --> B\n' > "$RUNNER_TEMP/probe.mmd"
+          if ! mmdc -p mermaid-puppeteer.json \
+                    -i "$RUNNER_TEMP/probe.mmd" -o "$RUNNER_TEMP/probe.svg"; then
+            echo "::warning::mermaid-cli cannot render on this runner — removing it so the build falls back to raw diagrams"
+            npm uninstall -g @mermaid-js/mermaid-cli
+          fi
 
       - name: Install Python dependencies
         run: uv sync --extra ubtrace

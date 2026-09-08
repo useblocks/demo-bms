@@ -24,6 +24,7 @@ Build it with the ``ubtrace`` extra (see pyproject.toml)::
 sources as an ordinary site, which is the faster loop while editing.
 """
 
+import os
 import shutil
 
 # -- Project information --------------------------------------------------------
@@ -87,6 +88,18 @@ suppress_warnings = ["needs.deprecated"]
 # PATH, pre-render to SVG instead so the diagrams survive the export; without it
 # the build still succeeds and only the three component diagrams degrade.
 mermaid_output_format = "svg" if shutil.which("mmdc") else "raw"
+
+# `mmdc` drives a headless Chromium through puppeteer, whose sandbox needs
+# unprivileged user namespaces. Ubuntu 23.10+ (so ubuntu-latest on GitHub
+# Actions) restricts those via AppArmor, and Chromium then aborts with "No
+# usable sandbox!" — three failed renders, three warnings, and under `-W` a
+# failed publish. mermaid-puppeteer.json passes `--no-sandbox` to make the
+# render work in that environment; the only content it renders is the three
+# diagrams in this repository's own sources.
+mermaid_params = [
+    "-p",
+    os.path.join(os.path.dirname(__file__), "mermaid-puppeteer.json"),
+]
 
 # -- HTML -----------------------------------------------------------------------
 html_theme = "furo"

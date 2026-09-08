@@ -178,9 +178,18 @@ repository secret, `UBTRACE_INGEST_TOKEN`.
 One detail worth knowing: **scripts do not run in the ubTrace export**, so the
 three `.. mermaid::` component diagrams cannot be rendered by the browser there.
 When the mermaid CLI (`mmdc`) is on `PATH`, [conf.py](conf.py) pre-renders them
-to SVG images instead; the workflow installs it for exactly that reason, and
-falls back to the raw output — three blank diagrams, everything else intact — if
-that install fails.
+to SVG images instead, and the workflow installs it for exactly that reason.
+
+That renderer drives a headless Chromium, which is the one fragile part of the
+build: on Ubuntu 23.10+ (so on `ubuntu-latest`) Chromium's sandbox needs
+unprivileged user namespaces that AppArmor restricts, and it aborts with "No
+usable sandbox!". [mermaid-puppeteer.json](mermaid-puppeteer.json) passes
+`--no-sandbox` to get past that — it only ever renders this repository's own
+three diagrams. As a second line of defence the workflow *renders a probe
+diagram* after installing `mmdc` and uninstalls it again if that fails, which
+drops [conf.py](conf.py) back to the raw output: three degraded diagrams and a
+published artefact, rather than a failed publish. The diagrams are a nicety; the
+traceability artefact is the point.
 
 ## Test results, from a static XML report
 
