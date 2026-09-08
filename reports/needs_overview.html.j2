@@ -42,9 +42,17 @@
     th { background: var(--report-soft-bg); }
     code { background: var(--report-soft-bg); padding: 1px 4px; border-radius: 3px; }
     svg text { fill: var(--report-fg); }
+    /* `gap` needs are the structural gate's own findings, imported by
+       tools/import_gaps.py. Fixed red, never themed: a gap must read the same in
+       every surface this report lands in, and the glyph carries the meaning too so
+       colour is never alone. */
+    .alert { color: #d03b3b; font-weight: 620; }
+    tr.gap td:first-child { border-left: 3px solid #d03b3b; padding-left: 5px; }
   </style>
 </head>
 <body>
+
+  {% set gaps = needs_list | selectattr('type', 'equalto', 'gap') | list %}
 
   <h1>Needs Overview</h1>
   <p class="muted">
@@ -52,6 +60,13 @@
     {{ needs_list|groupby('type')|length }} types ·
     {{ needs_list|groupby('status')|length }} statuses
   </p>
+  {% if gaps|length > 0 %}
+  <p class="alert">
+    ✕ {{ gaps|length }} open structural gap{{ "s" if gaps|length != 1 }} in this graph
+    ({% for g in gaps %}<code>{{ g.gap_need_id }}</code>{% if not loop.last %}, {% endif %}{% endfor %}).
+    See <code>reports/traceability_coverage.html.j2</code> for what each one is.
+  </p>
+  {% endif %}
 
   {% if needs|length == 0 %}
   <p><em>No needs found. Index the project and re-run this report.</em></p>
@@ -103,9 +118,9 @@
     <thead><tr><th>ID</th><th>Type</th><th>Title</th><th>Status</th></tr></thead>
     <tbody>
       {% for n in needs_list %}
-      <tr>
+      <tr{% if n.type == 'gap' %} class="gap"{% endif %}>
         <td><code>{{ n.id }}</code></td>
-        <td>{{ n.type }}</td>
+        <td>{% if n.type == 'gap' %}<span class="alert">✕ gap</span>{% else %}{{ n.type }}{% endif %}</td>
         <td>{{ n.title }}</td>
         <td>{{ n.status or "" }}</td>
       </tr>

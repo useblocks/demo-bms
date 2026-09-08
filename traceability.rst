@@ -16,6 +16,12 @@ software requirement, ``implements`` from the production source and ``verifies``
 from the test source, with a ``test_result`` recording what the last run of that
 test actually did.
 
+**A red node is a gap.** ``ubc agent gaps`` runs the structural gate over the
+whole graph, and :doc:`its findings are imported back into it </specs/_global/gaps>`
+as ``gap`` needs — so a missing rung of the V is not something you have to run a
+report to discover. It hangs off the need it is about, in red, in the diagram
+below and in the ``gaps`` column of every level table.
+
 The V, per stream
 -----------------
 
@@ -25,7 +31,7 @@ Cell protection
 .. needflow:: Cell protection — full chain
    :root_id: US_CELL_PROTECTION
    :root_direction: incoming
-   :link_types: traces_to, satisfies, refines, implements, verifies, results_for
+   :link_types: traces_to, satisfies, refines, implements, verifies, results_for, gap_for
    :direction: LR
    :show_link_names:
    :align: center
@@ -36,7 +42,7 @@ State estimation
 .. needflow:: State estimation — full chain
    :root_id: US_STATE_ESTIMATION
    :root_direction: incoming
-   :link_types: traces_to, satisfies, refines, implements, verifies, results_for
+   :link_types: traces_to, satisfies, refines, implements, verifies, results_for, gap_for
    :direction: LR
    :show_link_names:
    :align: center
@@ -47,7 +53,7 @@ Thermal management
 .. needflow:: Thermal management — full chain
    :root_id: US_THERMAL_MANAGEMENT
    :root_direction: incoming
-   :link_types: traces_to, satisfies, refines, implements, verifies, results_for
+   :link_types: traces_to, satisfies, refines, implements, verifies, results_for, gap_for
    :direction: LR
    :show_link_names:
    :align: center
@@ -62,7 +68,7 @@ shows the hole rather than hiding it.
 .. needflow:: Cell balancing — full chain
    :root_id: US_CELL_BALANCING
    :root_direction: incoming
-   :link_types: traces_to, satisfies, refines, implements, verifies, results_for
+   :link_types: traces_to, satisfies, refines, implements, verifies, results_for, gap_for
    :direction: LR
    :show_link_names:
    :align: center
@@ -79,7 +85,7 @@ User stories
 
 .. needtable::
    :types: user_story
-   :columns: id;title;traces_from
+   :columns: id;title;traces_from;gaps
    :style: table
 
 Requirements
@@ -87,7 +93,7 @@ Requirements
 
 .. needtable::
    :types: req
-   :columns: id;title;status;traces_to;satisfied_by;mitigated_by
+   :columns: id;title;status;traces_to;satisfied_by;mitigated_by;gaps
    :style: table
 
 Architecture
@@ -95,7 +101,7 @@ Architecture
 
 .. needtable::
    :types: arch
-   :columns: id;title;satisfies;refined_by;affected_by
+   :columns: id;title;satisfies;refined_by;affected_by;gaps
    :style: table
 
 Software requirements
@@ -107,7 +113,7 @@ verification arm.
 
 .. needtable::
    :types: swreq
-   :columns: id;title;refines;implements_back;verifies_back
+   :columns: id;title;refines;implements_back;verifies_back;gaps
    :style: table
 
 Implementation arm
@@ -136,6 +142,24 @@ the outcomes of one real run, not of this build. ``chain_reqs`` is the resolved
 .. needtable::
    :types: test_result
    :columns: id;outcome;runtime_s;results_for;chain_reqs
+   :style: table
+
+Gaps
+~~~~
+
+The structural gate's own output, imported back into the graph by
+``tools/import_gaps.py`` from a committed ``ubc agent gaps`` snapshot. This is the
+same arrangement as ``test_result`` on the other arm of the V: a ``test_result``
+records what *happened* when a test ran, a ``gap`` records what the *gate* found
+when it last ran, and neither is authored by hand.
+
+The point of importing them rather than reading the JSON is that a gap then
+appears **where the reader already is** — on the need's own page, in the tables
+above, and in red in the diagrams.
+
+.. needtable::
+   :types: gap
+   :columns: id;gap_need_id;gap_need_type;gap_category;gap_link;gap_shortfall
    :style: table
 
 Cross-cutting

@@ -20,10 +20,23 @@
     Script-free by design — pure inline SVG with native <title> tooltips — so it
     renders identically in the editor preview, a browser, and print.
 
-    Colour: the three requirement states and the two test outcomes are STATUS,
-    not categories, so they use a fixed status palette and are never themed. Every
-    status colour is paired with a glyph and a text label, so colour never carries
-    meaning alone. Chart chrome follows the editor theme via --vscode-* variables.
+    THE PAGE HAS TWO HALVES, and they measure different things.
+    `Structural gaps` is the STRUCTURE: `gap` needs, imported from a committed
+    `ubc agent gaps` snapshot by `tools/import_gaps.py`, one per finding of the
+    structural gate — a rung of the V that is missing outright. Everything below it
+    is the EVIDENCE: which requirements a recorded test outcome actually reaches,
+    and whether it passed. A requirement can be structurally perfect and still have
+    failing evidence (two in this project are, on purpose), and it can have no
+    evidence for either reason, which is why both halves are here.
+    The gap half reads the `gap_*` fields for the same reason the evidence half
+    reads `chain_reqs`: a template can read fields but cannot follow the `gap_for`
+    link.
+
+    Colour: the three requirement states, the two test outcomes and the gap rows are
+    STATUS, not categories, so they use a fixed status palette and are never themed.
+    Every status colour is paired with a glyph and a text label, so colour never
+    carries meaning alone. Chart chrome follows the editor theme via --vscode-*
+    variables.
 -#}
 <!DOCTYPE html>
 <html lang="en">
@@ -101,6 +114,11 @@
   dl.defs dt { font-weight: 620; margin-top: .85rem; font-size: .85rem; }
   dl.defs dd { margin: .15rem 0 0; color: var(--ink-2); font-size: .85rem; }
   .chain { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .78rem; color: var(--ink-2); }
+  /* A gap is the one thing on this page the reader must not have to hunt for, so
+     each row carries a red rule as well as the glyph and the label. */
+  tr.gap td:first-child { border-left: 3px solid var(--st-critical); padding-left: .45rem; }
+  .tile.alert { border-color: var(--st-critical); }
+  .tile.alert .v { color: var(--st-critical); }
 </style>
 </head>
 <body>
@@ -109,6 +127,10 @@
 {% set reqs = needs_list | selectattr('type', 'equalto', 'req') | list %}
 {% set results = needs_list | selectattr('type', 'equalto', 'test_result') | list %}
 {% set req_total = reqs | length %}
+{#- The structural gate's findings, imported as needs. Sorted worst-first is not
+    meaningful here — every gap is a gap — so they are ordered by the need they are
+    attributed to, which groups a need's several findings together. -#}
+{% set gaps = needs_list | selectattr('type', 'equalto', 'gap') | sort(attribute='gap_need_id') | list %}
 
 {#- The three states a requirement can be in, worst first: the reader should meet
     the problems before the passes. `no_evidence` deliberately merges "no chain at
@@ -240,7 +262,59 @@
     <p class="v">{{ agg.no_evidence }} / {{ req_total }}</p>
     <p class="n">{{ (agg.no_evidence / req_total * 100) | round(1) }} % have no recorded outcome reaching them</p>
   </div>
+  <div class="tile{% if gaps | length > 0 %} alert{% endif %}">
+    <p class="k">Open structural gaps</p>
+    <p class="v">{{ gaps | length }}</p>
+    <p class="n">
+      {% if gaps | length > 0 %}
+      findings of the last <code>ubc agent gaps</code> run, listed below
+      {% else %}
+      the last <code>ubc agent gaps</code> run found the graph structurally complete
+      {% endif %}
+    </p>
+  </div>
 </div>
+
+<h2>Structural gaps</h2>
+<p class="sub">
+  What is <em>missing from the graph</em>, as opposed to what the tests below say about
+  what is in it. Each row is one finding of <code>ubc agent gaps</code>, imported as a
+  <code>gap</code> need by <code>tools/import_gaps.py</code>.
+</p>
+{% if gaps | length > 0 %}
+<table>
+  <thead>
+    <tr>
+      <th>Gate</th>
+      <th>Need</th>
+      <th>Level</th>
+      <th>Link</th>
+      <th>Present</th>
+      <th>Gap need</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for g in gaps %}
+    <tr class="gap">
+      <td class="state" style="color: var(--st-critical)">
+        <span aria-hidden="true">✕</span> {{ g.gap_category }}
+      </td>
+      <td><code>{{ g.gap_need_id }}</code></td>
+      <td>{{ g.gap_need_type }}</td>
+      <td>{% if g.gap_link %}<code>{{ g.gap_link }}</code>{% endif %}</td>
+      <td>{{ g.gap_shortfall }}</td>
+      <td class="chain">{{ g.id }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+<p class="sub">
+  Ask the engine what to do about one with
+  <code>ubc agent next --id &lt;NEED_ID&gt;</code>.
+</p>
+{% else %}
+<p><em>No structural gaps in the imported snapshot — every declared trace obligation is met.</em></p>
+{% endif %}
 
 <h2>System requirements by evidence state</h2>
 <p class="sub">Each requirement falls in exactly one state. Hover a segment for its share.</p>
@@ -285,8 +359,8 @@
     A requirement with no architecture beneath it and a requirement whose tests
     have never been run both present as zero recorded outcomes.
     <code>chain_reqs</code> cannot separate them, so they share one state rather
-    than being guessed apart. Use <code>ubc agent gaps</code> to tell which is which:
-    a structural hole shows there, an unrun test does not.
+    than being guessed apart. <strong>Structural gaps</strong> above is what tells
+    them apart: a structural hole shows there, an unrun test does not.
   </dd>
   {% for b in bucket_defs %}
   <dt><span class="glyph" style="color: var(--st-{{ b.status }})" aria-hidden="true">{{ b.glyph }}</span> {{ b.label }}</dt>
@@ -334,7 +408,9 @@
   Rendered from <code>needs.json</code>. Rebuild the graph with <code>ubc build needs</code>;
   refresh the test evidence with
   <code>python3 -m pytest -q --junitxml=reports/junit/testresults.xml</code> followed by
-  <code>python3 tools/import_test_results.py</code>.
+  <code>python3 tools/import_test_results.py</code>; refresh the structural gaps with
+  <code>ubc agent gaps &gt; reports/gaps/gaps.json</code> followed by
+  <code>python3 tools/import_gaps.py</code>.
 </p>
 
 {% endif %}

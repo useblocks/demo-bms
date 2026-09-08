@@ -65,3 +65,4 @@ project was authored.
    specs/_global/decisions
    specs/_global/risks
    specs/_global/test_results
+   specs/_global/gaps

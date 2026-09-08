@@ -57,8 +57,10 @@ tests; the fourth is deliberately not.
 | [specs/cell-balancing/](specs/cell-balancing/) | `US_CELL_BALANCING` | **requirement only** | **the gap view, and driving the agent workflow live** |
 
 Global, cross-stream artefacts live in [specs/_global/](specs/_global/):
-five [risks](specs/_global/risks.rst) and five
-[design decisions](specs/_global/decisions.rst).
+five [risks](specs/_global/risks.rst), five
+[design decisions](specs/_global/decisions.rst), the imported
+[test results](specs/_global/test_results.rst) and the imported
+[workflow gaps](specs/_global/gaps.rst).
 
 ### The deliberate gap
 
@@ -76,6 +78,9 @@ It is the one non-artificial gap in the graph, so:
 
 Everything else in the graph is trace-complete and carries a fresh, passing
 review verdict, so this one gap is the only thing the gates complain about.
+
+And it is **in the graph as a need**, not only in a CLI's exit code — see
+[Workflow gaps, from the structural gate](#workflow-gaps-from-the-structural-gate).
 
 ## Setup
 
@@ -130,6 +135,15 @@ them fail on purpose — see [Two tests are red, on purpose](#two-tests-are-red-
 uv run pytest -q     # 2 failed, 48 passed
 ```
 
+Both imported artefacts are refreshed the same way — capture a snapshot, then turn
+it into needs:
+
+```bash
+$UBC agent gaps > reports/gaps/gaps.json || true   # the gate exits 1 when it finds a gap
+uv run python tools/import_gaps.py                 # -> specs/_global/gaps.rst
+uv run python tools/import_gaps.py --check         # CI guard: fail if it is stale
+```
+
 ## Traceability, as a page
 
 [traceability.rst](traceability.rst) is the aggregate view of the graph, and
@@ -145,7 +159,13 @@ drift from the specs the way a hand-drawn matrix does:
   level and the links *in* from the level below (`traces_to` / `satisfied_by`,
   `satisfies` / `refined_by`, `refines` / `implements_back` + `verifies_back`,
   …). An empty incoming cell is a coverage gap, visible without running a
-  report.
+  report;
+- **gaps, in red** — every level table also carries a `gaps` column, and every
+  diagram a red `gap` node hanging off the need it is about. Those are the
+  structural gate's own findings, imported back into the graph — see
+  [Workflow gaps, from the structural gate](#workflow-gaps-from-the-structural-gate).
+  An empty incoming cell says *something might be missing*; a red node says
+  *`ubc agent gaps` agrees, and here is which obligation*.
 
 The diagrams are rendered by **graphviz** (`flow_engine = "graphviz"` in
 [ubproject.toml](ubproject.toml)), not PlantUML: no Java, no vendored jar, and
@@ -299,10 +319,14 @@ render it with `ubc report traceability_coverage.html.j2`, or from the VS Code
 Reports view ("Generate & Preview" / "Open in Browser"). Script-free inline SVG,
 so the editor preview, a browser and print all look the same.
 
-It answers two questions: how many system requirements have a full chain down to
-a test, and of those, how many are backed by passing versus failing tests. Right
-now: **18 / 19** with a chain (94.7 %), and **14 verified vs 4 failing** (3.5 : 1).
-The one requirement with no evidence is `REQ_CELL_BALANCING_WINDOW`.
+It answers three questions: what is structurally *missing* from the graph, how many
+system requirements have a full chain down to a test, and of those, how many are
+backed by passing versus failing tests. Right now: **1 open structural gap**,
+**18 / 19** with a chain (94.7 %), and **14 verified vs 4 failing** (3.5 : 1). Both
+the gap and the requirement with no evidence are `REQ_CELL_BALANCING_WINDOW`, and
+the report shows them as separate facts — the structural half says the rung is
+missing, the evidence half says no outcome reaches it. That is the distinction the
+page exists to draw.
 
 **One thing to know if you write your own report template.** A template *cannot
 walk links.* `ubc report` builds each need in the Jinja context from that need's
@@ -345,6 +369,70 @@ absence of evidence rather than as a special case anyone had to write down.
 > view. The link is real everywhere else: `ubc agent status` counts it (50 / 50
 > parents covered), `needs.json` carries it, the gates enforce it, and Cypher
 > traverses it. Use `status` or a query, not `audit`, to show that arm.
+
+## Workflow gaps, from the structural gate
+
+`ubc agent gaps` reports every structural hole in the graph as JSON and exits
+non-zero. That is a fine gate and a poor *view*: it tells you
+`REQ_CELL_BALANCING_WINDOW` has no incoming `satisfies` in a terminal, a long way
+from the requirement page where someone is actually reading.
+
+So the findings are imported back **into** the graph.
+[reports/gaps/gaps.json](reports/gaps/gaps.json) is a committed snapshot of one
+real `ubc agent gaps` run, and [tools/import_gaps.py](tools/import_gaps.py) turns
+it into one `gap` need per finding, each linking `gap_for` down to the need the
+gate attributed it to:
+
+```bash
+$UBC agent gaps > reports/gaps/gaps.json || true
+uv run python tools/import_gaps.py            # -> specs/_global/gaps.rst
+uv run python tools/import_gaps.py --check    # CI guard: fail if it is stale
+```
+
+This is the **exact mirror of `test_result`** on the other arm of the V, and
+deliberately so:
+
+| | `test_result` | `gap` |
+|---|---|---|
+| records | what *happened* when a test ran | what the *gate* found when it ran |
+| imported from | `reports/junit/testresults.xml` | `reports/gaps/gaps.json` |
+| by | `tools/import_test_results.py` | `tools/import_gaps.py` |
+| links | `results_for` → the `test` | `gap_for` → the need with the gap |
+| authored by a human or an agent | never | never |
+
+Once a gap is a need, it shows up everywhere the graph does — and it is **red**
+(`#EF4444`, the strongest colour in the ontology) in all of them:
+
+- as a red node hanging off its requirement in the `needflow` diagrams on
+  [traceability.rst](traceability.rst);
+- in the `gaps` column of every level table on the same page;
+- as a red-barred need on its own page, and on the incoming-links list of the need
+  it is about;
+- as the **Open structural gaps** tile and table at the top of
+  [the coverage report](#the-coverage-report);
+- in the ubTrace export, where the `gap_for` edge is traversable like any other.
+
+The five `gap_*` extra options (`gap_category`, `gap_link`, `gap_shortfall`,
+`gap_need_id`, `gap_need_type`) exist for the same reason `chain_reqs` does: a
+report template can read fields but cannot follow links, so the `gap_for` link and
+the `gap_need_id` field carry the same fact for two different consumers.
+
+Three things about this arrangement are worth knowing before you demo it:
+
+1. **The gap type is produced by no workflow stage, on purpose.** `ubc agent
+   config-validate` says so as a warning (`type_unproduced`), and that warning is
+   correct: nothing *authors* a gap. It also carries no trace edge and sits in
+   `orphan_exempt_types`, because an obligation to carry a gap would make a clean
+   graph fail the gap gate — the gate must not grade its own findings.
+2. **Importing gaps does not create gaps.** Re-running `ubc agent gaps` after an
+   import returns the same list; only `summary.total_needs` moves, which is why
+   the generated page deliberately does not quote it.
+3. **A gap disappears by being fixed.** The ids are derived from the need plus the
+   gate that reported it, so re-importing an unchanged snapshot rewrites the same
+   bytes, and a resolved gap vanishes instead of lingering under a stale id. Give
+   `REQ_CELL_BALANCING_WINDOW` an architecture element, re-snapshot, re-import, and
+   [specs/_global/gaps.rst](specs/_global/gaps.rst) becomes an empty page that says
+   so.
 
 ## Review verdicts
 

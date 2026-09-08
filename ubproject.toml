@@ -21,13 +21,20 @@ id_regex = "^[A-Z]+_[A-Z][A-Z0-9_]*$"
 flow_engine = "graphviz"
 
 # --- EXTRA OPTIONS ---
-# Fields the built-in need schema does not carry. These three exist for the
-# `test_result` type: they hold what a JUnit `<testcase>` element reports, so the
-# imported evidence is queryable as need FIELDS rather than buried in prose.
-# `outcome` is the one worth filtering on (`type == "test_result" and outcome !=
-# "passed"`); `runtime_s` and `test_run_label` give the reader the run it came from.
-# Extra options are global in ubCode — declared once, available on every type —
-# so they are simply left unset on the spec needs.
+# Fields the built-in need schema does not carry, in two groups, one per IMPORTED
+# type.
+#
+# The first three exist for the `test_result` type: they hold what a JUnit
+# `<testcase>` element reports, so the imported evidence is queryable as need FIELDS
+# rather than buried in prose. `outcome` is the one worth filtering on
+# (`type == "test_result" and outcome != "passed"`); `runtime_s` and
+# `test_run_label` give the reader the run it came from.
+#
+# The `gap_*` group at the end does the same job for the `gap` type: it holds what
+# one record of `ubc agent gaps` reports.
+#
+# Extra options are global in ubCode — declared once, available on every type — so
+# they are simply left unset on the spec needs.
 
 [[needs.extra_options]]
 name = "outcome"
@@ -75,6 +82,44 @@ description = "Identifier of the test run the outcome came from: the report's ti
 [[needs.extra_options]]
 name = "chain_reqs"
 description = "System requirement ids this test result is evidence for, via test -> swreq -> arch -> req."
+
+# The five `gap` fields, stamped on every generated `gap` need by
+# `tools/import_gaps.py`. They hold what ONE record of `ubc agent gaps` reports, so
+# the workflow gate's output is queryable as need FIELDS rather than living only in
+# a JSON file next to the graph.
+#
+# They are FIELDS and not just links for the same reason `chain_reqs` is: a report
+# template cannot walk links. `ubc report` builds each need in its Jinja context
+# from that need's scalar fields only, so `gap_for` is invisible to
+# `reports/traceability_coverage.html.j2` while `gap_need_id` is not. The link and
+# the field carry the same fact on purpose — the link is what the graph, the
+# needflow diagrams and ubTrace traverse, the field is what a template can read.
+#
+# NOTE the shapes, for the same Elasticsearch reason `test_run_label` documents
+# above: every one of these is written as "" on the ~190 needs that are not gaps,
+# so none of them may ever hold a value ES date-detection would type as a `date`.
+# `gap_shortfall` is deliberately the string "0 of 1" rather than two numeric
+# `have` / `need` fields, which keeps it unmistakably text.
+
+[[needs.extra_options]]
+name = "gap_category"
+description = "Which gate reported this gap: trace_backward, trace_forward, orphan, status_disallowed, ..."
+
+[[needs.extra_options]]
+name = "gap_link"
+description = "The link name the reporting gate counted, when the gap is a trace gap; empty otherwise."
+
+[[needs.extra_options]]
+name = "gap_shortfall"
+description = "How far short the need fell, as a label: \"<have> of <need>\" links present."
+
+[[needs.extra_options]]
+name = "gap_need_id"
+description = "Id of the need the gap is attributed to — the same fact as the `gap_for` link, as a field a report template can read."
+
+[[needs.extra_options]]
+name = "gap_need_type"
+description = "Type of the need the gap is attributed to (req, swreq, arch, ...), so a report can group gaps by V-model level."
 
 # BATTERY MANAGEMENT SYSTEM (BMS) — everything-as-code, MINIMIZED V-MODEL.
 #
@@ -200,6 +245,37 @@ prefix = "DEC_"
 color="#D1D5DB"
 style="frame"
 
+# The WORKFLOW-GATE need: one structural gap that `ubc agent gaps` reports, imported
+# from a committed JSON snapshot rather than authored by hand. It is the same idea as
+# `test_result` on the other side of the V — a `test_result` records what HAPPENED
+# when a test ran, a `gap` records what the STRUCTURAL GATE found when it last ran —
+# and it is imported for the same reason: a gap an agent could rewrite would not be
+# a gate.
+#
+# Generated into `specs/_global/gaps.rst` by `tools/import_gaps.py` from
+# `reports/gaps/gaps.json`, which is a COMMITTED SNAPSHOT of `ubc agent gaps`: the
+# gate is not re-run on every build.
+#
+# RED, and the only red-filled type in the ontology apart from `risk` — a gap is the
+# one thing on a traceability page a reader must not have to hunt for. `risk` is the
+# lighter #F87171; `gap` is the saturated #EF4444, which is also the red slot of the
+# report palette in `reports/*.j2`, so the page and the reports agree on what red
+# means. Every generated directive additionally carries `:style: red_bar`, which is
+# the sphinx-needs CSS class that paints the need's own page red — `style` HERE is
+# the graphviz node SHAPE (`type_style`) and is a different field entirely.
+#
+# The shape is `rectangle` rather than something more alarming because sphinx-needs
+# only maps the PlantUML shape vocabulary onto graphviz shapes, and an unmapped name
+# ("octagon", say) logs an "Unknown node style" warning — which `-W --keep-going` in
+# .github/workflows/ubtrace.yml turns into a failed publish. The fill colour carries
+# the signal instead.
+[[needs.types]]
+directive = "gap"
+title = "Workflow Gap"
+prefix = "GAP_"
+color="#EF4444"
+style="rectangle"
+
 # --- LINKS ---
 # Declare every link the [workflow] trace edges reference here.
 
@@ -263,6 +339,20 @@ outgoing = "motivates"
 [needs.links.mitigates]
 incoming = "mitigated_by"
 outgoing = "mitigates"
+
+# The gap link: a `gap` need's outgoing `gap_for` points at the need the gate
+# attributed the gap to, and that need's incoming `gaps` is what puts a red node
+# next to it in every `needflow` on `traceability.rst` and a non-empty `gaps` cell
+# in every level table.
+#
+# It is deliberately NOT named in any `[[workflow.stages.trace]]` edge. A trace edge
+# is an OBLIGATION the gate counts, and an obligation to carry a gap is nonsense: it
+# would make a graph with no gaps fail the gap gate. `gap` is in
+# `orphan_exempt_types` below for the same reason — the gate must not report gaps
+# about its own findings.
+[needs.links.gap_for]
+incoming = "gaps"
+outgoing = "gap_for"
 
 # --- CODELINKS (consumed by `ubc build`) ---
 # Two projects, one per arm of the lower V — SYMMETRIC: each scans a source tree for
@@ -383,8 +473,17 @@ needs_fields = [
 # `risk` and `decision` are not exempt either, which is why the two optional stages
 # below each declare a trace edge: a stage that owes a link to the orphan gate has to
 # name the link it owes.
+#
+# `gap` is exempt on different grounds. It is not a workflow artefact at all: it is
+# this gate's own output, imported back into the graph so a gap is visible on the
+# traceability page instead of only in a JSON file. It carries a real `gap_for` link
+# to the need it is about, but that link is named by NO stage's trace edge on
+# purpose — an obligation to carry a gap would make a clean graph fail the gap gate,
+# and the gate must not grade its own findings. No stage `produces` it either, for
+# the same reason `test_results` has no `author_skill`, taken one step further: there
+# is nothing for an agent to author here at all.
 [workflow]
-orphan_exempt_types = ["user_story", "req", "arch", "swreq"]
+orphan_exempt_types = ["user_story", "req", "arch", "swreq", "gap"]
 
 # The diagram SYNTAX the runner authors any diagram in. `format` is the authoring
 # directive injected into the runner prompt ("author it as a `mermaid` directive");
