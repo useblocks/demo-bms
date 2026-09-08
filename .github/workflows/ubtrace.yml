@@ -9,7 +9,7 @@
 #
 # Required repository secret:
 #   UBTRACE_INGEST_TOKEN — a token with "Ingest" permission on the
-#   useblocks-rollout/rollout-demo-bms project at team.useblocks.com.
+#   useblocks/rollout-demo-bms project at team.useblocks.com.
 name: ubTrace publish
 
 on:
@@ -38,14 +38,14 @@ jobs:
     name: Publish ubTrace artefact
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           ref: ${{ github.event.inputs.ref || github.ref }}
 
       - name: Install uv
         # Pinned to an exact release on purpose: setup-uv publishes moving
         # major tags only up to v7, so `@v10` does not resolve at all.
-        uses: astral-sh/setup-uv@v10.0.1
+        uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
           enable-cache: true
           cache-dependency-glob: uv.lock
