@@ -105,21 +105,21 @@ description = "System requirement ids this test result is evidence for, via test
 directive = "user_story"
 title = "User Story"
 prefix = "US_"
-color="#FEF3C7"
-style="card"
+color="#FDE68A"
+style="usecase"
 
 [[needs.types]]
 directive = "req"
 title = "Requirement"
 prefix = "REQ_"
-color="#FEF3C7"
+color="#FDBA74"
 style="file"
 
 [[needs.types]]
 directive = "arch"
 title = "Architecture"
 prefix = "ARCH_"
-color="#EFF6FF"
+color="#818CF8"
 style="node"
 
 # The BOTTOM of the decomposition arm. A software requirement states the testable
@@ -131,8 +131,8 @@ style="node"
 directive = "swreq"
 title = "Software Requirement"
 prefix = "SWREQ_"
-color="#E0F2FE"
-style="artifact"
+color="#7DD3FC"
+style="card"
 
 # The implementation-arm need: an implementation element authored as a real need via
 # a one-line codelinks marker in production source. It `implements` the `swreq` it
@@ -142,7 +142,7 @@ style="artifact"
 directive = "impl"
 title = "Implementation"
 prefix = "IMPL_"
-color="#F3E8FF"
+color="#C084FC"
 style="component"
 
 # The verification-arm need: a test case authored as a real need via a one-line
@@ -152,8 +152,8 @@ style="component"
 directive = "test"
 title = "Test"
 prefix = "TEST_"
-color="#F0FDF4"
-style="process"
+color="#BBF7D0"
+style="hexagon"
 
 # The EXECUTION-EVIDENCE need: the recorded outcome of ONE test case in ONE test
 # run, imported from a JUnit XML report rather than authored by hand. It is
@@ -170,21 +170,21 @@ style="process"
 directive = "test_result"
 title = "Test Result"
 prefix = "TRES_"
-color="#DCFCE7"
-style="hexagon"
+color="#4ADE80"
+style="database"
 
 [[needs.types]]
 directive = "risk"
 title = "Risk"
 prefix = "RISK_"
-color="#FFE4E6"
-style="storage"
+color="#F87171"
+style="folder"
 
 [[needs.types]]
 directive = "decision"
 title = "Decision"
 prefix = "DEC_"
-color="#F3F4F6"
+color="#D1D5DB"
 style="frame"
 
 # --- LINKS ---
