@@ -20,9 +20,10 @@ user_story ──traces_to──> req ──satisfies──> arch ──refines�
                                                                  │
                                      ┌───────────implements──────┤
                                      │                           │
+                                     │                       verifies
+                                     │                           │
                                    impl                        test
                               (marker in src/)           (marker in tests/)
-                                                                 └──verifies──┘
 
 optional:  risk ──mitigates──> req        decision ──affects──> arch
            test_result ──results_for──> test
