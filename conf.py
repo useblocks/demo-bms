@@ -73,6 +73,25 @@ src_trace_config_from_toml = "ubproject.toml"
 needs_show_link_type = False
 needs_show_link_title = False
 
+# Omit fields that still hold their default from needs.json. This is NOT
+# cosmetic — it is what keeps the ubTrace search index complete.
+#
+# Extra options are global in ubCode and Sphinx-Needs: `test_run` is declared
+# once and therefore written to EVERY need, as "" on the 143 needs that never
+# had a test run. ubTrace indexes needs into Elasticsearch with dynamic mapping
+# and no dynamic template, so the first `test_run` it sees — an ISO-8601
+# timestamp on a `test_result` — types the field as `date` for the whole index,
+# and every later need carrying "" is then rejected with "cannot parse empty
+# datetime". The result was 50 of 193 needs indexed (only the `test_result`
+# ones), a silent 74 % hole in every Elasticsearch-backed view, while the
+# ingest still reported success. Reproduced against a local ubTrace 1.12.0-dev
+# instance; the Postgres graph was complete throughout (193 nodes, 206 links).
+#
+# With defaults removed, a need that has no test run carries no `test_run` key
+# at all, so there is no empty string to reject. It protects `outcome`,
+# `runtime_s` and `chain_reqs` from the same class of collision.
+needs_json_remove_defaults = True
+
 # sphinx-needs reads `[[needs.extra_options]]` out of ubproject.toml and maps it
 # onto its own deprecated `needs_extra_options` config, so IT emits the
 # deprecation — nothing in this repository sets that option. Suppressing it here
