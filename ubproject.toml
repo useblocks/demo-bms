@@ -25,7 +25,7 @@ flow_engine = "graphviz"
 # `test_result` type: they hold what a JUnit `<testcase>` element reports, so the
 # imported evidence is queryable as need FIELDS rather than buried in prose.
 # `outcome` is the one worth filtering on (`type == "test_result" and outcome !=
-# "passed"`); `runtime_s` and `test_run` give the reader the run it came from.
+# "passed"`); `runtime_s` and `test_run_label` give the reader the run it came from.
 # Extra options are global in ubCode — declared once, available on every type —
 # so they are simply left unset on the spec needs.
 
@@ -37,9 +37,22 @@ description = "Recorded outcome of one test case in one run: passed, failed, err
 name = "runtime_s"
 description = "Wall-clock runtime of that test case, in seconds, as the report recorded it."
 
+# NAMED `test_run_label`, not `test_run`, and holding a NON-ISO timestamp. Both
+# details are load-bearing for the ubTrace export:
+#
+# Extra options are global, so this field is also written as "" on every need
+# that is not a `test_result`. ubTrace indexes needs into Elasticsearch with
+# dynamic mapping and date detection on, so an ISO-8601 value types the field
+# as `date` for the whole index and every need carrying "" is then rejected
+# ("cannot parse empty datetime"). Elasticsearch mappings are IMMUTABLE, so
+# once an index has learned `test_run: date` it keeps rejecting, and re-ingesting
+# corrected data cannot repair it — only deleting the index can. The rename to
+# a field the live index has never seen is what escapes that stuck mapping;
+# the space-instead-of-`T` format is what stops the new field being typed as a
+# date in turn. See `_run_label` in tools/import_test_results.py.
 [[needs.extra_options]]
-name = "test_run"
-description = "Identifier of the test run the outcome came from: the report's timestamp."
+name = "test_run_label"
+description = "Identifier of the test run the outcome came from: the report's timestamp, as a label."
 
 # The chain roll-up, stamped on every generated `test_result`: the ids of the
 # system requirements this result is evidence for, resolved through

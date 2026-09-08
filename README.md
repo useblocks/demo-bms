@@ -249,7 +249,7 @@ a `test_result` is what **happened** the last time it ran. That separation is
 what lets the report be replaced by a newer run without touching a single spec
 file, and what lets a newly added test legitimately exist with no result yet.
 The outcome, runtime and run id are need **fields** (`outcome`, `runtime_s`,
-`test_run`), so they are queryable rather than buried in prose.
+`test_run_label`), so they are queryable rather than buried in prose.
 
 ### Two tests are red, on purpose
 

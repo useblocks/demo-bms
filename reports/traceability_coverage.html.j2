@@ -208,7 +208,7 @@
 <p class="sub">
   {{ req_total }} system requirements &middot; {{ needs | length }} needs in the graph
   {% if results | length > 0 %}
-  &middot; test evidence from run <code>{{ (results | first).test_run }}</code>
+  &middot; test evidence from run <code>{{ (results | first).test_run_label }}</code>
   {% endif %}
 </p>
 

@@ -221,8 +221,8 @@ def join(
 def _run_label(timestamp: str) -> str:
     """Format the run identifier so it is NOT a parseable ISO-8601 datetime.
 
-    `test_run` is stamped on every `test_result`, and because extra options are
-    global it is also written as "" on every OTHER need. ubTrace indexes needs
+    `test_run_label` is stamped on every `test_result`, and because extra options
+    are global it is also written as "" on every OTHER need. ubTrace indexes needs
     into Elasticsearch with dynamic mapping and date detection on, so a value
     like `2026-08-13T15:35:36.742977+02:00` types the field as `date` for the
     whole index — and then every need carrying "" is rejected with "cannot
@@ -235,8 +235,9 @@ def _run_label(timestamp: str) -> str:
     Elasticsearch 9.3: the `T` form maps to `date` and rejects "" with HTTP
     400; this form maps to `text` and accepts it.
 
-    Do NOT "restore" the ISO format here without also giving `test_run` an
-    explicit non-date mapping on the ubTrace side.
+    Do NOT "restore" the ISO format here. An Elasticsearch mapping cannot be
+    changed in place, so re-poisoning the field would require deleting the
+    project index on the server to recover.
     """
     if timestamp == "unknown":
         return timestamp
@@ -296,7 +297,7 @@ def render(suite: dict[str, str], joined: list[Outcome], report: Path) -> str:
             f"   :results_for: {need.need_id}",
             f"   :outcome: {item.outcome}",
             f"   :runtime_s: {item.runtime_s}",
-            f"   :test_run: {run_id}",
+            f"   :test_run_label: {run_id}",
             f"   :chain_reqs: {', '.join(item.chain_reqs)}",
             "",
             f"   ``{need.path}::{need.function}`` recorded ``{item.outcome}`` in "

@@ -76,8 +76,8 @@ needs_show_link_title = False
 # NOTE: do NOT set `needs_json_remove_defaults = True` here.
 #
 # It looks like the right fix for the Elasticsearch problem described in
-# tools/import_test_results.py (`test_run` written as "" on every need that has
-# no test run), and it does close that hole — but it opens a worse one.
+# tools/import_test_results.py (the run label written as "" on every need that
+# has no test run), and it does close that hole — but it opens a worse one.
 # ubt-coverage discovers custom link types PER NEED, by looking for a
 # `<name>_back` key on the same need whose outgoing links it is counting
 # (`discover_custom_link_bases` in rust/ubt-coverage/src/needs.rs). Removing
