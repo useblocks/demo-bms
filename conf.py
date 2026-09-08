@@ -101,6 +101,19 @@ mermaid_params = [
     os.path.join(os.path.dirname(__file__), "mermaid-puppeteer.json"),
 ]
 
+# -- Diagrams -------------------------------------------------------------------
+# `traceability.rst` renders the per-stream chains as `needflow` diagrams
+# through graphviz (`flow_engine` in ubproject.toml). Without `dot` on PATH
+# sphinx-needs cannot produce them, so fail here with something readable
+# instead of at the first directive.
+if shutil.which("dot") is None:
+    raise RuntimeError(
+        "graphviz 'dot' executable not found on PATH. The needflow diagrams on "
+        "traceability.rst are rendered with it (see flow_engine in "
+        "ubproject.toml). Install graphviz (macOS: 'brew install graphviz', "
+        "Debian/Ubuntu: 'apt-get install graphviz') and retry."
+    )
+
 # -- HTML -----------------------------------------------------------------------
 html_theme = "furo"
 html_title = "BMS"

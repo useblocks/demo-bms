@@ -12,6 +12,14 @@ extend_exclude = [".specify"]
 id_required = true
 id_regex = "^[A-Z]+_[A-Z][A-Z0-9_]*$"
 
+# Render the `needflow` diagrams on `traceability.rst` with the local graphviz
+# `dot` instead of PlantUML: no Java, no jar to vendor, and the graphviz engine
+# emits a PNG plus an HTML image map — a plain <img> with clickable nodes, which
+# is what survives the ubTrace export (scripts do not run there, and the viewer
+# resolves <img> assets only). conf.py fails the build early when `dot` is
+# missing rather than letting the diagrams degrade silently.
+flow_engine = "graphviz"
+
 # --- EXTRA OPTIONS ---
 # Fields the built-in need schema does not carry. These three exist for the
 # `test_result` type: they hold what a JUnit `<testcase>` element reports, so the

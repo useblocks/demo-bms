@@ -130,6 +130,35 @@ them fail on purpose — see [Two tests are red, on purpose](#two-tests-are-red-
 uv run pytest -q     # 2 failed, 48 passed
 ```
 
+## Traceability, as a page
+
+[traceability.rst](traceability.rst) is the aggregate view of the graph, and
+every line of it is **derived** — nothing on it is hand-maintained, so it cannot
+drift from the specs the way a hand-drawn matrix does:
+
+- **the V, per stream** — four `needflow` diagrams, each rooted at that stream's
+  user story with `:root_direction: incoming`, so the whole chain below it
+  (`req -> arch -> swreq -> impl` / `test -> test_result`) is one picture. Cell
+  balancing's diagram stops one level down, which is [the deliberate
+  gap](#the-deliberate-gap) showing itself rather than hiding;
+- **level by level** — a `needtable` per type carrying the links *out* of that
+  level and the links *in* from the level below (`traces_to` / `satisfied_by`,
+  `satisfies` / `refined_by`, `refines` / `implements_back` + `verifies_back`,
+  …). An empty incoming cell is a coverage gap, visible without running a
+  report.
+
+The diagrams are rendered by **graphviz** (`flow_engine = "graphviz"` in
+[ubproject.toml](ubproject.toml)), not PlantUML: no Java, no vendored jar, and
+the graphviz engine emits a PNG plus an HTML image map — a plain `<img>` with
+clickable nodes. That is what survives the ubTrace export, where scripts do not
+run and the viewer resolves `<img>` assets only. `dot` must therefore be on
+`PATH`; [conf.py](conf.py) fails the build with an explicit message when it is
+not, and the workflow installs it.
+
+This page is why the export is worth publishing at all: the needs themselves
+carry their links in both directions on their own pages, but nothing *aggregates*
+them until something asks the graph a question.
+
 ## Publishing to ubTrace
 
 The sources have a **second consumer**. `ubc build needs` compiles

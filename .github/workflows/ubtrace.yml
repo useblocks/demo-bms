@@ -83,6 +83,17 @@ jobs:
             npm uninstall -g @mermaid-js/mermaid-cli
           fi
 
+      - name: Install graphviz
+        # `dot` renders the per-stream needflow diagrams on traceability.rst
+        # (flow_engine = "graphviz" in ubproject.toml). Unlike the mermaid step
+        # above this one is NOT optional: conf.py fails the build when `dot` is
+        # missing, because a traceability page with no diagrams is worse than a
+        # loud failure.
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes graphviz
+          dot -V
+
       - name: Install Python dependencies
         run: uv sync --extra ubtrace
 
