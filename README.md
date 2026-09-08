@@ -77,6 +77,27 @@ It is the one non-artificial gap in the graph, so:
 Everything else in the graph is trace-complete and carries a fresh, passing
 review verdict, so this one gap is the only thing the gates complain about.
 
+## Setup
+
+The Python side is managed by [uv](https://docs.astral.sh/uv/), so the
+environment is reproducible: [.python-version](.python-version) pins the
+interpreter, [uv.lock](uv.lock) pins every package down to its hash, and both
+are committed.
+
+```bash
+uv sync          # create .venv from the lock file — exact interpreter, exact pytest
+uv run pytest -q # run anything inside it
+```
+
+`uv sync` is the only setup step. It needs no pre-installed Python: uv fetches
+the pinned interpreter itself. Nothing is installed *from* this repository —
+[pyproject.toml](pyproject.toml) declares `package = false`, and the test
+modules import the production sources as `src.<stream>.<module>` from the
+repository root.
+
+The `ubc` CLI is **not** part of this environment. It ships with the ubCode IDE
+extension — see [Commands](#commands).
+
 ## Commands
 
 The version-matched CLI is what the IDE extension ships; a bare `ubc` on `$PATH`
@@ -103,7 +124,7 @@ The tests are plain pytest, no dependencies beyond the standard library. Two of
 them fail on purpose — see [Two tests are red, on purpose](#two-tests-are-red-on-purpose):
 
 ```bash
-python3 -m pytest -q     # 2 failed, 48 passed
+uv run pytest -q     # 2 failed, 48 passed
 ```
 
 ## Test results, from a static XML report
@@ -116,8 +137,8 @@ snapshot of one real pytest run, and
 `test` need whose execution it records.
 
 ```bash
-python3 tools/import_test_results.py            # regenerate the needs from the XML
-python3 tools/import_test_results.py --check    # CI guard: fail if it is stale
+uv run python tools/import_test_results.py            # regenerate the needs from the XML
+uv run python tools/import_test_results.py --check    # CI guard: fail if it is stale
 ```
 
 The mapping is deterministic, not fuzzy. Every test function carries a marker
@@ -136,7 +157,7 @@ The outcome, runtime and run id are need **fields** (`outcome`, `runtime_s`,
 
 ### Two tests are red, on purpose
 
-`python3 -m pytest -q` reports **2 failed, 48 passed**, and the committed report
+`uv run pytest -q` reports **2 failed, 48 passed**, and the committed report
 records those two as `outcome: failed`. The failures are real — the report is not
 hand-edited, so running the suite live during a demo tells the same story the
 graph does.

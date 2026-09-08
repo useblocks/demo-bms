@@ -1,0 +1,26 @@
+# Python environment for the BMS demo, managed by uv.
+#
+# The production sources import nothing outside the standard library, so the
+# only dependency is the test runner. It lives in the `dev` group and is pinned
+# by `uv.lock`, which is COMMITTED: `uv sync` reproduces the exact interpreter
+# and the exact pytest build on every machine.
+#
+# `package = false` because `src/` is not distributed. The test modules import
+# it as `src.<stream>.<module>` from the repository root, which the root
+# `conftest.py` puts on `sys.path` — nothing is installed into the environment.
+
+[project]
+name = "rollout-demo-bms"
+version = "0.1.0"
+description = "Battery management system demo: everything-as-code across a minimized V-model."
+requires-python = ">=3.13"
+dependencies = []
+
+[dependency-groups]
+dev = ["pytest>=8.4.2"]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

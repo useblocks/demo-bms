@@ -9,3 +9,7 @@ __pycache__/
 # Rendered reports are build output, not sources.
 /reports/_build/
 /_build/
+
+# uv's environment — recreated from `uv.lock` by `uv sync`. `uv.lock` itself IS
+# a source and stays committed: it is what makes the build reproducible.
+/.venv/
