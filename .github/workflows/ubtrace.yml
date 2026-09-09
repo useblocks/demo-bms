@@ -10,9 +10,14 @@
 # Triggers:
 #   push to main    -> builds and publishes as version "main" (overwriting it).
 #   push of a tag   -> builds and publishes under the tag name, alongside "main".
+#   push to demo**  -> builds only, no upload. A demo branch gets the full gate
+#                       and build treatment, but nothing it produces reaches
+#                       team.useblocks.com.
 #   pull request     -> builds only, no upload: the gate that a change keeps the
 #                       ubTrace export building warning-free before it lands.
 #   workflow_dispatch -> republish "main", or re-publish an old tag by name.
+#                       Dispatching a demo branch builds without uploading too:
+#                       the upload is gated on WHAT WAS BUILT, not on the event.
 #
 # Required repository secret:
 #   UBTRACE_INGEST_TOKEN — a token with "Ingest" permission on the
@@ -21,7 +26,11 @@ name: ubTrace publish
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+      # `**`, not `*`: a single star stops at a slash, so it would match
+      # `demo-cell-balancing` but miss `demo/cell-balancing`.
+      - "demo**"
     tags:
       - "v[0-9]+.[0-9]+.[0-9]+*"
   pull_request:
@@ -29,7 +38,7 @@ on:
   workflow_dispatch:
     inputs:
       ref:
-        description: 'Git ref to build and publish (tag name, or "main")'
+        description: 'Git ref to build (tag name, "main", or a demo branch — a demo branch builds but does not publish)'
         required: true
         default: "main"
 
@@ -284,11 +293,23 @@ jobs:
 
       - name: Compute UBTRACE_VERSION
         id: vars
+        # Emits TWO things: the version the artefact is built as, and whether it
+        # may be uploaded. They are decided together, here, because a demo branch
+        # is defined by the second: it is built like everything else and then not
+        # published. Deriving `publish` from the resolved ref rather than from
+        # `github.event_name` is what makes a workflow_dispatch of a demo branch
+        # behave the same as a push of one — dispatch checks out `inputs.ref`, so
+        # it can reach a demo branch just as easily.
         run: |
           set -euo pipefail
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             ref="${INPUT_REF}"
           elif [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
+            ref="$GITHUB_REF_NAME"
+          elif [[ "$GITHUB_REF_NAME" == demo* ]]; then
+            # NOT collapsed into "main" like other branches: publishing is off
+            # for demo branches, so the version only names the build directory,
+            # and naming it after the branch keeps a run log self-explanatory.
             ref="$GITHUB_REF_NAME"
           else
             ref="main"
@@ -297,12 +318,22 @@ jobs:
           # `v[0-9]+.[0-9]+.[0-9]+*`, but git tag names may contain shell
           # metacharacters that the trailing glob accepts, and the dispatch
           # input is free text. Reject anything outside "main" / a SemVer-ish
-          # tag before it becomes a version segment in a URL and a path.
-          if [[ "$ref" != "main" && ! "$ref" =~ ^v[0-9]+\.[0-9]+\.[0-9]+[A-Za-z0-9.+-]*$ ]]; then
-            echo "::error::Refusing to publish: ref '$ref' is neither 'main' nor v<MAJOR>.<MINOR>.<PATCH>[suffix]" >&2
+          # tag / a demo branch before it becomes a version segment in a URL and
+          # a path. Demo names are held to the same character set even though
+          # they are never uploaded, because the value still becomes a path.
+          publish=true
+          if [[ "$ref" == demo* ]]; then
+            publish=false
+            if [[ ! "$ref" =~ ^demo[A-Za-z0-9._/-]*$ ]]; then
+              echo "::error::Refusing to build: demo ref '$ref' contains characters that may not appear in a version path" >&2
+              exit 1
+            fi
+          elif [[ "$ref" != "main" && ! "$ref" =~ ^v[0-9]+\.[0-9]+\.[0-9]+[A-Za-z0-9.+-]*$ ]]; then
+            echo "::error::Refusing to publish: ref '$ref' is neither 'main', a demo branch, nor v<MAJOR>.<MINOR>.<PATCH>[suffix]" >&2
             exit 1
           fi
           echo "version=$ref" >> "$GITHUB_OUTPUT"
+          echo "publish=$publish" >> "$GITHUB_OUTPUT"
         env:
           INPUT_REF: ${{ github.event.inputs.ref }}
 
@@ -319,8 +350,14 @@ jobs:
             . _build/ubtrace
 
       - name: Upload to team.useblocks.com
-        # Pull requests build the artefact but never publish it.
-        if: github.event_name != 'pull_request'
+        # Pull requests and demo branches build the artefact but never publish
+        # it. `steps.vars.outputs.publish` carries the demo half of that rule so
+        # it holds however the demo branch was reached — a push, or a dispatch
+        # naming it. To start publishing demo versions later, flip that flag —
+        # but note a slashed branch name (`demo/foo`) then needs handling too:
+        # upload_ubtrace.sh locates the built version at exactly depth 3 under
+        # the build root, and such a name nests one level deeper.
+        if: github.event_name != 'pull_request' && steps.vars.outputs.publish == 'true'
         env:
           UBTRACE_INGEST_TOKEN: ${{ secrets.UBTRACE_INGEST_TOKEN }}
           UBTRACE_VERSION: ${{ steps.vars.outputs.version }}
