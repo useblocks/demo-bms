@@ -1,0 +1,33 @@
+{
+    // Extensions this repository expects. VS Code offers these on first open;
+    // nothing here is required to run `uv sync`, `pytest` or `ubc` from a shell.
+    "recommendations": [
+        // The ubCode language server and the bundled `ubc` CLI that
+        // `settings.json` wires into the integrated terminal. This is what
+        // resolves the needs graph in `specs/*.rst` and `ubproject.toml`.
+        "useblocks.ubcode",
+
+        // Python: `src/` + `tests/`, run against the uv-managed .venv.
+        "ms-python.python",
+        "ms-python.vscode-pylance",
+        "ms-python.debugpy",
+
+        // reStructuredText syntax for the sphinx-needs specs. Deliberately the
+        // lightweight highlighter, not a full RST language server, which would
+        // flag every `.. req::` and `.. src-trace::` directive as unknown.
+        "trond-snekvik.simple-rst",
+
+        // TOML: `ubproject.toml` (the single ontology source), `pyproject.toml`
+        // and the review criteria in `quality/*.toml`.
+        "tamasfe.even-better-toml",
+
+        // Mermaid preview for the architecture diagrams in README.md.
+        "bierner.markdown-mermaid",
+
+        // Workflow authoring for .github/workflows/ubtrace.yml.
+        "github.vscode-github-actions",
+
+        // Claude Code, alongside the `.claude/` skills and `.mcp.json` in-repo.
+        "anthropic.claude-code"
+    ]
+}
