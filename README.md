@@ -225,7 +225,67 @@ on every push to `main` (publishing as `main`) and on every `v*.*.*` tag
 (publishing under the tag name, alongside `main`). A pull request builds the
 artefact but never uploads it, so a change that breaks the export is caught
 before it lands rather than after it publishes. The workflow needs one
-repository secret, `UBTRACE_INGEST_TOKEN`.
+repository secret, `UBTRACE_INGEST_TOKEN`, plus the two ubCode licence secrets
+the graph gates need (below).
+
+### The graph gates run first
+
+The workflow has **two jobs**, and `publish` does not start until `graph-gates`
+passes. That job runs the `ubc` CLI itself on the runner, via
+[useblocks/ubc-action](https://github.com/useblocks/ubc-action) — a composite
+action that does nothing but download the binary from `download.useblocks.com`
+and put it on `PATH`:
+
+| Step | Blocking? | What it defends |
+|---|---|---|
+| `ubc check` | yes | the specs parse — nothing validated them *as specs* before, the Sphinx build only proved they render |
+| gap snapshot vs. reality | yes | [reports/gaps/gaps.json](reports/gaps/gaps.json) still matches what `ubc agent gaps` actually reports |
+| `import_gaps.py --check` / `import_test_results.py --check` | yes | the generated RST still matches its snapshot |
+| `ubc agent trace` / `verdict-check` | **no** | reported into the log only |
+
+**It needs a ubCode license.** `ubc` is commercial software and this repository is
+private, so the free open-source mode does not apply — ubCode grants that only to
+projects under an [OSI licence](https://opensource.org/licenses) in a *publicly
+reachable* Git repo, and it probes the remote to decide. Unlicensed, `ubc` caps
+indexing at **5 files and 100 needs**; this project has 22 and 194, so every gate
+fails with `exceeds maximum without license`. Two repository secrets are required,
+and **both** of them — useblocks keys are user-based, so the key does not activate
+without the e-mail it was issued to:
+
+| Secret | Becomes |
+|---|---|
+| `UBCODE_LICENSE_KEY` | `UBCODE_LICENSE_KEY` |
+| `UBCODE_LICENSE_USER` | `UBCODE_LICENSE_USER` |
+
+The first step of the job checks they exist and fails naming them, because the
+error you get otherwise talks about file counts and never mentions a secret. See
+the [licence docs](https://ubcode.useblocks.com/usage/ublicense.html); keys come
+from support@useblocks.com. Note the runner is ephemeral, so ubc's three-day
+licence cache is always cold and every run performs one online activation.
+
+Three things about it are deliberate:
+
+1. **The ubc version is pinned in the workflow, not left to the action.** The
+   action's own default is `0.27.0` and its only tag, `0.1`, is two commits older
+   still. `UBC_VERSION` at the top of the workflow has to track whatever
+   `ubc --version` says in your ubCode extension, because that is the engine that
+   produced the committed snapshots. The action itself is pinned to a full commit
+   SHA — a composite action is plain YAML executed inside your job, so a moving
+   ref is a moving payload.
+2. **`ubc agent gaps` is compared, not obeyed.** It exits non-zero whenever it
+   finds a gap, and this project [has one on purpose](#the-deliberate-gap), so its
+   exit code would fail every run. The gate requires the output to parse as a gap
+   report — that is what proves the binary ran — and then requires it to be
+   byte-identical to the committed snapshot.
+3. **`trace` and `verdict-check` never block.** `trace` exits non-zero on that same
+   deliberate gap, and `verdict-check` goes red the moment anyone edits a
+   requirement — which is [the live demo the README recommends](#review-verdicts),
+   not a reason to break `main`.
+
+This closes the last open link in both imported chains. `reality → snapshot →
+generated RST → published artefact` was only gated from the second arrow onwards;
+until `ubc` could run on the runner, nothing in CI could tell whether the
+committed snapshot still described reality.
 
 One detail worth knowing: **scripts do not run in the ubTrace export**, so the
 three `.. mermaid::` component diagrams cannot be rendered by the browser there.
@@ -426,7 +486,9 @@ Three things about this arrangement are worth knowing before you demo it:
    graph fail the gap gate — the gate must not grade its own findings.
 2. **Importing gaps does not create gaps.** Re-running `ubc agent gaps` after an
    import returns the same list; only `summary.total_needs` moves, which is why
-   the generated page deliberately does not quote it.
+   the generated page deliberately does not quote it. The output is also stable
+   run-to-run, which is what lets CI compare it — see
+   [The graph gates run first](#the-graph-gates-run-first).
 3. **A gap disappears by being fixed.** The ids are derived from the need plus the
    gate that reported it, so re-importing an unchanged snapshot rewrites the same
    bytes, and a resolved gap vanishes instead of lingering under a stale id. Give
