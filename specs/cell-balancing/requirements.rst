@@ -3,11 +3,12 @@ Cell Balancing — Requirements
 
 .. note::
 
-   This stream is deliberately left **undecomposed**: the requirement below has
-   no architecture, no software requirements, no implementation and no tests
-   beneath it. It exists so that the gap view has a real, non-artificial gap to
-   show, and so the agent workflow can be driven live from a requirement whose
-   downstream artefacts genuinely do not exist yet.
+   This stream was deliberately left **undecomposed** while the gap view needed a
+   real, non-artificial gap to show. It is now decomposed the whole way down —
+   :doc:`architecture <architecture>`, :doc:`software requirements
+   <software_requirements>`, implementation markers under ``src/cell_balancing/``
+   and test markers under ``tests/cell_balancing/`` — so the chain below this
+   requirement is complete.
 
 .. req:: The battery management system shall reduce the cell voltage spread to 20 mV or less within 8 hours of a charge session ending
    :id: REQ_CELL_BALANCING_WINDOW
@@ -19,4 +20,4 @@ Cell Balancing — Requirements
    the end of a charge session, measured while the pack is at rest and every
    cell temperature is between 15 °C and 45 °C. The spread is evaluated on
    settled cell voltages, so the 8 hour window includes the time the cells need
-   to relax after charging. Change this requirement to see if the gates catch the change.
+   to relax after charging.

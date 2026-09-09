@@ -61,9 +61,9 @@ Thermal management
 Cell balancing
 ~~~~~~~~~~~~~~
 
-The stream with the deliberate gap: its requirements have no architecture below
-them yet, so the chain stops one level down. That is the point — the diagram
-shows the hole rather than hiding it.
+Formerly the stream with the deliberate gap. It is now decomposed the whole way
+down — architecture, software requirements, implementation and tests — so the
+chain reaches the leaves like every other stream.
 
 .. needflow:: Cell balancing — full chain
    :root_id: US_CELL_BALANCING

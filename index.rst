@@ -50,6 +50,8 @@ project was authored.
 
    specs/cell-balancing/user_stories
    specs/cell-balancing/requirements
+   specs/cell-balancing/architecture
+   specs/cell-balancing/software_requirements
 
 .. toctree::
    :maxdepth: 2
