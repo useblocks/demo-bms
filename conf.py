@@ -100,14 +100,14 @@ needs_show_link_title = False
 # formatted so Elasticsearch never types the field as a date. See
 # `_run_label` in tools/import_test_results.py.
 
-# sphinx-needs reads `[[needs.extra_options]]` out of ubproject.toml and maps it
-# onto its own deprecated `needs_extra_options` config, so IT emits the
-# deprecation — nothing in this repository sets that option. Suppressing it here
-# is what keeps `-W` usable as a real gate on NEW warnings; drop this once
-# ubCode accepts the `[[needs.fields]]` spelling, so both sides can move
-# together.
+# `needs.deprecated` USED TO BE SUPPRESSED HERE and no longer needs to be. It was
+# emitted because sphinx-needs mapped `[[needs.extra_options]]` onto its own
+# deprecated `needs_extra_options` config; ubproject.toml now declares those nine
+# fields as `[needs.fields.<name>]` instead, so nothing deprecated is reached and
+# the warning is gone at the source rather than hidden. Verified by building with
+# only the entry below suppressed: no deprecation warning appears.
 #
-# The second entry is the ONE ontology-schema rule that currently fires:
+# The single remaining entry is the ONE ontology-schema rule that currently fires:
 # `coverage-req-satisfies-back` in schemas.json reports that
 # REQ_CELL_BALANCING_WINDOW has no arch satisfying it, because the cell-balancing
 # stream has no `architecture.rst` yet. Every schema severity reaches Sphinx as a
@@ -123,10 +123,7 @@ needs_show_link_title = False
 # warning because they read ubproject.toml, not this file. Only the export build is
 # quiet about it. Drop this entry — and promote the rule to `violation` — once that
 # stream reaches the archs stage.
-suppress_warnings = [
-    "needs.deprecated",
-    "sn_schema_warning.network_contains_too_few",
-]
+suppress_warnings = ["sn_schema_warning.network_contains_too_few"]
 
 # -- Mermaid --------------------------------------------------------------------
 # The default "raw" output emits a <div> that the browser renders with

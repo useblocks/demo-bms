@@ -53,29 +53,58 @@ flow_engine = "graphviz"
 # rather than trusting a clean build.
 schema_definitions_from_json = "schemas.json"
 
-# --- EXTRA OPTIONS ---
+# --- FIELDS ---
 # Fields the built-in need schema does not carry, in two groups, one per IMPORTED
-# type.
+# type, plus a vocabulary for the built-in `status`.
 #
-# The first three exist for the `test_result` type: they hold what a JUnit
+# The first four exist for the `test_result` type: they hold what a JUnit
 # `<testcase>` element reports, so the imported evidence is queryable as need FIELDS
 # rather than buried in prose. `outcome` is the one worth filtering on
 # (`type == "test_result" and outcome != "passed"`); `runtime_s` and
 # `test_run_label` give the reader the run it came from.
 #
-# The `gap_*` group at the end does the same job for the `gap` type: it holds what
-# one record of `ubc agent gaps` reports.
+# The `gap_*` group does the same job for the `gap` type: it holds what one record
+# of `ubc agent gaps` reports.
 #
-# Extra options are global in ubCode — declared once, available on every type — so
-# they are simply left unset on the spec needs.
+# SPELLING: `[needs.fields.<name>]`, not the older `[[needs.extra_options]]`.
+# sphinx-needs maps the deprecated spelling onto `needs_extra_options` and emits a
+# deprecation warning for it, which conf.py used to have to suppress to keep `-W`
+# usable; that suppression is gone with this migration. The table form also reaches
+# the BUILT-IN fields — which is what lets `status` get a vocabulary below — and
+# carries a `schema` slot the list form has no room for.
+#
+# WHERE A CONSTRAINT BELONGS. A field is global in ubCode: declared once, present on
+# every type, and left at its `default` on the types that do not use it. So a
+# `schema` here states what is true of the field EVERYWHERE — which for these
+# imported fields means the empty string has to be admissible, because that is what
+# the ~190 needs outside the owning type carry. Narrowing a field on the one type
+# that owns it is schemas.json's job, keyed by `select`. Neither file repeats the
+# other: `outcome` is `"" | passed | failed | error | skipped` here and exactly the
+# four words there.
 
-[[needs.extra_options]]
-name = "outcome"
+# The GLOBAL enum carries the empty string because the field is global: it is
+# written as "" on the 144 needs that are not test_results (see the note above),
+# and a global schema sees all of them. Dropping "" is the per-type job, done by
+# `field-test_result-outcome` in schemas.json — which is the whole division of
+# labour the two files follow: uniform vocabulary here, type-specific narrowing
+# there. The four words are not a guess: they are exactly OUTCOME_BY_TAG plus the
+# `passed` default in tools/import_test_results.py.
+[needs.fields.outcome]
 description = "Recorded outcome of one test case in one run: passed, failed, error or skipped."
+default = ""
+nullable = false
+schema = { type = "string", enum = ["", "passed", "failed", "error", "skipped"] }
 
-[[needs.extra_options]]
-name = "runtime_s"
+# DELIBERATELY UNCONSTRAINED. `runtime_s` is `case.get("time", "0.000")` — the
+# JUnit `time` attribute passed through verbatim from a report this repository
+# does not generate. Pinning a numeric format here would fail on a legitimate
+# report (a runner emitting `1e-05`, say) rather than catch a project error, so
+# the only thing asserted about it is that the importer populated it, which
+# `field-test_result-run-evidence` in schemas.json does per-type.
+[needs.fields.runtime_s]
 description = "Wall-clock runtime of that test case, in seconds, as the report recorded it."
+default = ""
+nullable = false
 
 # NAMED `test_run_label`, not `test_run`, and holding a NON-ISO timestamp. Both
 # details are load-bearing for the ubTrace export:
@@ -90,9 +119,19 @@ description = "Wall-clock runtime of that test case, in seconds, as the report r
 # a field the live index has never seen is what escapes that stuck mapping;
 # the space-instead-of-`T` format is what stops the new field being typed as a
 # date in turn. See `_run_label` in tools/import_test_results.py.
-[[needs.extra_options]]
-name = "test_run_label"
+# The pattern is the ES guard, and it belongs HERE rather than in schemas.json
+# because it is uniform: no need of any type may ever carry an ISO-8601 value in
+# this field. `^$|` admits the "" every non-test_result need carries; the
+# alternative branch pins date-SPACE-time, so the `T` form cannot be written at
+# all. Stated positively because sphinx-needs rejects `not` inside a field
+# constraint. With this global rule in place, `field-test_result-run-evidence`
+# (minLength 1) is all schemas.json needs to add: non-empty AND matching this
+# pattern means a real timestamp.
+[needs.fields.test_run_label]
 description = "Identifier of the test run the outcome came from: the report's timestamp, as a label."
+default = ""
+nullable = false
+schema = { type = "string", pattern = "^$|^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}" }
 
 # The chain roll-up, stamped on every generated `test_result`: the ids of the
 # system requirements this result is evidence for, resolved through
@@ -112,9 +151,14 @@ description = "Identifier of the test run the outcome came from: the report's ti
 # VS Code Reports view render with no extra tooling. It is DERIVED data on a
 # DERIVED need — `tools/import_test_results.py` resolves it from the spec sources
 # on every run, and nothing hand-maintains it.
-[[needs.extra_options]]
-name = "chain_reqs"
+# No pattern: this is a SPACE-SEPARATED LIST of ids whose length varies with the
+# chain, so the only uniform statement about it is that it is a string. That it
+# is populated on every generated result is asserted per-type by
+# `field-test_result-run-evidence` in schemas.json.
+[needs.fields.chain_reqs]
 description = "System requirement ids this test result is evidence for, via test -> swreq -> arch -> req."
+default = ""
+nullable = false
 
 # The five `gap` fields, stamped on every generated `gap` need by
 # `tools/import_gaps.py`. They hold what ONE record of `ubc agent gaps` reports, so
@@ -134,25 +178,100 @@ description = "System requirement ids this test result is evidence for, via test
 # `gap_shortfall` is deliberately the string "0 of 1" rather than two numeric
 # `have` / `need` fields, which keeps it unmistakably text.
 
-[[needs.extra_options]]
-name = "gap_category"
+# NO ENUM HERE, and that is the one deliberate omission in this file. The seven
+# categories the 0.34 engine emits are known (CATEGORIES in tools/import_gaps.py),
+# but that importer renders an UNKNOWN category generically rather than rejecting
+# it, on the explicit grounds that `ubc agent` is alpha and "a gate finding must
+# never be dropped because this table has not caught up with the engine". A global
+# enum would be a hard error and would invert exactly that decision: a newer engine
+# emitting an eighth category would fail the build instead of reporting the gap.
+# The vocabulary is therefore checked at `warning` severity by `field-gap-category`
+# in schemas.json, which surfaces the drift without dropping the finding.
+[needs.fields.gap_category]
 description = "Which gate reported this gap: trace_backward, trace_forward, orphan, status_disallowed, ..."
+default = ""
+nullable = false
 
-[[needs.extra_options]]
-name = "gap_link"
+# Enumerable where gap_category is not: the gate names a link out of THIS file's
+# `[needs.links]`, so the vocabulary is bounded by config rather than by the
+# engine's version. "" covers both the 193 non-gap needs and an `orphan` record,
+# which carries no link at all.
+[needs.fields.gap_link]
 description = "The link name the reporting gate counted, when the gap is a trace gap; empty otherwise."
+default = ""
+nullable = false
+schema = { type = "string", enum = [
+  "",
+  "traces_to",
+  "satisfies",
+  "refines",
+  "implements",
+  "verifies",
+  "results_for",
+  "affects",
+  "motivates",
+  "mitigates",
+  "gap_for",
+  "links",
+] }
 
-[[needs.extra_options]]
-name = "gap_shortfall"
+# The "<have> of <need>" shape the description promises, asserted rather than
+# merely documented. Deliberately text and never two numeric fields, for the same
+# Elasticsearch reason `test_run_label` carries a space instead of a `T`.
+[needs.fields.gap_shortfall]
 description = "How far short the need fell, as a label: \"<have> of <need>\" links present."
+default = ""
+nullable = false
+schema = { type = "string", pattern = "^$|^[0-9]+ of [0-9]+$" }
 
-[[needs.extra_options]]
-name = "gap_need_id"
+# Reuses the project's own `id_regex` as an alternative branch, so a malformed id
+# cannot reach a report template through this field even though it arrives as a
+# plain string rather than a link.
+[needs.fields.gap_need_id]
 description = "Id of the need the gap is attributed to — the same fact as the `gap_for` link, as a field a report template can read."
+default = ""
+nullable = false
+schema = { type = "string", pattern = "^$|^[A-Z]+_[A-Z][A-Z0-9_]*$" }
 
-[[needs.extra_options]]
-name = "gap_need_type"
+# The ten directives declared under `[[needs.types]]` below. Adding a type there
+# means adding it here — the duplication is the price of letting a report group
+# gaps by V-model level from a plain field.
+[needs.fields.gap_need_type]
 description = "Type of the need the gap is attributed to (req, swreq, arch, ...), so a report can group gaps by V-model level."
+default = ""
+nullable = false
+schema = { type = "string", enum = [
+  "",
+  "user_story",
+  "req",
+  "arch",
+  "swreq",
+  "impl",
+  "test",
+  "test_result",
+  "risk",
+  "decision",
+  "gap",
+] }
+
+# --- STATUS (a CORE field, given a vocabulary) ---
+# `[needs.fields]` reaches the built-in fields too, not just the project's own, so
+# the spec lifecycle is declared here rather than left implicit. Before this, every
+# authored need carried `draft` by convention and nothing checked it: a typo such
+# as `draft2` was accepted silently by every gate in the project.
+#
+# `status` is nullable and genuinely unset on the four DERIVED types (impl, test,
+# test_result, gap) — their state is the source file or the import, not a lifecycle —
+# so the enum must not force a value onto them. It constrains the value when one is
+# present; `status-present-on-spec-needs` in schemas.json is what additionally
+# REQUIRES one on the six authored spec types.
+#
+# This is the ONLY place the vocabulary is enforced. `[workflow.lifecycle] states`
+# looks like it should carry it too, and does not: see the comment at `[workflow]`
+# below for the measurement that ruled it out.
+[needs.fields.status]
+description = "Lifecycle state of an authored spec need: draft -> review -> approved."
+schema = { type = "string", enum = ["draft", "review", "approved"] }
 
 # BATTERY MANAGEMENT SYSTEM (BMS) — everything-as-code, MINIMIZED V-MODEL.
 #
@@ -517,6 +636,26 @@ needs_fields = [
 # is nothing for an agent to author here at all.
 [workflow]
 orphan_exempt_types = ["user_story", "req", "arch", "swreq", "gap"]
+
+# `[workflow.lifecycle] states` IS DELIBERATELY NOT SET, and the reason is worth
+# recording so it is not "fixed" later.
+#
+# A non-empty `states` list turns on the deterministic `status_undeclared` gate. That
+# gate fires on a need whose status is UNSET — not on one whose status is outside the
+# vocabulary. This project has 124 needs that legitimately carry no status at all:
+# `impl` and `test` are materialised from one-line source markers, `test_result` and
+# `gap` are imported, and none of the four is in a lifecycle — their state is the
+# source file or the import. Measured: enabling it produced 124 `status_undeclared`
+# gaps (every impl, test, test_result and the gap itself) and did NOT flag a req
+# carrying the bogus status `draft2`, which is the case the vocabulary exists to
+# catch. The sub-table accepts only `states` and `transitions`, so the gate cannot be
+# scoped to the six authored types, and `[workflow] exempt_status` filters by status
+# VALUE and so cannot exempt needs that have none.
+#
+# The vocabulary is therefore enforced where it actually works: `[needs.fields.status]`
+# rejects `draft2` as a schema violation in both `ubc schema validate` and the build,
+# and `status-present-on-spec-needs` in schemas.json requires a status on exactly the
+# six types that owe one. Revisit if ubc grows a type-scoped lifecycle.
 
 # The diagram SYNTAX the runner authors any diagram in. `format` is the authoring
 # directive injected into the runner prompt ("author it as a `mermaid` directive");
