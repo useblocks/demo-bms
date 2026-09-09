@@ -20,6 +20,39 @@ id_regex = "^[A-Z]+_[A-Z][A-Z0-9_]*$"
 # missing rather than letting the diagrams degrade silently.
 flow_engine = "graphviz"
 
+# --- ONTOLOGY SCHEMA ---
+# The structural rules the graph must hold to, checked by `ubc schema validate` and
+# by the sphinx-needs build. JSON carries no comments, so each rule in `schemas.json`
+# states its own rationale in its `message`, and the file's `$defs._readme` carries
+# the derivation.
+#
+# Two sources, two severities, and the split is deliberate:
+#
+# - `violation` for what THIS FILE ALREADY DECLARES — every `[[workflow.stages.trace]]`
+#   edge (link / direction / min / up) and every `[[needs.types]]` prefix. These are
+#   obligations the project has committed to, so breaking one is an error, and the
+#   schema is only restating them where a build can enforce them per-need.
+# - `warning` for what the graph merely SHOWS — conventions that hold unanimously
+#   across all 194 needs but that no config declares (single-parent cardinality, the
+#   presence of `status` on authored spec needs). Hard-failing a build on a rule the
+#   project never wrote down would turn an observation into a law by accident.
+#
+# ONE RULE IS DECLARED-BUT-NOT-MET and is held at `warning` for that reason alone:
+# `coverage-req-satisfies-back`. The `archs` stage declares `satisfies` bidirectional,
+# so every req owes an incoming link, and 18 of 19 have one —
+# REQ_CELL_BALANCING_WINDOW does not, because the cell-balancing stream has no
+# `architecture.rst` yet. That is the same finding the gap gate already reports as
+# GAP_REQ_CELL_BALANCING_WINDOW_NO_SATISFIES_BACK. At `violation` it would fail the
+# `-W --keep-going` ubtrace publish in .github/workflows/ubtrace.yml on a gap the
+# project is already tracking. PROMOTE IT TO `violation` once that stream reaches the
+# archs stage — the rule's own message says so too.
+#
+# A SYNTAX ERROR ANYWHERE IN schemas.json DISABLES EVERY RULE IN IT. ubc reports it
+# against the pseudo-need `__config__` with "no rule from this file is applied" and
+# still exits successfully-looking, so re-run `ubc schema validate` after every edit
+# rather than trusting a clean build.
+schema_definitions_from_json = "schemas.json"
+
 # --- EXTRA OPTIONS ---
 # Fields the built-in need schema does not carry, in two groups, one per IMPORTED
 # type.

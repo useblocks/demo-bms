@@ -1,0 +1,469 @@
+{
+  "$defs": {
+    "_readme": {
+      "$comment": [
+        "ONTOLOGY SCHEMA for the BMS minimized V-model. Wired via",
+        "`[needs] schema_definitions_from_json = \"schemas.json\"` in ubproject.toml and",
+        "checked by `ubc schema validate` and by the sphinx-needs build.",
+        "",
+        "JSON carries no comments, so the rationale lives here and in each rule's",
+        "`message`. Every rule below was derived from two sources and nothing else:",
+        "",
+        "  DECLARED  -- `[[workflow.stages.trace]]` (link / direction / min / up) and",
+        "              `[[needs.types]] prefix` in ubproject.toml. These are the",
+        "              obligations the project already states, so they are `violation`.",
+        "  OBSERVED  -- a census of the 194-need graph taken when this file was written.",
+        "              Where the data is unanimous but no config declares the rule, it is",
+        "              recorded at `warning` so it guides authors without hard-failing a",
+        "              build on a convention the project never committed to.",
+        "",
+        "The census (194 needs / 194 links):",
+        "  user_story 4   req 19   arch 14   swreq 23   impl 23",
+        "  test 50        test_result 50    risk 5    decision 5   gap 1",
+        "Every outgoing trace link resolved to exactly one target type, and every",
+        "non-root need carried at least one. Backward coverage was complete on every",
+        "gated leg except `req <- satisfies`: 18 of 19 (REQ_CELL_BALANCING_WINDOW has no",
+        "arch, because the cell-balancing stream has no architecture.rst yet). That one",
+        "rule is therefore `warning`, not `violation` -- see `coverage-req-satisfies-back`.",
+        "",
+        "WHICH CONSTRUCT DOES WHAT -- each check is written once, in the one place that",
+        "can express it, with no overlap between them:",
+        "",
+        "  local.properties.<link>.minItems + local.required   HOW MANY outgoing links.",
+        "      A link field is a plain array of target ids, so arity is an ordinary array",
+        "      constraint -- NOT network `contains` + `minContains`, which is a weaker way",
+        "      of saying the same thing (it bounds only the MATCHING items) and duplicates",
+        "      the type test `items` already does.",
+        "      `required` IS NOT OPTIONAL HERE. `properties` constrains a key only when it",
+        "      is present, and a need carrying no link at all has no such key -- so",
+        "      `minItems` ALONE SILENTLY PASSES on exactly the case these rules exist to",
+        "      catch. Probed: `minItems: 1` on the 4 user_story needs (which have no",
+        "      `traces_to`) fired 0 times; adding `required` fired 4. Never write one",
+        "      without the other. `maxItems` needs no `required` -- an absent field",
+        "      trivially satisfies an upper bound, which is the intended reading.",
+        "",
+        "  network.<link>.items                                WHAT TYPE the targets are.",
+        "      Applies to every element, which is the intent: a req traces only to user",
+        "      stories. Probed on its own (no `contains`) against a deliberately wrong",
+        "      type: fired on all 23 swreqs.",
+        "      COSMETIC NOTE: when a rule carries both `local` and `network` and the LOCAL",
+        "      half fails, the finding is reported TWICE with the same message -- once as",
+        "      local_other, once as network_local_fail -- because the network walk",
+        "      re-applies the rule's local schema as a precondition. Two identical lines",
+        "      are one defect, not two. A network-only failure reports once.",
+        "",
+        "  network_back.<link>.contains + minContains          INCOMING coverage.",
+        "      The ONLY construct available here. Incoming links are not locally visible:",
+        "      a `local` rule on a declared incoming field name (`satisfied_by`,",
+        "      `verifies_back`, ...) matches nothing and silently passes. Probed and",
+        "      confirmed -- never reach for `local` on an incoming link.",
+        "",
+        "TWO KEYWORDS THAT LOOK PORTABLE AND ARE NOT. ubCode accepts both; sphinx-needs",
+        "rejects both, and the file is consumed by BOTH engines:",
+        "  - `not` inside a `select` allOf element -- `ubc check` flags this one as",
+        "    config.schema_sphinx_needs_incompatible.",
+        "  - `not` inside a `local` field constraint -- `ubc check` does NOT flag it;",
+        "    only sphinx-build does, as a hard NeedsConfigException. Prefer a positive",
+        "    `pattern` (see field-test_result-run-label-not-iso).",
+        "So `ubc check` passing is not sufficient: run the ubtrace build too.",
+        "",
+        "A SYNTAX ERROR ANYWHERE DISABLES THE WHOLE FILE (ubc reports it against the",
+        "pseudo-need `__config__` and applies no rule at all), so re-run both validators",
+        "after every edit rather than trusting a clean build."
+      ]
+    },
+
+    "type-user_story": { "properties": { "type": { "const": "user_story" } } },
+    "type-req": { "properties": { "type": { "const": "req" } } },
+    "type-arch": { "properties": { "type": { "const": "arch" } } },
+    "type-swreq": { "properties": { "type": { "const": "swreq" } } },
+    "type-impl": { "properties": { "type": { "const": "impl" } } },
+    "type-test": { "properties": { "type": { "const": "test" } } },
+
+    "select-spec-need": {
+      "properties": {
+        "type": { "enum": ["user_story", "req", "arch", "swreq", "risk", "decision"] }
+      }
+    }
+  },
+
+  "schemas": [
+    {
+      "id": "id-prefix-user_story",
+      "severity": "violation",
+      "message": "DECLARED: [[needs.types]] gives user_story the prefix US_.",
+      "select": { "$ref": "#/$defs/type-user_story" },
+      "validate": { "local": { "properties": { "id": { "pattern": "^US_" } } } }
+    },
+    {
+      "id": "id-prefix-req",
+      "severity": "violation",
+      "message": "DECLARED: [[needs.types]] gives req the prefix REQ_.",
+      "select": { "$ref": "#/$defs/type-req" },
+      "validate": { "local": { "properties": { "id": { "pattern": "^REQ_" } } } }
+    },
+    {
+      "id": "id-prefix-arch",
+      "severity": "violation",
+      "message": "DECLARED: [[needs.types]] gives arch the prefix ARCH_.",
+      "select": { "$ref": "#/$defs/type-arch" },
+      "validate": { "local": { "properties": { "id": { "pattern": "^ARCH_" } } } }
+    },
+    {
+      "id": "id-prefix-swreq",
+      "severity": "violation",
+      "message": "DECLARED: [[needs.types]] gives swreq the prefix SWREQ_.",
+      "select": { "$ref": "#/$defs/type-swreq" },
+      "validate": { "local": { "properties": { "id": { "pattern": "^SWREQ_" } } } }
+    },
+    {
+      "id": "id-prefix-impl",
+      "severity": "violation",
+      "message": "DECLARED: [[needs.types]] gives impl the prefix IMPL_.",
+      "select": { "$ref": "#/$defs/type-impl" },
+      "validate": { "local": { "properties": { "id": { "pattern": "^IMPL_" } } } }
+    },
+    {
+      "id": "id-prefix-test",
+      "severity": "violation",
+      "message": "DECLARED: [[needs.types]] gives test the prefix TEST_.",
+      "select": { "$ref": "#/$defs/type-test" },
+      "validate": { "local": { "properties": { "id": { "pattern": "^TEST_" } } } }
+    },
+    {
+      "id": "id-prefix-test_result",
+      "severity": "violation",
+      "message": "DECLARED: [[needs.types]] gives test_result the prefix TRES_.",
+      "select": { "properties": { "type": { "const": "test_result" } } },
+      "validate": { "local": { "properties": { "id": { "pattern": "^TRES_" } } } }
+    },
+    {
+      "id": "id-prefix-risk",
+      "severity": "violation",
+      "message": "DECLARED: [[needs.types]] gives risk the prefix RISK_.",
+      "select": { "properties": { "type": { "const": "risk" } } },
+      "validate": { "local": { "properties": { "id": { "pattern": "^RISK_" } } } }
+    },
+    {
+      "id": "id-prefix-decision",
+      "severity": "violation",
+      "message": "DECLARED: [[needs.types]] gives decision the prefix DEC_.",
+      "select": { "properties": { "type": { "const": "decision" } } },
+      "validate": { "local": { "properties": { "id": { "pattern": "^DEC_" } } } }
+    },
+    {
+      "id": "id-prefix-gap",
+      "severity": "violation",
+      "message": "DECLARED: [[needs.types]] gives gap the prefix GAP_.",
+      "select": { "properties": { "type": { "const": "gap" } } },
+      "validate": { "local": { "properties": { "id": { "pattern": "^GAP_" } } } }
+    },
+
+    {
+      "id": "trace-req-traces_to",
+      "severity": "violation",
+      "message": "DECLARED (stage `reqs`, trace link=traces_to min=1 up=user_story): every req must trace up to a user_story. OBSERVED 19/19.",
+      "select": { "$ref": "#/$defs/type-req" },
+      "validate": {
+        "local": {
+          "properties": { "traces_to": { "minItems": 1 } },
+          "required": ["traces_to"]
+        },
+        "network": {
+          "traces_to": { "items": { "local": { "$ref": "#/$defs/type-user_story" } } }
+        }
+      }
+    },
+    {
+      "id": "trace-arch-satisfies",
+      "severity": "violation",
+      "message": "DECLARED (stage `archs`, trace link=satisfies min=1 up=req): every arch must satisfy at least one req. OBSERVED 14/14, fan-out 1..4 -- the upper end is left unbounded, an observed maximum is not a rule.",
+      "select": { "$ref": "#/$defs/type-arch" },
+      "validate": {
+        "local": {
+          "properties": { "satisfies": { "minItems": 1 } },
+          "required": ["satisfies"]
+        },
+        "network": {
+          "satisfies": { "items": { "local": { "$ref": "#/$defs/type-req" } } }
+        }
+      }
+    },
+    {
+      "id": "trace-swreq-refines",
+      "severity": "violation",
+      "message": "DECLARED (stage `swreqs`, trace link=refines min=1 up=arch): every swreq must refine an arch. OBSERVED 23/23.",
+      "select": { "$ref": "#/$defs/type-swreq" },
+      "validate": {
+        "local": {
+          "properties": { "refines": { "minItems": 1 } },
+          "required": ["refines"]
+        },
+        "network": {
+          "refines": { "items": { "local": { "$ref": "#/$defs/type-arch" } } }
+        }
+      }
+    },
+    {
+      "id": "trace-impl-implements",
+      "severity": "violation",
+      "message": "DECLARED (stage `code`, trace link=implements min=1 up=swreq): every impl marker must implement a swreq. OBSERVED 23/23.",
+      "select": { "$ref": "#/$defs/type-impl" },
+      "validate": {
+        "local": {
+          "properties": { "implements": { "minItems": 1 } },
+          "required": ["implements"]
+        },
+        "network": {
+          "implements": { "items": { "local": { "$ref": "#/$defs/type-swreq" } } }
+        }
+      }
+    },
+    {
+      "id": "trace-test-verifies",
+      "severity": "violation",
+      "message": "DECLARED (stage `tests`, trace link=verifies min=1 up=swreq): every test marker must verify a swreq. OBSERVED 50/50.",
+      "select": { "$ref": "#/$defs/type-test" },
+      "validate": {
+        "local": {
+          "properties": { "verifies": { "minItems": 1 } },
+          "required": ["verifies"]
+        },
+        "network": {
+          "verifies": { "items": { "local": { "$ref": "#/$defs/type-swreq" } } }
+        }
+      }
+    },
+    {
+      "id": "trace-test_result-results_for",
+      "severity": "violation",
+      "message": "DECLARED (stage `test_results`, trace link=results_for min=1 up=test) plus a STRUCTURAL upper bound: one recorded outcome belongs to exactly one test case in exactly one run, so a second target would make the evidence unattributable. Both bounds are violations, so they share one rule. OBSERVED 50/50, all exactly 1.",
+      "select": { "properties": { "type": { "const": "test_result" } } },
+      "validate": {
+        "local": {
+          "properties": { "results_for": { "minItems": 1, "maxItems": 1 } },
+          "required": ["results_for"]
+        },
+        "network": {
+          "results_for": { "items": { "local": { "$ref": "#/$defs/type-test" } } }
+        }
+      }
+    },
+    {
+      "id": "trace-risk-mitigates",
+      "severity": "violation",
+      "message": "DECLARED (stage `risks`, trace link=mitigates min=1 up=req): every risk must bear on at least one req. OBSERVED 5/5, fan-out 1..2, upper end left unbounded.",
+      "select": { "properties": { "type": { "const": "risk" } } },
+      "validate": {
+        "local": {
+          "properties": { "mitigates": { "minItems": 1 } },
+          "required": ["mitigates"]
+        },
+        "network": {
+          "mitigates": { "items": { "local": { "$ref": "#/$defs/type-req" } } }
+        }
+      }
+    },
+    {
+      "id": "trace-decision-affects",
+      "severity": "violation",
+      "message": "DECLARED (stage `decisions`, trace link=affects min=1 up=arch): every decision must constrain at least one arch. OBSERVED 5/5, fan-out 1..2, upper end left unbounded.",
+      "select": { "properties": { "type": { "const": "decision" } } },
+      "validate": {
+        "local": {
+          "properties": { "affects": { "minItems": 1 } },
+          "required": ["affects"]
+        },
+        "network": {
+          "affects": { "items": { "local": { "$ref": "#/$defs/type-arch" } } }
+        }
+      }
+    },
+    {
+      "id": "trace-gap-gap_for",
+      "severity": "violation",
+      "message": "OBSERVED 1/1: an imported gap must attribute itself to exactly one need. No `items` type test, because a gap can legitimately be raised against any type. `gap_for` is deliberately named by no stage trace edge -- an obligation to carry a gap would make a clean graph fail the gap gate -- so this rule only checks the shape the importer writes.",
+      "select": { "properties": { "type": { "const": "gap" } } },
+      "validate": {
+        "local": {
+          "properties": { "gap_for": { "minItems": 1, "maxItems": 1 } },
+          "required": ["gap_for"]
+        }
+      }
+    },
+
+    {
+      "id": "coverage-user_story-traces_to-back",
+      "severity": "violation",
+      "message": "DECLARED (stage `reqs`, direction=both): every user_story must be decomposed into at least one req. OBSERVED 4/4, fan-in 1..7.",
+      "select": { "$ref": "#/$defs/type-user_story" },
+      "validate": {
+        "network_back": {
+          "traces_to": {
+            "contains": { "local": { "$ref": "#/$defs/type-req" } },
+            "minContains": 1
+          }
+        }
+      }
+    },
+    {
+      "id": "coverage-arch-refines-back",
+      "severity": "violation",
+      "message": "DECLARED (stage `swreqs`, direction=both): every arch must be refined by at least one swreq, so no component is left without stated behaviour. OBSERVED 14/14, fan-in 1..4.",
+      "select": { "$ref": "#/$defs/type-arch" },
+      "validate": {
+        "network_back": {
+          "refines": {
+            "contains": { "local": { "$ref": "#/$defs/type-swreq" } },
+            "minContains": 1
+          }
+        }
+      }
+    },
+    {
+      "id": "coverage-swreq-implements-back",
+      "severity": "violation",
+      "message": "DECLARED (stage `code`, direction=both): every swreq must be implemented. OBSERVED 23/23, exactly one impl each.",
+      "select": { "$ref": "#/$defs/type-swreq" },
+      "validate": {
+        "network_back": {
+          "implements": {
+            "contains": { "local": { "$ref": "#/$defs/type-impl" } },
+            "minContains": 1
+          }
+        }
+      }
+    },
+    {
+      "id": "coverage-swreq-verifies-back",
+      "severity": "violation",
+      "message": "DECLARED (stage `tests`, direction=both): every swreq must be verified. OBSERVED 23/23, fan-in 1..3.",
+      "select": { "$ref": "#/$defs/type-swreq" },
+      "validate": {
+        "network_back": {
+          "verifies": {
+            "contains": { "local": { "$ref": "#/$defs/type-test" } },
+            "minContains": 1
+          }
+        }
+      }
+    },
+    {
+      "id": "coverage-req-satisfies-back",
+      "severity": "warning",
+      "message": "DECLARED (stage `archs`, direction=both) but NOT YET MET: every req should be satisfied by at least one arch. OBSERVED 18/19 -- REQ_CELL_BALANCING_WINDOW has none, because the cell-balancing stream has no architecture.rst yet. The gap gate already reports exactly this as GAP_REQ_CELL_BALANCING_WINDOW_NO_SATISFIES_BACK. Held at `warning` and NOT carved out by id: a carve-out would need `not` in `select`, which sphinx-needs rejects, and an id-free carve-out would silently stop checking whole streams. Because EVERY severity reaches Sphinx as a warning or error, conf.py suppresses this one subtype for the `-W` ubtrace publish -- see the `suppress_warnings` comment there. PROMOTE TO `violation` and drop that suppression once the cell-balancing stream reaches the archs stage.",
+      "select": { "$ref": "#/$defs/type-req" },
+      "validate": {
+        "network_back": {
+          "satisfies": {
+            "contains": { "local": { "$ref": "#/$defs/type-arch" } },
+            "minContains": 1
+          }
+        }
+      }
+    },
+
+    {
+      "id": "single-parent-req-traces_to",
+      "severity": "warning",
+      "message": "OBSERVED 19/19: a req traces to exactly one user_story. Convention, not declared config -- a req that genuinely serves two stories is a design smell worth a second look, not an error. Kept separate from trace-req-traces_to because that rule's lower bound is declared and this upper bound is not.",
+      "select": { "$ref": "#/$defs/type-req" },
+      "validate": { "local": { "properties": { "traces_to": { "maxItems": 1 } } } }
+    },
+    {
+      "id": "single-parent-swreq-refines",
+      "severity": "warning",
+      "message": "OBSERVED 23/23, and stated in ubproject.toml: a swreq refines THE arch element whose behaviour it pins down -- singular. Two parents means the behaviour belongs to neither component cleanly.",
+      "select": { "$ref": "#/$defs/type-swreq" },
+      "validate": { "local": { "properties": { "refines": { "maxItems": 1 } } } }
+    },
+    {
+      "id": "single-parent-impl-implements",
+      "severity": "warning",
+      "message": "OBSERVED 23/23: one impl marker realises one swreq. The one-line marker grammar accepts a list, so this is a convention the grammar does not enforce.",
+      "select": { "$ref": "#/$defs/type-impl" },
+      "validate": { "local": { "properties": { "implements": { "maxItems": 1 } } } }
+    },
+    {
+      "id": "single-parent-test-verifies",
+      "severity": "warning",
+      "message": "OBSERVED 50/50: one test marker covers one swreq. A test asserting against two requirements at once is hard to attribute when it fails.",
+      "select": { "$ref": "#/$defs/type-test" },
+      "validate": { "local": { "properties": { "verifies": { "maxItems": 1 } } } }
+    },
+
+    {
+      "id": "field-test_result-outcome",
+      "severity": "violation",
+      "message": "DECLARED: the `outcome` extra option is documented as `passed, failed, error or skipped` -- the four states a JUnit <testcase> can report. OBSERVED passed=48, failed=2.",
+      "select": { "properties": { "type": { "const": "test_result" } } },
+      "validate": {
+        "local": {
+          "properties": {
+            "outcome": { "enum": ["passed", "failed", "error", "skipped"] }
+          },
+          "required": ["outcome"]
+        }
+      }
+    },
+    {
+      "id": "field-test_result-run-evidence",
+      "severity": "violation",
+      "message": "OBSERVED 50/50 non-empty: tools/import_test_results.py stamps runtime_s, test_run_label and chain_reqs on every generated result. Extra options are global in ubCode and default to \"\", so this checks they were actually populated, not merely present. An empty one means the importer half-wrote the need.",
+      "select": { "properties": { "type": { "const": "test_result" } } },
+      "validate": {
+        "local": {
+          "properties": {
+            "runtime_s": { "minLength": 1 },
+            "test_run_label": { "minLength": 1 },
+            "chain_reqs": { "minLength": 1 }
+          },
+          "required": ["runtime_s", "test_run_label", "chain_reqs"]
+        }
+      }
+    },
+    {
+      "id": "field-test_result-run-label-not-iso",
+      "severity": "violation",
+      "message": "LOAD-BEARING for the ubTrace export: test_run_label must be `YYYY-MM-DD HH:MM:SS...` with a SPACE, never the ISO-8601 `T`. ubTrace indexes into Elasticsearch with date detection on; an ISO value types the field as `date` index-wide, and then every need carrying \"\" is rejected -- and ES mappings are immutable, so only deleting the index repairs it. Stated as a POSITIVE pattern because sphinx-needs rejects `not` inside a field constraint (ubCode accepts it, so the mismatch surfaces only in sphinx-build, not in `ubc check`). Observed value: `2026-08-13 15:35:36 +02:00`. See the field's comment in ubproject.toml and `_run_label` in tools/import_test_results.py.",
+      "select": { "properties": { "type": { "const": "test_result" } } },
+      "validate": {
+        "local": {
+          "properties": {
+            "test_run_label": {
+              "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "field-gap-attribution",
+      "severity": "violation",
+      "message": "OBSERVED 1/1 non-empty: tools/import_gaps.py stamps gap_category, gap_need_id and gap_need_type on every generated gap. gap_need_id duplicates the gap_for link on purpose -- a report template cannot walk links, so the field is the half a Jinja report can read.",
+      "select": { "properties": { "type": { "const": "gap" } } },
+      "validate": {
+        "local": {
+          "properties": {
+            "gap_category": { "minLength": 1 },
+            "gap_need_id": { "minLength": 1 },
+            "gap_need_type": { "minLength": 1 }
+          },
+          "required": ["gap_category", "gap_need_id", "gap_need_type"]
+        }
+      }
+    },
+    {
+      "id": "status-present-on-spec-needs",
+      "severity": "warning",
+      "message": "OBSERVED: all 70 authored spec needs (user_story, req, arch, swreq, risk, decision) carry a status; the four derived types (impl, test, test_result, gap) carry none, correctly -- their state is the source file or the import. No status VOCABULARY is declared anywhere in ubproject.toml, so this rule deliberately checks presence only. Add an `enum` here once the project settles on a lifecycle.",
+      "select": { "$ref": "#/$defs/select-spec-need" },
+      "validate": {
+        "local": {
+          "properties": { "status": { "minLength": 1 } },
+          "required": ["status"]
+        }
+      }
+    }
+  ]
+}
