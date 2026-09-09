@@ -84,11 +84,14 @@ schema_definitions_from_json = "schemas.json"
 
 # The GLOBAL enum carries the empty string because the field is global: it is
 # written as "" on the 144 needs that are not test_results (see the note above),
-# and a global schema sees all of them. Dropping "" is the per-type job, done by
-# `field-test_result-outcome` in schemas.json — which is the whole division of
-# labour the two files follow: uniform vocabulary here, type-specific narrowing
-# there. The four words are not a guess: they are exactly OUTCOME_BY_TAG plus the
-# `passed` default in tools/import_test_results.py.
+# and a global schema sees all of them. Dropping "" is the per-type job, and
+# `field-test_result-run-evidence` in schemas.json does it with `minLength: 1` —
+# NOT by listing the four words a second time. Admitting "" here and excluding it
+# there yields exactly `passed | failed | error | skipped` on a test_result, so the
+# vocabulary exists in ONE place and there is no second copy to drift.
+#
+# The four words are not a guess: they are exactly OUTCOME_BY_TAG plus the `passed`
+# default in tools/import_test_results.py.
 [needs.fields.outcome]
 description = "Recorded outcome of one test case in one run: passed, failed, error or skipped."
 default = ""

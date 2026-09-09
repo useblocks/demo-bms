@@ -17,30 +17,66 @@
         "              recorded at `warning` so it guides authors without hard-failing a",
         "              build on a convention the project never committed to.",
         "",
-        "The census (194 needs / 194 links):",
+        "FORWARD IS A VIOLATION, BACKWARD IS A WARNING -- read this before changing any",
+        "severity. Both directions are declared by the same `direction = \"both\"` trace",
+        "edge, so it is tempting to give them the same weight. They are not the same:",
+        "",
+        "  An OUTGOING obligation is owed by the need being authored, at the moment it is",
+        "  authored. A req written without `traces_to` is wrong on the spot, and the",
+        "  author can fix it without touching anything else. `violation`.",
+        "",
+        "  An INCOMING obligation is owed by a LATER STAGE. Every backward rule below",
+        "  spans a `depends_on` boundary -- arch <- refines is owed by `swreqs`, which by",
+        "  construction runs after `archs` -- so it is UNMET BY CONSTRUCTION for as long",
+        "  as the downstream stage is pending. That is not a defect in the graph, it is",
+        "  the workflow in motion. `warning`.",
+        "",
+        "This was learned the hard way: these five started as violations because a census",
+        "of a COMPLETE graph found them all satisfied. The moment three arch elements were",
+        "authored for a stream whose swreqs did not exist yet, `coverage-arch-refines-back`",
+        "failed the build on three needs that were exactly where the workflow expected them",
+        "to be. A snapshot of a finished V says nothing about the states it passes through.",
+        "",
+        "Nothing is lost by the demotion. Incomplete coverage is `ubc agent gaps`'s whole",
+        "job: it reports each one as a tracked `gap` need and drives `ubc agent next` to",
+        "the stage that owes the work. This file re-reports them so they surface in an",
+        "editor too; it should not also be the thing that fails a publish.",
+        "",
+        "The census, AS A SNAPSHOT and nothing more (194 needs / 194 links):",
         "  user_story 4   req 19   arch 14   swreq 23   impl 23",
         "  test 50        test_result 50    risk 5    decision 5   gap 1",
         "Every outgoing trace link resolved to exactly one target type, and every",
-        "non-root need carried at least one. Backward coverage was complete on every",
-        "gated leg except `req <- satisfies`: 18 of 19 (REQ_CELL_BALANCING_WINDOW has no",
-        "arch, because the cell-balancing stream has no architecture.rst yet). That one",
-        "rule is therefore `warning`, not `violation` -- see `coverage-req-satisfies-back`.",
+        "non-root need carried at least one -- those are the facts the `violation` rules",
+        "rest on, and they are properties of the ONTOLOGY, true of any state the graph",
+        "can be in. Backward coverage was complete on every gated leg except",
+        "`req <- satisfies` (18 of 19). Treat that last number as expired the moment you",
+        "read it: it describes one stream mid-workflow, it has already changed once, and",
+        "NO SEVERITY IN THIS FILE DEPENDS ON IT -- see the note above for why every",
+        "backward rule is a warning regardless of how complete coverage happens to be.",
         "",
         "THIS FILE vs ubproject.toml. A field is GLOBAL in ubCode: declared once,",
         "present on every type, left at its `default` on the types that do not use it.",
         "So a `schema` on `[needs.fields.<name>]` states what is true of the field",
         "EVERYWHERE -- which for the imported fields means \"\" must be admissible, since",
         "that is what the ~190 needs outside the owning type carry. Narrowing a field on",
-        "the one type that owns it is THIS file's job, keyed by `select`. The two never",
-        "repeat each other:",
-        "  outcome     ubproject.toml: \"\" | passed | failed | error | skipped",
-        "              schemas.json:   exactly those four, on test_result only",
-        "  status      ubproject.toml: draft | review | approved (the vocabulary)",
-        "              schemas.json:   WHICH TYPES OWE ONE (the six authored types)",
-        "  gap_*       ubproject.toml: shape and vocabulary, except gap_category",
-        "              schemas.json:   gap_category at `warning` -- see that rule",
-        "Put a constraint here only when it is type-specific. If it holds for every",
-        "need, it belongs on the field.",
+        "the one type that owns it is THIS file's job, keyed by `select`.",
+        "",
+        "A VOCABULARY IS WRITTEN EXACTLY ONCE, and the trick that keeps it that way is",
+        "worth knowing before adding a rule. A global enum has to admit \"\", so it reads",
+        "`\"\" | <the valid values>`; excluding \"\" on the owning type therefore yields the",
+        "valid values with no second copy of the list. So the per-type rule says",
+        "`minLength: 1`, NOT the enum again:",
+        "  outcome         field: \"\" | passed | failed | error | skipped",
+        "                  here:  minLength 1  ->  exactly those four on test_result",
+        "  test_run_label  field: \"\" | the non-ISO timestamp form",
+        "                  here:  minLength 1  ->  a real timestamp on test_result",
+        "  status          field: draft | review | approved",
+        "                  here:  WHICH TYPES OWE ONE -- the six authored types",
+        "  gap_category    field: nothing (see field-gap-category for why)",
+        "                  here:  the seven categories, at `warning`",
+        "If you find yourself pasting an enum from ubproject.toml into this file, stop:",
+        "the answer is almost always `minLength: 1`. Put a constraint here only when it",
+        "is type-specific; if it holds for every need, it belongs on the field.",
         "",
         "WHICH CONSTRUCT DOES WHAT -- each check is written once, in the one place that",
         "can express it, with no overlap between them:",
@@ -310,8 +346,8 @@
 
     {
       "id": "coverage-user_story-traces_to-back",
-      "severity": "violation",
-      "message": "DECLARED (stage `reqs`, direction=both): every user_story must be decomposed into at least one req. OBSERVED 4/4, fan-in 1..7.",
+      "severity": "warning",
+      "message": "DECLARED (stage `reqs`, direction=both): every user_story must be decomposed into at least one req. OBSERVED 4/4, fan-in 1..7. BACKWARD, so `warning`, not `violation`: this is owed by a later stage and is unmet by construction while that stage is pending -- see the FORWARD IS A VIOLATION, BACKWARD IS A WARNING note in $defs._readme.",
       "select": { "$ref": "#/$defs/type-user_story" },
       "validate": {
         "network_back": {
@@ -324,8 +360,8 @@
     },
     {
       "id": "coverage-arch-refines-back",
-      "severity": "violation",
-      "message": "DECLARED (stage `swreqs`, direction=both): every arch must be refined by at least one swreq, so no component is left without stated behaviour. OBSERVED 14/14, fan-in 1..4.",
+      "severity": "warning",
+      "message": "DECLARED (stage `swreqs`, direction=both): every arch must be refined by at least one swreq, so no component is left without stated behaviour. OBSERVED 14/14, fan-in 1..4. BACKWARD, so `warning`, not `violation`: this is owed by a later stage and is unmet by construction while that stage is pending -- see the FORWARD IS A VIOLATION, BACKWARD IS A WARNING note in $defs._readme.",
       "select": { "$ref": "#/$defs/type-arch" },
       "validate": {
         "network_back": {
@@ -338,8 +374,8 @@
     },
     {
       "id": "coverage-swreq-implements-back",
-      "severity": "violation",
-      "message": "DECLARED (stage `code`, direction=both): every swreq must be implemented. OBSERVED 23/23, exactly one impl each.",
+      "severity": "warning",
+      "message": "DECLARED (stage `code`, direction=both): every swreq must be implemented. OBSERVED 23/23, exactly one impl each. BACKWARD, so `warning`, not `violation`: this is owed by a later stage and is unmet by construction while that stage is pending -- see the FORWARD IS A VIOLATION, BACKWARD IS A WARNING note in $defs._readme.",
       "select": { "$ref": "#/$defs/type-swreq" },
       "validate": {
         "network_back": {
@@ -352,8 +388,8 @@
     },
     {
       "id": "coverage-swreq-verifies-back",
-      "severity": "violation",
-      "message": "DECLARED (stage `tests`, direction=both): every swreq must be verified. OBSERVED 23/23, fan-in 1..3.",
+      "severity": "warning",
+      "message": "DECLARED (stage `tests`, direction=both): every swreq must be verified. OBSERVED 23/23, fan-in 1..3. BACKWARD, so `warning`, not `violation`: this is owed by a later stage and is unmet by construction while that stage is pending -- see the FORWARD IS A VIOLATION, BACKWARD IS A WARNING note in $defs._readme.",
       "select": { "$ref": "#/$defs/type-swreq" },
       "validate": {
         "network_back": {
@@ -367,7 +403,7 @@
     {
       "id": "coverage-req-satisfies-back",
       "severity": "warning",
-      "message": "DECLARED (stage `archs`, direction=both) but NOT YET MET: every req should be satisfied by at least one arch. OBSERVED 18/19 -- REQ_CELL_BALANCING_WINDOW has none, because the cell-balancing stream has no architecture.rst yet. The gap gate already reports exactly this as GAP_REQ_CELL_BALANCING_WINDOW_NO_SATISFIES_BACK. Held at `warning` and NOT carved out by id: a carve-out would need `not` in `select`, which sphinx-needs rejects, and an id-free carve-out would silently stop checking whole streams. Because EVERY severity reaches Sphinx as a warning or error, conf.py suppresses this one subtype for the `-W` ubtrace publish -- see the `suppress_warnings` comment there. PROMOTE TO `violation` and drop that suppression once the cell-balancing stream reaches the archs stage.",
+      "message": "DECLARED (stage `archs`, direction=both): every req should be satisfied by at least one arch. BACKWARD, so `warning`, not `violation`: this is owed by the `archs` stage, which by construction runs after `reqs`, so a req authored before its architecture exists is exactly where the workflow expects it to be -- see the FORWARD IS A VIOLATION, BACKWARD IS A WARNING note in $defs._readme. The finding is `ubc agent gaps`'s to own; it reports it as a tracked gap need and points `ubc agent next` at the stage that owes the work. Not carved out by id either: a carve-out would need `not` in `select`, which sphinx-needs rejects, and an id-free carve-out would silently stop checking whole streams.",
       "select": { "$ref": "#/$defs/type-req" },
       "validate": {
         "network_back": {
@@ -409,32 +445,19 @@
     },
 
     {
-      "id": "field-test_result-outcome",
-      "severity": "violation",
-      "message": "DECLARED: the `outcome` extra option is documented as `passed, failed, error or skipped` -- the four states a JUnit <testcase> can report. OBSERVED passed=48, failed=2.",
-      "select": { "properties": { "type": { "const": "test_result" } } },
-      "validate": {
-        "local": {
-          "properties": {
-            "outcome": { "enum": ["passed", "failed", "error", "skipped"] }
-          },
-          "required": ["outcome"]
-        }
-      }
-    },
-    {
       "id": "field-test_result-run-evidence",
       "severity": "violation",
-      "message": "OBSERVED 50/50 non-empty: tools/import_test_results.py stamps runtime_s, test_run_label and chain_reqs on every generated result. Fields are global in ubCode and default to \"\", so this checks they were actually POPULATED, not merely present -- an empty one means the importer half-wrote the need. Note what this buys on test_run_label: `[needs.fields.test_run_label]` globally admits `\"\" | YYYY-MM-DD HH:MM:SS...`, so non-empty here means the timestamp form, and the ES `T` guard needs no second rule of its own.",
+      "message": "OBSERVED 50/50 non-empty: tools/import_test_results.py stamps outcome, runtime_s, test_run_label and chain_reqs on every generated result. Fields are global in ubCode and default to \"\", so this checks they were actually POPULATED, not merely present -- an empty one means the importer half-wrote the need. NOTE THAT NON-EMPTY IS ALL THIS RULE HAS TO SAY, even for the two fields that have a vocabulary: `[needs.fields]` already admits exactly `\"\" | <the valid values>` for both, so excluding \"\" here yields the valid values without this file restating them. outcome becomes exactly `passed | failed | error | skipped`, and test_run_label exactly the non-ISO timestamp form. Writing the enum out again would be a second copy to keep in sync, and the vocabulary belongs on the field because it holds for every need, not just this type.",
       "select": { "properties": { "type": { "const": "test_result" } } },
       "validate": {
         "local": {
           "properties": {
+            "outcome": { "minLength": 1 },
             "runtime_s": { "minLength": 1 },
             "test_run_label": { "minLength": 1 },
             "chain_reqs": { "minLength": 1 }
           },
-          "required": ["runtime_s", "test_run_label", "chain_reqs"]
+          "required": ["outcome", "runtime_s", "test_run_label", "chain_reqs"]
         }
       }
     },

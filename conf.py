@@ -107,22 +107,32 @@ needs_show_link_title = False
 # the warning is gone at the source rather than hidden. Verified by building with
 # only the entry below suppressed: no deprecation warning appears.
 #
-# The single remaining entry is the ONE ontology-schema rule that currently fires:
-# `coverage-req-satisfies-back` in schemas.json reports that
-# REQ_CELL_BALANCING_WINDOW has no arch satisfying it, because the cell-balancing
-# stream has no `architecture.rst` yet. Every schema severity reaches Sphinx as a
-# warning or an error (info and warning -> warning, violation -> error), so under
-# `-W --keep-going` there is no severity at which a firing rule leaves the publish
-# green — suppressing the subtype is the only lever, and it is deliberately the
-# narrow `sn_schema_warning.network_contains_too_few` rather than all of
-# `sn_schema_warning`.
+# The single remaining entry is what keeps INCOMPLETE COVERAGE from failing the
+# publish, and it is a standing decision rather than a workaround for one need.
 #
-# Nothing is lost by suppressing it HERE: the finding is the gap gate's own, already
-# tracked as GAP_REQ_CELL_BALANCING_WINDOW_NO_SATISFIES_BACK and reported by
-# `ubc agent gaps`, and `ubc check` / `ubc schema validate` still print the schema
-# warning because they read ubproject.toml, not this file. Only the export build is
-# quiet about it. Drop this entry — and promote the rule to `violation` — once that
-# stream reaches the archs stage.
+# The five `coverage-*-back` rules in schemas.json each assert an INCOMING link, and
+# every one of them is owed by a stage that runs LATER than the stage producing the
+# need — `arch <- refines` is owed by `swreqs`, which `depends_on = ["archs"]`. So
+# each is unmet by construction for as long as the downstream stage is pending, which
+# is the normal condition of a V-model project in motion, not a defect. They are all
+# `warning` for that reason; this entry is the second half of the same decision.
+#
+# It is needed because `-W` does not care about our severities: every schema severity
+# reaches Sphinx as a warning or an error (info and warning -> warning, violation ->
+# error), so under `-W --keep-going` there is NO severity at which a firing rule
+# leaves the publish green. Suppressing the subtype is the only lever, and it is
+# deliberately the narrow `sn_schema_warning.network_contains_too_few` — the one
+# subtype those five rules emit — rather than all of `sn_schema_warning`.
+#
+# Nothing is lost. Incomplete coverage is `ubc agent gaps`'s job: it reports each as a
+# tracked `gap` need and drives `ubc agent next` to the stage that owes the work, and
+# `ubc check` / `ubc schema validate` still print the schema warning because they read
+# ubproject.toml, not this file. Only the export build is quiet, and the export should
+# not fail because a stream is halfway down the V.
+#
+# Do NOT drop this entry when coverage happens to be complete. It will be incomplete
+# again on the next stream, and a publish that breaks whenever someone authors an arch
+# before its swreqs is a publish nobody can rely on.
 suppress_warnings = ["sn_schema_warning.network_contains_too_few"]
 
 # -- Mermaid --------------------------------------------------------------------
