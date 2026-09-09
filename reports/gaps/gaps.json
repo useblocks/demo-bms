@@ -7,14 +7,23 @@
       "have": 0,
       "need": 1,
       "category": "trace_backward"
+    },
+    {
+      "id": "REQ_CELL_BALANCING_WINDOW",
+      "type": "req",
+      "link": "review",
+      "have": 0,
+      "need": 1,
+      "category": "review"
     }
   ],
   "by_category": {
-    "trace_backward": 1
+    "trace_backward": 1,
+    "review": 1
   },
   "summary": {
     "total_needs": 194,
-    "total_gaps": 1
+    "total_gaps": 2
   },
   "ok": false
 }
