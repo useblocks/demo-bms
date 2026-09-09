@@ -243,6 +243,15 @@ and put it on `PATH`:
 | `import_gaps.py --check` / `import_test_results.py --check` | yes | the generated RST still matches its snapshot |
 | `ubc agent trace` / `verdict-check` | **no** | reported into the log only |
 
+Every run writes a **job summary** to the run page —
+[tools/gate_summary.py](tools/gate_summary.py) renders the gate results, the open
+structural gaps, the full trace matrix and the verdict state as markdown tables, so
+what the gates found is one click from the commit rather than buried in step logs.
+It runs with `if: always()` and is written so that it cannot itself fail: a summary
+is worth most exactly when a gate has failed, which is also when its inputs are
+likely to be missing or half-written, so every unreadable input renders as a note
+instead of an exception.
+
 **It needs a ubCode license.** `ubc` is commercial software and this repository is
 private, so the free open-source mode does not apply — ubCode grants that only to
 projects under an [OSI licence](https://opensource.org/licenses) in a *publicly

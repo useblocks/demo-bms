@@ -127,12 +127,14 @@ jobs:
           python-version-file: ".python-version"
 
       - name: Parse the sources
+        id: parse
         # The cheapest real gate there is: `ubc check` reports RST problems and exits
         # non-zero on an error. Nothing in this pipeline validated the specs as specs
         # before — the Sphinx build only proved they render.
         run: ubc check
 
       - name: The gap snapshot still matches reality
+        id: snapshot
         # `reports/gaps/gaps.json` is a COMMITTED snapshot (see the README). This is
         # the step that stops it drifting: re-run the gate here and require the output
         # to be byte-identical to what is committed.
@@ -165,6 +167,7 @@ jobs:
           echo "gap snapshot is current"
 
       - name: The generated specs still match their snapshots
+        id: generated
         # The second link of both chains. These are the same `--check` modes the
         # README documents; they were never wired into CI.
         run: |
@@ -177,12 +180,39 @@ jobs:
         # verdicts. `ubc agent trace` exits non-zero on that deliberate gap, and
         # `ubc agent verdict-check` goes red the moment someone edits a requirement
         # during a demo — which is the behaviour the README asks people to show off,
-        # not a reason to break main. The numbers are worth having in the log; the
-        # exit codes are not worth gating on.
+        # not a reason to break main. The numbers are worth having; the exit codes are
+        # not worth gating on.
+        #
+        # `tee` rather than a plain redirect: the JSON feeds the job summary below AND
+        # stays in the step log, so the run page and the log tell the same story. The
+        # trailing `|| true` swallows the expected non-zero exits — `continue-on-error`
+        # would too, but only after marking the step failed, and this step's outcome is
+        # deliberately NOT one of the results the summary reports.
         continue-on-error: true
         run: |
-          ubc agent trace
-          ubc agent verdict-check
+          set -uo pipefail
+          ubc agent trace | tee "$RUNNER_TEMP/trace.json" || true
+          ubc agent verdict-check | tee "$RUNNER_TEMP/verdicts.json" || true
+
+      - name: Job summary
+        # `always()`, because a summary is worth most exactly when a gate failed — and
+        # tools/gate_summary.py is written so that it cannot itself fail: every input is
+        # optional and every unreadable one renders as a note.
+        #
+        # The three `--result` labels are the BLOCKING gates only. The step above is
+        # left out on purpose: it exits non-zero by design here, and listing it would
+        # put a red row in the summary for the one thing that is meant to be red.
+        if: always()
+        run: |
+          python3 tools/gate_summary.py \
+            --ubc-version "$UBC_VERSION" \
+            --result "Sources parse=${{ steps.parse.outcome }}" \
+            --result "Gap snapshot matches reality=${{ steps.snapshot.outcome }}" \
+            --result "Generated specs match snapshots=${{ steps.generated.outcome }}" \
+            --gaps "$RUNNER_TEMP/gaps.json" \
+            --trace "$RUNNER_TEMP/trace.json" \
+            --verdicts "$RUNNER_TEMP/verdicts.json" \
+            >> "$GITHUB_STEP_SUMMARY"
 
   publish:
     name: Publish ubTrace artefact
