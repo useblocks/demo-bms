@@ -19,4 +19,4 @@ Cell Balancing — Requirements
    the end of a charge session, measured while the pack is at rest and every
    cell temperature is between 15 °C and 45 °C. The spread is evaluated on
    settled cell voltages, so the 8 hour window includes the time the cells need
-   to relax after charging.
+   to relax after charging. Change this requirement to see if the gates catch the change.
