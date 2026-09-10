@@ -4,10 +4,10 @@ Workflow Gaps
 .. warning::
 
    **Generated file — do not edit by hand.** Written by
-   ``tools/import_gaps.py`` from ``reports/gaps/gaps.json``.
+   ``tools/import_gaps.py`` from ``docs/reports/gaps/gaps.json``.
    Re-generate it with::
 
-      ubc agent gaps > reports/gaps/gaps.json
+      ubc agent gaps > docs/reports/gaps/gaps.json
       python3 tools/import_gaps.py
 
    The report is a **committed snapshot**: the structural gate is not re-run

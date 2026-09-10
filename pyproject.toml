@@ -28,7 +28,7 @@ testpaths = ["tests"]
 # --- ubTRACE EXPORT ------------------------------------------------------------
 # The ubTrace export is a SECOND consumer of the same sources: `ubc build needs`
 # compiles the graph for the CLI and the IDE, and `sphinx-build -b ubtrace`
-# compiles the SAME `specs/*.rst` (plus the two `.. src-trace::` pages that
+# compiles the SAME `docs/specs/**` (plus the two `.. src-trace::` pages that
 # materialise the code-marker needs) into the artefact `upload_ubtrace.sh` ships
 # to team.useblocks.com. Both read their ontology out of `ubproject.toml`, so the
 # need types, links and extra options are declared exactly once.

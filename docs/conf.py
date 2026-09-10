@@ -15,12 +15,17 @@ them from there — ``needs_from_toml`` for the needs, ``src_trace_config_from_t
 for the code markers. Changing a type in ``ubproject.toml`` therefore changes
 both consumers, and there is no second copy of the data model to keep in sync.
 
-Build it with the ``ubtrace`` extra (see pyproject.toml)::
+This directory, ``docs/``, is the Sphinx source directory AND the ubCode project
+root (``ubproject.toml`` is here). The code it traces lives beside it, in
+``../src`` and ``../tests``, and finds its way back to this configuration through
+``../src/ubproject.redirect.toml`` and ``../tests/ubproject.redirect.toml``.
+Build from the repository root, with the
+``ubtrace`` extra (see ../pyproject.toml)::
 
-    uv run --extra ubtrace sphinx-build -b ubtrace . _build/ubtrace
+    uv run --extra ubtrace sphinx-build -b ubtrace docs _build/ubtrace
     UBTRACE_INGEST_TOKEN=<token> bash upload_ubtrace.sh
 
-``uv run --extra ubtrace sphinx-build -b html . _build/html`` renders the same
+``uv run --extra ubtrace sphinx-build -b html docs _build/html`` renders the same
 sources as an ordinary site, which is the faster loop while editing.
 """
 
@@ -44,27 +49,15 @@ extensions = [
     "ubt_sphinx",  # the `ubtrace` builder
 ]
 
-# Sphinx builds every `.rst` file it finds under the source directory (this
-# repository root), whether or not it is in a toctree. Everything below is
-# either build output, a virtualenv, or a cache — never a source.
+# Sphinx builds every `.rst` and `.md` file it finds under the source directory,
+# whether or not it is in a toctree. Because the source directory is docs/ and
+# nothing but documentation lives here, the list is the Sphinx default plus the
+# build output and ubc's cache — no virtualenv, no worktrees, no host directories
+# to keep excluding by name as the repository grows.
 exclude_patterns = [
     "_build",
-    ".venv",
+    "reports/_build",  # `ubc report` output; the templates and snapshots beside it are not pages
     ".ub_cache",
-    ".pytest_cache",
-    ".git",
-    ".github",
-    ".agents",
-    ".pharaoh",
-    "reports/_build",
-    # With myst_parser on, every `.md` under the source directory is a page unless
-    # excluded. Documentation Markdown lives under specs/ only; a Markdown file at
-    # the repository root (README.md, presentation.md, ...) is never a page. `*`
-    # does not cross `/` in Sphinx patterns, so this is exactly the root level.
-    # `.claude/` also holds other worktrees' full spec copies.
-    "*.md",
-    ".claude",
-    ".vscode",
     "Thumbs.db",
     ".DS_Store",
 ]
@@ -198,8 +191,9 @@ ubtrace_version = "main"
 
 ubtrace_theme_options = {
     "repo_url": "https://github.com/useblocks/rollout-demo-bms",
-    "edit_uri": "edit/main/",
-    "view_source_uri": "blob/main/",
+    # The sources sit one level down from the repository root.
+    "edit_uri": "edit/main/docs/",
+    "view_source_uri": "blob/main/docs/",
     "logo": {
         "desktop": "_static/bms-logo.svg",
         "mobile": "_static/bms-logo.svg",

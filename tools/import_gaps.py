@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Import a `ubc agent gaps` JSON report into `gap` needs.
 
-The structural gate is NOT re-run on every build. ``reports/gaps/gaps.json`` is a
+The structural gate is NOT re-run on every build. ``docs/reports/gaps/gaps.json`` is a
 committed snapshot of one real ``ubc agent gaps`` run, and this script turns it
 into needs so the gate's findings are part of the graph rather than an
 untraceable file next to it — the same arrangement as the JUnit snapshot on the
@@ -26,8 +26,8 @@ dangling ``gap_for`` link that fails the Sphinx build under ``-W``.
 
 Usage::
 
-    ubc agent gaps > reports/gaps/gaps.json   # refresh the snapshot (exits 1 on gaps)
-    python3 tools/import_gaps.py              # default paths
+    ubc agent gaps > docs/reports/gaps/gaps.json   # refresh the snapshot (exits 1 on gaps)
+    python3 tools/import_gaps.py              # default paths -> docs/specs/_global/gaps.rst
     python3 tools/import_gaps.py --check      # fail if the output is stale
 """
 
@@ -42,10 +42,10 @@ from dataclasses import dataclass
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_REPORT = REPO_ROOT / "reports" / "gaps" / "gaps.json"
-DEFAULT_SPECS_DIR = REPO_ROOT / "specs"
+DEFAULT_REPORT = REPO_ROOT / "docs" / "reports" / "gaps" / "gaps.json"
+DEFAULT_SPECS_DIR = REPO_ROOT / "docs" / "specs"
 DEFAULT_CODE_DIRS = (REPO_ROOT / "src", REPO_ROOT / "tests")
-DEFAULT_OUTPUT = REPO_ROOT / "specs" / "_global" / "gaps.rst"
+DEFAULT_OUTPUT = REPO_ROOT / "docs" / "specs" / "_global" / "gaps.rst"
 
 #: Directive line and `:id:` field as they appear in the spec sources. Parsed
 #: from source rather than from `needs.json` so the import never depends on a
@@ -345,7 +345,7 @@ def main() -> int:
 
     if not args.report.is_file():
         print(f"error: gap report not found: {args.report}", file=sys.stderr)
-        print("hint: ubc agent gaps > reports/gaps/gaps.json", file=sys.stderr)
+        print("hint: ubc agent gaps > docs/reports/gaps/gaps.json", file=sys.stderr)
         return 2
 
     try:

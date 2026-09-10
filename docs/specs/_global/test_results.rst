@@ -4,10 +4,10 @@ Test Results
 .. warning::
 
    **Generated file — do not edit by hand.** Written by
-   ``tools/import_test_results.py`` from ``reports/junit/testresults.xml``.
+   ``tools/import_test_results.py`` from ``docs/reports/junit/testresults.xml``.
    Re-generate it with::
 
-      python3 -m pytest -q --junitxml=reports/junit/testresults.xml
+      python3 -m pytest -q --junitxml=docs/reports/junit/testresults.xml
       python3 tools/import_test_results.py
 
    The report is a **committed snapshot**: the suite is not re-run on every

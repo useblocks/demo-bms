@@ -1,0 +1,8 @@
+# This tree holds code, not documents; its one-line codelinks markers belong to
+# the ubCode project in ../docs. ubc finds a file's configuration by walking UP
+# from the file until it meets a ubproject.toml — from here that walk would end
+# at the repository root, empty. This redirect is the documented answer to that
+# layout (https://ubcode.useblocks.com/configuration/index.html#config-redirect):
+# the walk follows it into ../docs and continues there, for the CLI and for the
+# VS Code extension editing a file under src/.
+path = "../docs"

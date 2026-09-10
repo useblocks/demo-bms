@@ -4,6 +4,16 @@
 name = "bms"
 version = "0.1.0"
 
+# This file is the PROJECT ROOT, and it lives in docs/ on purpose: the source
+# root ubc discovers documents from is the directory holding this file, so with
+# the file here, discovery never leaves docs/. src/, tests/, tools/, reports/ and
+# the host integration directories are siblings of docs/ and are not walked at
+# all — nothing outside docs/ ever has to be excluded by name. Files outside
+# docs/ that ubc still has to read (the codelinks markers in ../src and ../tests)
+# find their way back here through ../src/ubproject.redirect.toml and
+# ../tests/ubproject.redirect.toml. There is deliberately no configuration at
+# the repository root: run ubc in docs/, or name the project (`ubc check docs`,
+# `-p docs` on `ubc agent` verbs, `ubc script --path docs <name>`).
 [source]
 # Skip framework-internal directories so they are not parsed as needs.
 extend_exclude = [".specify"]
@@ -11,11 +21,10 @@ extend_exclude = [".specify"]
 # --- PARSERS: reStructuredText AND Markdown (MyST) ---
 # Declaring parsers switches ubCode into parser mode, where discovery follows
 # each parser's own `include` globs. BOTH must be declared: an `md` table alone
-# would drop `*.rst` discovery. The Markdown include is scoped to `specs/` so
-# README.md, presentation.md, `.claude/**` and `.github/agents/*.md` never parse
-# as documents — the same hygiene conf.py's `exclude_patterns` provides on the
-# Sphinx side. (`*` crosses `/` in these globs, so `specs/*.md` is recursive.)
-# The one Markdown-authored stream is `specs/isolation-monitoring/`.
+# would drop `*.rst` discovery. The Markdown include is scoped to `specs/`, so a
+# stray Markdown note elsewhere under docs/ is never parsed as a document.
+# (`*` crosses `/` in these globs, so `specs/*.md` is recursive.) The one
+# Markdown-authored stream is `specs/isolation-monitoring/`.
 [parse.parsers.rst]
 
 [parse.parsers.md]
@@ -24,7 +33,10 @@ include = ["specs/*.md"]
 
 # --- SCRIPTS (`ubc script <name>`) ---
 # The demo beats as one-liners. A value is split like a shell command line, so
-# the quoted `-c` override travels as one argument.
+# the quoted `-c` override travels as one argument. Scripts run in the project
+# root (docs/), so build output lands in docs/_build/ (gitignored). `uv run`
+# finds ../pyproject.toml by walking up, and `sphinx-build .` here IS the docs
+# tree — the repository root never enters the picture.
 [scripts]
 check = "ubc check"
 schema = "ubc schema validate"
@@ -34,6 +46,10 @@ variant-diff = "ubc diff -c \"needs.variant_data_file = 'variants/lfp.json'\""
 html = "ubc build html --deny none -o _build/ubc-html"
 report = "ubc report traceability_coverage.html.j2"
 sphinx = "uv run --extra ubtrace sphinx-build -W --keep-going -b html . _build/html"
+
+# Report templates and the committed evidence snapshots (JUnit, gaps) live in
+# `reports/` beside this file — the `[reports] directory` default — so the whole
+# documentation project, evidence included, is one tree.
 
 [needs]
 id_required = true
@@ -441,7 +457,7 @@ style="hexagon"
 # what lets a `test` need legitimately exist with no result yet.
 #
 # Generated into `specs/_global/test_results.rst` by
-# `tools/import_test_results.py` from `reports/junit/testresults.xml`. The XML is
+# `../tools/import_test_results.py` from `reports/junit/testresults.xml`. The XML is
 # a COMMITTED SNAPSHOT: the suite is not re-run on every build.
 [[needs.types]]
 directive = "test_result"
@@ -471,7 +487,7 @@ style="frame"
 # and it is imported for the same reason: a gap an agent could rewrite would not be
 # a gate.
 #
-# Generated into `specs/_global/gaps.rst` by `tools/import_gaps.py` from
+# Generated into `specs/_global/gaps.rst` by `../tools/import_gaps.py` from
 # `reports/gaps/gaps.json`, which is a COMMITTED SNAPSHOT of `ubc agent gaps`: the
 # gate is not re-run on every build.
 #
@@ -578,12 +594,12 @@ outgoing = "gap_for"
 # ONE-LINE need markers (`get_oneline_needs = true`) and MATERIALISES a real need
 # from each. Neither back-attaches a ref URL; both author needs.
 #
-# - `code` (the implementation arm) scans the production source for
+# - `code` (the implementation arm) scans the production source (../src) for
 #   `# @<title>, <IMPL_ID>, impl, [<SWREQ_ID>]` markers. The marker's link field is
 #   named `implements` (not the default `links`) so the `implements`-keyed trace gate
 #   sees it.
 #
-# - `tests` (the verification arm) scans the test source for
+# - `tests` (the verification arm) scans the test source (../tests) for
 #   `# @<title>, <TEST_ID>, test, [<SWREQ_ID>]` markers. The marker's link field is
 #   named `verifies` so the `verifies`-keyed trace gate sees it.
 #
@@ -599,7 +615,7 @@ set_local_url = true
 # `get_rst` stay off because this project's job is authoring `impl` needs, not
 # back-attaching ref URLs or extracting RST blocks.
 [codelinks.projects.code.source_discover]
-src_dir = "src"
+src_dir = "../src"
 comment_type = "python"
 
 [codelinks.projects.code.analyse]
@@ -627,7 +643,7 @@ needs_fields = [
 # `get_rst` stay off because this project's job is authoring `test` needs, not
 # back-attaching ref URLs or extracting RST blocks.
 [codelinks.projects.tests.source_discover]
-src_dir = "tests"
+src_dir = "../tests"
 comment_type = "python"
 
 [codelinks.projects.tests.analyse]
@@ -826,7 +842,7 @@ produces = "impl"
 
 [workflow.stages.route]
 granularity = "global"
-path = "src"
+path = "../src"
 scope = "global"
 
 [[workflow.stages.trace]]
@@ -853,7 +869,7 @@ produces = "test"
 
 [workflow.stages.route]
 granularity = "global"
-path = "tests"
+path = "../tests"
 scope = "global"
 
 [[workflow.stages.trace]]

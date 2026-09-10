@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Import a JUnit XML test report into `test_result` needs.
 
-The test suite is NOT re-run on every build. ``reports/junit/testresults.xml`` is
+The test suite is NOT re-run on every build. ``docs/reports/junit/testresults.xml`` is
 a committed snapshot of one real pytest run, and this script turns it into needs
 so the recorded outcomes are part of the graph rather than an untraceable file
 next to it.
@@ -20,7 +20,7 @@ evidence pointing at nothing.
 
 Usage::
 
-    python3 tools/import_test_results.py            # default paths
+    python3 tools/import_test_results.py            # default paths -> docs/specs/_global/test_results.rst
     python3 tools/import_test_results.py --check     # fail if the output is stale
 """
 
@@ -34,10 +34,10 @@ from dataclasses import dataclass
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_REPORT = REPO_ROOT / "reports" / "junit" / "testresults.xml"
+DEFAULT_REPORT = REPO_ROOT / "docs" / "reports" / "junit" / "testresults.xml"
 DEFAULT_TESTS_DIR = REPO_ROOT / "tests"
-DEFAULT_SPECS_DIR = REPO_ROOT / "specs"
-DEFAULT_OUTPUT = REPO_ROOT / "specs" / "_global" / "test_results.rst"
+DEFAULT_SPECS_DIR = REPO_ROOT / "docs" / "specs"
+DEFAULT_OUTPUT = REPO_ROOT / "docs" / "specs" / "_global" / "test_results.rst"
 
 #: Directive id line and the two upward link fields the roll-up walks, as they
 #: appear in the spec sources. Parsed from source rather than from `needs.json` so

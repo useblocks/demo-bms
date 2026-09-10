@@ -64,8 +64,8 @@ project was authored.
    :maxdepth: 2
    :caption: Implementation and verification arms
 
-   src/code_trace
-   tests/code_trace
+   arms/implementation
+   arms/verification
 
 .. toctree::
    :maxdepth: 2

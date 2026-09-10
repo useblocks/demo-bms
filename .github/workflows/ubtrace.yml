@@ -72,7 +72,7 @@ jobs:
   #
   # The importers' `--check` modes have always been able to gate the second link
   # (snapshot -> RST). The FIRST link had nothing gating it until this job: nothing
-  # in CI could tell whether `reports/gaps/gaps.json` still matched what the engine
+  # in CI could tell whether `docs/reports/gaps/gaps.json` still matched what the engine
   # actually reports, because there was no `ubc` on the runner. That is exactly the
   # hole useblocks/ubc-action closes.
   graph-gates:
@@ -140,11 +140,15 @@ jobs:
         # The cheapest real gate there is: `ubc check` reports RST problems and exits
         # non-zero on an error. Nothing in this pipeline validated the specs as specs
         # before — the Sphinx build only proved they render.
-        run: ubc check
+        #
+        # The project is `docs/` and there is NO configuration at the repository
+        # root by design (see the README's layout section). A bare `ubc check` here
+        # finds no project and passes silently, so the path is not optional.
+        run: ubc check docs
 
       - name: The gap snapshot still matches reality
         id: snapshot
-        # `reports/gaps/gaps.json` is a COMMITTED snapshot (see the README). This is
+        # `docs/reports/gaps/gaps.json` is a COMMITTED snapshot (see the README). This is
         # the step that stops it drifting: re-run the gate here and require the output
         # to be byte-identical to what is committed.
         #
@@ -160,7 +164,7 @@ jobs:
           # `run:` executes under `bash -e`, and a found gap exits non-zero, so the
           # command has to be written in a form that does not abort the step.
           rc=0
-          ubc agent gaps > "$out" || rc=$?
+          ubc agent gaps -p docs > "$out" || rc=$?
           probe="import json,sys; d=json.load(open(sys.argv[1])); raise SystemExit(0 if 'gaps' in d and 'ok' in d else 1)"
           # stderr is dropped: a JSONDecodeError traceback tells the reader nothing
           # the explicit error line below does not, and it buries it.
@@ -169,8 +173,8 @@ jobs:
             cat "$out" || true
             exit 1
           fi
-          if ! diff -u reports/gaps/gaps.json "$out"; then
-            echo "::error::reports/gaps/gaps.json is stale. Refresh it with 'ubc agent gaps > reports/gaps/gaps.json' and re-run 'python3 tools/import_gaps.py'."
+          if ! diff -u docs/reports/gaps/gaps.json "$out"; then
+            echo "::error::docs/reports/gaps/gaps.json is stale. Refresh it with 'ubc agent gaps -p docs > docs/reports/gaps/gaps.json' and re-run 'python3 tools/import_gaps.py'."
             exit 1
           fi
           echo "gap snapshot is current"
@@ -200,8 +204,8 @@ jobs:
         continue-on-error: true
         run: |
           set -uo pipefail
-          ubc agent trace | tee "$RUNNER_TEMP/trace.json" || true
-          ubc agent verdict-check | tee "$RUNNER_TEMP/verdicts.json" || true
+          ubc agent trace -p docs | tee "$RUNNER_TEMP/trace.json" || true
+          ubc agent verdict-check -p docs | tee "$RUNNER_TEMP/verdicts.json" || true
 
       - name: Job summary
         # `always()`, because a summary is worth most exactly when a gate failed — and
@@ -347,7 +351,7 @@ jobs:
         run: |
           uv run --extra ubtrace sphinx-build -b ubtrace -W --keep-going \
             -D "ubtrace_version=${UBTRACE_VERSION}" \
-            . _build/ubtrace
+            docs _build/ubtrace
 
       - name: Upload to team.useblocks.com
         # Pull requests and demo branches build the artefact but never publish

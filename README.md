@@ -12,7 +12,7 @@ review verdicts that were actually scored rather than rubber-stamped.
 
 ## The V-model in this project
 
-Declared in [ubproject.toml](ubproject.toml) under `[workflow]`. Six mandatory
+Declared in [docs/ubproject.toml](docs/ubproject.toml) under `[workflow]`. Six mandatory
 stages plus two optional ones:
 
 ```
@@ -41,8 +41,60 @@ production or test source *is* the need:
 ```
 
 Those markers only materialise where a `.. src-trace::` directive names their
-project — see [src/code_trace.rst](src/code_trace.rst) and
-[tests/code_trace.rst](tests/code_trace.rst).
+project — see [docs/arms/implementation.rst](docs/arms/implementation.rst) and
+[docs/arms/verification.rst](docs/arms/verification.rst).
+
+## Repository layout
+
+```
+docs/                     the ubCode project AND the Sphinx source directory
+  ubproject.toml          ontology, workflow, codelinks — the one configuration
+  conf.py                 Sphinx reads ubproject.toml; nothing is declared twice
+  specs/                  the needs, one directory per stream (RST and Markdown)
+  arms/                   the two `.. src-trace::` pages that materialise src/ and tests/
+  quality/                review criteria packs
+  variants/               variant data for the 150 % model
+  schemas.json            ontology schema
+  .pharaoh/               review verdicts and the agent install manifest
+  reports/                report templates and the committed evidence snapshots (JUnit, gaps)
+src/  tests/              production and test code, carrying the one-line need markers
+  ubproject.redirect.toml one per code tree: "the project is in ../docs"
+tools/                    the importers that turn the snapshots into needs
+```
+
+Documentation and source code are not mixed at the repository root. That is how
+real projects are laid out, and it is the layout the redirect file was invented
+for: `ubc` finds a file's configuration by walking **up** from the file until it
+meets a `ubproject.toml`, so a marker in `src/` or `tests/` would reach the root
+and find nothing. [src/ubproject.redirect.toml](src/ubproject.redirect.toml) and
+[tests/ubproject.redirect.toml](tests/ubproject.redirect.toml) send that walk
+into `docs/` — for the codelinks markers, and for the VS Code extension editing
+a source file. The agent workflow (`ubc agent`, Pharaoh) resolves its project
+the same way and keeps its state, `docs/.pharaoh/`, under the project root. The
+one consumer that does not follow a redirect (ubc 0.33) is the MCP server, so
+[.mcp.json](.mcp.json) points it at `docs/ubproject.toml` explicitly with
+`--default-config`.
+
+The other half of the reason is file discovery. With the project at the root,
+both Sphinx and ubCode globbed the **whole repository** for `*.rst` (and now
+`*.md`), and every new top-level folder — a virtualenv, a cache, a worktree
+under `.claude/`, the host-integration directories — had to be excluded by name
+in *two* places, or it became a source: a Claude Code worktree under
+`.claude/worktrees/` was a second copy of every spec as far as Sphinx was
+concerned. Now the source root ubc discovers documents from *is* `docs/`, and
+Sphinx's `exclude_patterns` is back to its default plus `_build` and
+`.ub_cache`. Isolation of concerns: the docs tree contains only docs, so nothing
+outside it can ever leak in.
+
+Three practical consequences. Builds run from the repository root with `docs`
+as the source directory (`sphinx-build -b html docs _build/html`). There is
+deliberately **no configuration at the repository root**, and a bare `ubc check`
+there finds no project and passes silently — so name the project: `ubc check
+docs`, `ubc build html docs`, `-p docs` on every `ubc agent` verb, and
+`ubc script --path docs <name>` (or simply run `ubc` inside `docs/`; script
+output lands in `docs/_build/`). And `-p docs` is not just convenience for
+`review-brief` and `verdict-submit`: they print and resolve `verdicts_dir`
+relative to `-p`, and the review skills reuse that path.
 
 ## Streams
 
@@ -52,21 +104,21 @@ deliberately not.
 
 | Stream | Root story | Depth | What it is good for demoing |
 |---|---|---|---|
-| [specs/cell-protection/](specs/cell-protection/) | `US_CELL_PROTECTION` | full V | safety-critical reactions, timing budgets, a latched fault state |
-| [specs/state-estimation/](specs/state-estimation/) | `US_STATE_ESTIMATION` | full V | accuracy budgets, persistence, a fused estimator |
-| [specs/thermal-management/](specs/thermal-management/) | `US_THERMAL_MANAGEMENT` | full V | hysteresis vs. ramps, derating, actuator failsafe |
-| [specs/cell-balancing/](specs/cell-balancing/) | `US_CELL_BALANCING` | **requirement only** | **the gap view, and driving the agent workflow live** |
-| [specs/isolation-monitoring/](specs/isolation-monitoring/) | `US_ISOLATION_MONITORING` | full V, **in Markdown (MyST)** | RST and Markdown in one graph |
+| [docs/specs/cell-protection/](docs/specs/cell-protection/) | `US_CELL_PROTECTION` | full V | safety-critical reactions, timing budgets, a latched fault state |
+| [docs/specs/state-estimation/](docs/specs/state-estimation/) | `US_STATE_ESTIMATION` | full V | accuracy budgets, persistence, a fused estimator |
+| [docs/specs/thermal-management/](docs/specs/thermal-management/) | `US_THERMAL_MANAGEMENT` | full V | hysteresis vs. ramps, derating, actuator failsafe |
+| [docs/specs/cell-balancing/](docs/specs/cell-balancing/) | `US_CELL_BALANCING` | **requirement only** | **the gap view, and driving the agent workflow live** |
+| [docs/specs/isolation-monitoring/](docs/specs/isolation-monitoring/) | `US_ISOLATION_MONITORING` | full V, **in Markdown (MyST)** | RST and Markdown in one graph |
 
-Global, cross-stream artefacts live in [specs/_global/](specs/_global/):
-five [risks](specs/_global/risks.rst), five
-[design decisions](specs/_global/decisions.rst), the imported
-[test results](specs/_global/test_results.rst) and the imported
-[workflow gaps](specs/_global/gaps.rst).
+Global, cross-stream artefacts live in [docs/specs/_global/](docs/specs/_global/):
+five [risks](docs/specs/_global/risks.rst), five
+[design decisions](docs/specs/_global/decisions.rst), the imported
+[test results](docs/specs/_global/test_results.rst) and the imported
+[workflow gaps](docs/specs/_global/gaps.rst).
 
 ### The deliberate gap
 
-[`REQ_CELL_BALANCING_WINDOW`](specs/cell-balancing/requirements.rst) —
+[`REQ_CELL_BALANCING_WINDOW`](docs/specs/cell-balancing/requirements.rst) —
 *"the BMS shall reduce the cell voltage spread to 20 mV or less within 8 hours of
 a charge session ending"* — has **no architecture, no software requirements, no
 implementation and no tests** beneath it. On purpose.
@@ -116,18 +168,18 @@ may be a different build.
 ```bash
 UBC=/home/lrhenisch/.vscode/extensions/useblocks.ubcode-0.31.2-linux-x64/server/cli/ubc
 
-$UBC check                                  # parse the sources, report RST problems
-$UBC build needs                            # compile the graph into needs.json
-$UBC agent status -p .                      # every stage's state at once
-$UBC agent gaps -p .                        # the trace gate, whole graph
-$UBC agent gaps --scope US_CELL_BALANCING -p .   # ...narrowed to one stream
-$UBC agent verdict-check -p .               # the substance gate (reads verdicts)
+$UBC check docs                             # parse the sources, report RST problems
+$UBC build needs docs -o needs.json         # compile the graph into needs.json
+$UBC agent status -p docs                      # every stage's state at once
+$UBC agent gaps -p docs                        # the trace gate, whole graph
+$UBC agent gaps --scope US_CELL_BALANCING -p docs   # ...narrowed to one stream
+$UBC agent verdict-check -p docs               # the substance gate (reads verdicts)
 
-$UBC agent audit   --id REQ_FAULT_LATCH -p .          # one need, as data
-$UBC agent context --id ARCH_SAFETY_SUPERVISOR --no-code -p .   # its neighbourhood
-$UBC agent impact  --id REQ_CELL_VOLTAGE_LIMITS -p .  # what a change reaches
-$UBC agent next    --id REQ_CELL_BALANCING_WINDOW -p . # the single next action
-$UBC agent prompt  --id REQ_CELL_BALANCING_WINDOW -p . # ...as an agent briefing
+$UBC agent audit   --id REQ_FAULT_LATCH -p docs          # one need, as data
+$UBC agent context --id ARCH_SAFETY_SUPERVISOR --no-code -p docs   # its neighbourhood
+$UBC agent impact  --id REQ_CELL_VOLTAGE_LIMITS -p docs  # what a change reaches
+$UBC agent next    --id REQ_CELL_BALANCING_WINDOW -p docs # the single next action
+$UBC agent prompt  --id REQ_CELL_BALANCING_WINDOW -p docs # ...as an agent briefing
 ```
 
 The tests are plain pytest, no dependencies beyond the standard library. Two of
@@ -141,18 +193,18 @@ Both imported artefacts are refreshed the same way — capture a snapshot, then 
 it into needs:
 
 ```bash
-$UBC agent gaps > reports/gaps/gaps.json || true   # the gate exits 1 when it finds a gap
-uv run python tools/import_gaps.py                 # -> specs/_global/gaps.rst
+$UBC agent gaps -p docs > docs/reports/gaps/gaps.json || true   # the gate exits 1 when it finds a gap
+uv run python tools/import_gaps.py                 # -> docs/specs/_global/gaps.rst
 uv run python tools/import_gaps.py --check         # CI guard: fail if it is stale
 ```
 
 ## Variants: the 150 % model
 
 The specification describes more than one product. The pack chemistry is the
-axis: [variants/nmc.json](variants/nmc.json) is the default profile and
-[variants/lfp.json](variants/lfp.json) the alternative, wired through
-`[needs] variant_data_file` in [ubproject.toml](ubproject.toml) and exposed as
-`var.*`. [`REQ_CELL_VOLTAGE_LIMITS`](specs/cell-protection/requirements.rst)
+axis: [docs/variants/nmc.json](docs/variants/nmc.json) is the default profile and
+[docs/variants/lfp.json](docs/variants/lfp.json) the alternative, wired through
+`[needs] variant_data_file` in [docs/ubproject.toml](docs/ubproject.toml) and exposed as
+`var.*`. [`REQ_CELL_VOLTAGE_LIMITS`](docs/specs/cell-protection/requirements.rst)
 is the one requirement that reads it: its limits are `:variant:` references
 resolved from the profile, its `chemistry` field is injected with
 `<{ var.pack.chemistry }>`, and an `.. if::` block on the same page only
@@ -160,11 +212,11 @@ renders for the LFP profile. Nothing else in the graph depends on the variant,
 so the diff between the two builds is exactly that one need:
 
 ```bash
-ubc script variant-diff     # ubc diff -c "needs.variant_data_file = 'variants/lfp.json'"
-ubc script needs:lfp        # the LFP graph as needs.lfp.json
+ubc script --path docs variant-diff   # ubc diff -c "needs.variant_data_file = 'variants/lfp.json'"
+ubc script --path docs needs:lfp      # the LFP graph as docs/needs.lfp.json
 ```
 
-Sphinx reads the same key (`-D needs_variant_data_file=variants/lfp.json`).
+Sphinx reads the same key (`-D needs_variant_data_file=docs/variants/lfp.json`).
 Per-variant *file* selection (`[[source.variant_sources]]`) is deliberately not
 used: the Sphinx side honours it only with `sphinx-mounts` installed, and the
 `-W` publish must build the same document set as `ubc`. The implementation and
@@ -172,12 +224,12 @@ verification arms in this repository are the NMC build.
 
 ## Markdown next to RST
 
-[specs/isolation-monitoring/](specs/isolation-monitoring/) is a complete stream
+[docs/specs/isolation-monitoring/](docs/specs/isolation-monitoring/) is a complete stream
 — user story, requirement, architecture element, software requirements —
 authored in Markdown (MyST) instead of reStructuredText, traced to
 [src/isolation_monitoring/](src/isolation_monitoring/) and its tests through
-the same one-line markers as every other stream. `ubc` routes `specs/**/*.md`
-to its MyST parser (`[parse.parsers.md]` in ubproject.toml, scoped so no other
+the same one-line markers as every other stream. `ubc` routes `docs/specs/**/*.md`
+to its MyST parser (`[parse.parsers.md]` in docs/ubproject.toml, scoped so no other
 Markdown in the repository is ever parsed as a document); Sphinx renders it
 through `myst_parser`. The importers under [tools/](tools/) read both
 spellings, so a gap or a test chain resolves through a Markdown need exactly as
@@ -185,7 +237,7 @@ through an RST one.
 
 ## Traceability, as a page
 
-[traceability.rst](traceability.rst) is the aggregate view of the graph, and
+[docs/traceability.rst](docs/traceability.rst) is the aggregate view of the graph, and
 every line of it is **derived** — nothing on it is hand-maintained, so it cannot
 drift from the specs the way a hand-drawn matrix does:
 
@@ -207,11 +259,11 @@ drift from the specs the way a hand-drawn matrix does:
   *`ubc agent gaps` agrees, and here is which obligation*.
 
 The diagrams are rendered by **graphviz** (`flow_engine = "graphviz"` in
-[ubproject.toml](ubproject.toml)), not PlantUML: no Java, no vendored jar, and
+[docs/ubproject.toml](docs/ubproject.toml)), not PlantUML: no Java, no vendored jar, and
 the graphviz engine emits a PNG plus an HTML image map — a plain `<img>` with
 clickable nodes. That is what survives the ubTrace export, where scripts do not
 run and the viewer resolves `<img>` assets only. `dot` must therefore be on
-`PATH`; [conf.py](conf.py) fails the build with an explicit message when it is
+`PATH`; [docs/conf.py](docs/conf.py) fails the build with an explicit message when it is
 not, and the workflow installs it.
 
 This page is why the export is worth publishing at all: the needs themselves
@@ -221,25 +273,25 @@ them until something asks the graph a question.
 ## Publishing to ubTrace
 
 The sources have a **second consumer**. `ubc build needs` compiles
-`specs/**/*.rst` plus the one-line codelinks markers in `src/` and `tests/` into
-`needs.json` for the CLI and the IDE; [conf.py](conf.py) compiles the *same*
+`docs/specs/**/*.rst` plus the one-line codelinks markers in `src/` and `tests/` into
+`needs.json` for the CLI and the IDE; [docs/conf.py](docs/conf.py) compiles the *same*
 sources through Sphinx into the artefact that
 [upload_ubtrace.sh](upload_ubtrace.sh) ships to
 [team.useblocks.com](https://team.useblocks.com). Both sides produce the same
 205 needs, because neither side owns the data model: the need types, the link
 types and the extra options are declared once in
-[ubproject.toml](ubproject.toml) and read from there by both — `needs_from_toml`
+[docs/ubproject.toml](docs/ubproject.toml) and read from there by both — `needs_from_toml`
 for the needs, `src_trace_config_from_toml` for the code markers. There is no
 second copy of the ontology to keep in sync.
 
 ```bash
 uv sync --extra ubtrace   # the export toolchain (sphinx-needs, sphinx-codelinks, ubt-sphinx)
 
-uv run --extra ubtrace sphinx-build -b ubtrace -W --keep-going . _build/ubtrace
+uv run --extra ubtrace sphinx-build -b ubtrace -W --keep-going docs _build/ubtrace
 UBTRACE_INGEST_TOKEN=<token> bash upload_ubtrace.sh
 ```
 
-`uv run --extra ubtrace sphinx-build -b html . _build/html` renders the same
+`uv run --extra ubtrace sphinx-build -b html docs _build/html` renders the same
 sources as an ordinary Sphinx site, which is the faster loop while editing.
 
 The `ubtrace` extra is **not** part of the default environment: plain `uv sync`
@@ -251,7 +303,7 @@ dependency falls through to PyPI.
 
 The ingest token needs **Ingest** permission on the target project. *Where* the
 artefact goes is configured in exactly one place, `ubtrace_organization` /
-`ubtrace_project` / `ubtrace_version` in [conf.py](conf.py) — currently
+`ubtrace_project` / `ubtrace_version` in [docs/conf.py](docs/conf.py) — currently
 `useblocks-rollout` / `rollout-demo-bms` / `main`. The builder writes its output
 into `_build/ubtrace/<org>/<project>/<version>/`, and
 [upload_ubtrace.sh](upload_ubtrace.sh) *discovers* that path instead of
@@ -278,7 +330,7 @@ and put it on `PATH`:
 | Step | Blocking? | What it defends |
 |---|---|---|
 | `ubc check` | yes | the specs parse — nothing validated them *as specs* before, the Sphinx build only proved they render |
-| gap snapshot vs. reality | yes | [reports/gaps/gaps.json](reports/gaps/gaps.json) still matches what `ubc agent gaps` actually reports |
+| gap snapshot vs. reality | yes | [docs/reports/gaps/gaps.json](docs/reports/gaps/gaps.json) still matches what `ubc agent gaps` actually reports |
 | `import_gaps.py --check` / `import_test_results.py --check` | yes | the generated RST still matches its snapshot |
 | `ubc agent trace` / `verdict-check` | **no** | reported into the log only |
 
@@ -337,24 +389,24 @@ committed snapshot still described reality.
 
 One detail worth knowing: **scripts do not run in the ubTrace export**, so the
 three `.. mermaid::` component diagrams cannot be rendered by the browser there.
-When the mermaid CLI (`mmdc`) is on `PATH`, [conf.py](conf.py) pre-renders them
+When the mermaid CLI (`mmdc`) is on `PATH`, [docs/conf.py](docs/conf.py) pre-renders them
 to SVG images instead, and the workflow installs it for exactly that reason.
 
 That renderer drives a headless Chromium, which is the one fragile part of the
 build: on Ubuntu 23.10+ (so on `ubuntu-latest`) Chromium's sandbox needs
 unprivileged user namespaces that AppArmor restricts, and it aborts with "No
-usable sandbox!". [mermaid-puppeteer.json](mermaid-puppeteer.json) passes
+usable sandbox!". [docs/mermaid-puppeteer.json](docs/mermaid-puppeteer.json) passes
 `--no-sandbox` to get past that — it only ever renders this repository's own
 three diagrams. As a second line of defence the workflow *renders a probe
 diagram* after installing `mmdc` and uninstalls it again if that fails, which
-drops [conf.py](conf.py) back to the raw output: three degraded diagrams and a
+drops [docs/conf.py](docs/conf.py) back to the raw output: three degraded diagrams and a
 published artefact, rather than a failed publish. The diagrams are a nicety; the
 traceability artefact is the point.
 
 ## Test results, from a static XML report
 
 The suite is **not re-run on every build.**
-[reports/junit/testresults.xml](reports/junit/testresults.xml) is a committed
+[docs/reports/junit/testresults.xml](docs/reports/junit/testresults.xml) is a committed
 snapshot of one real pytest run, and
 [tools/import_test_results.py](tools/import_test_results.py) turns it into one
 `test_result` need per JUnit `<testcase>`, each linking `results_for` up to the
@@ -422,7 +474,7 @@ To make the repo fully green instead, flip `>=` back to `>` and `<=` back to
 
 ### The coverage report
 
-[reports/traceability_coverage.html.j2](reports/traceability_coverage.html.j2) —
+[docs/reports/traceability_coverage.html.j2](docs/reports/traceability_coverage.html.j2) —
 render it with `ubc report traceability_coverage.html.j2`, or from the VS Code
 Reports view ("Generate & Preview" / "Open in Browser"). Script-free inline SVG,
 so the editor preview, a browser and print all look the same.
@@ -486,14 +538,14 @@ non-zero. That is a fine gate and a poor *view*: it tells you
 from the requirement page where someone is actually reading.
 
 So the findings are imported back **into** the graph.
-[reports/gaps/gaps.json](reports/gaps/gaps.json) is a committed snapshot of one
+[docs/reports/gaps/gaps.json](docs/reports/gaps/gaps.json) is a committed snapshot of one
 real `ubc agent gaps` run, and [tools/import_gaps.py](tools/import_gaps.py) turns
 it into one `gap` need per finding, each linking `gap_for` down to the need the
 gate attributed it to:
 
 ```bash
-$UBC agent gaps > reports/gaps/gaps.json || true
-uv run python tools/import_gaps.py            # -> specs/_global/gaps.rst
+$UBC agent gaps > docs/reports/gaps/gaps.json || true
+uv run python tools/import_gaps.py            # -> docs/specs/_global/gaps.rst
 uv run python tools/import_gaps.py --check    # CI guard: fail if it is stale
 ```
 
@@ -503,7 +555,7 @@ deliberately so:
 | | `test_result` | `gap` |
 |---|---|---|
 | records | what *happened* when a test ran | what the *gate* found when it ran |
-| imported from | `reports/junit/testresults.xml` | `reports/gaps/gaps.json` |
+| imported from | `docs/reports/junit/testresults.xml` | `docs/reports/gaps/gaps.json` |
 | by | `tools/import_test_results.py` | `tools/import_gaps.py` |
 | links | `results_for` → the `test` | `gap_for` → the need with the gap |
 | authored by a human or an agent | never | never |
@@ -512,7 +564,7 @@ Once a gap is a need, it shows up everywhere the graph does — and it is **red*
 (`#EF4444`, the strongest colour in the ontology) in all of them:
 
 - as a red node hanging off its requirement in the `needflow` diagrams on
-  [traceability.rst](traceability.rst);
+  [docs/traceability.rst](docs/traceability.rst);
 - in the `gaps` column of every level table on the same page;
 - as a red-barred need on its own page, and on the incoming-links list of the need
   it is about;
@@ -541,15 +593,15 @@ Three things about this arrangement are worth knowing before you demo it:
    gate that reported it, so re-importing an unchanged snapshot rewrites the same
    bytes, and a resolved gap vanishes instead of lingering under a stale id. Give
    `REQ_CELL_BALANCING_WINDOW` an architecture element, re-snapshot, re-import, and
-   [specs/_global/gaps.rst](specs/_global/gaps.rst) becomes an empty page that says
+   [docs/specs/_global/gaps.rst](docs/specs/_global/gaps.rst) becomes an empty page that says
    so.
 
 ## Review verdicts
 
 The substance gate is data, not prose. Each reviewed type is wired to a criteria
-pack in [quality/](quality/) — `requirement.toml` (used by both `req` and
+pack in [docs/quality/](docs/quality/) — `requirement.toml` (used by both `req` and
 `swreq`), `arch.toml`, `feat.toml`, `decision.toml` — and every verdict under
-`.pharaoh/verdicts/` was produced by an independent reviewer context scoring
+`docs/.pharaoh/verdicts/` was produced by an independent reviewer context scoring
 those axes, then stamped by `ubc agent verdict-submit`.
 
 Two consequences worth knowing before you demo:
