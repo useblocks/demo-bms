@@ -141,8 +141,7 @@ jobs:
         run: |
           set -uo pipefail
 
-          generated=(reports/gaps/gaps.json specs/_global/gaps.rst specs/_global/test_results.rst)
-          probe="import json,sys; d=json.load(open(sys.argv[1])); raise SystemExit(0 if 'gaps' in d and 'ok' in d else 1)"
+          generated=(specs/_global/gaps.rst specs/_global/test_results.rst)
 
           # Every exit path that publishes names a commit that exists on the
           # remote, never this working tree.
@@ -154,19 +153,12 @@ jobs:
           # Derive the generated files from the tree at HEAD, then re-check them:
           # `ubc check` before this step parsed the sources, not the RST this step
           # writes, so without a second check an importer could commit RST that
-          # does not parse. A found gap exits non-zero (one is deliberate here), so
-          # the exit code is no test — the output has to parse. Captured to a temp
-          # file and copied in afterwards: redirecting into the snapshot would
-          # truncate it before `ubc` produced a byte.
-          out="$RUNNER_TEMP/gaps.json"
-          rc=0
-          ubc agent gaps > "$out" || rc=$?
-          if ! python3 -c "$probe" "$out" 2>/dev/null; then
-            echo "::error::ubc agent gaps produced no usable report (exit $rc)"
-            cat "$out" || true
-            exit 1
-          fi
-          cp "$out" reports/gaps/gaps.json
+          # does not parse. `ubc agent gaps` exits non-zero on any found gap (one
+          # is deliberate here) so its code is no test; import_gaps.py validates
+          # the report it reads. reports/gaps/ is gitignored, so truncating it here
+          # costs nothing.
+          mkdir -p reports/gaps
+          ubc agent gaps > reports/gaps/gaps.json || true
           python3 tools/import_gaps.py || exit 1
           python3 tools/import_test_results.py || exit 1
           ubc check || exit 1
@@ -255,7 +247,7 @@ jobs:
             --result "Sources parse=${{ steps.parse.outcome }}" \
             --result "Imported artefacts refreshed=${{ steps.refresh.outcome }}" \
             --result "Refresh pushed=${{ steps.push.outcome }}" \
-            --gaps "$RUNNER_TEMP/gaps.json" \
+            --gaps reports/gaps/gaps.json \
             --trace "$RUNNER_TEMP/trace.json" \
             --verdicts "$RUNNER_TEMP/verdicts.json" \
             >> "$GITHUB_STEP_SUMMARY"

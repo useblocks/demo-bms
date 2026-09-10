@@ -252,9 +252,9 @@ style="frame"
 # and it is imported for the same reason: a gap an agent could rewrite would not be
 # a gate.
 #
-# Generated into `specs/_global/gaps.rst` by `tools/import_gaps.py` from
-# `reports/gaps/gaps.json`, which is a COMMITTED SNAPSHOT of `ubc agent gaps`: the
-# gate is not re-run on every build.
+# Generated into `specs/_global/gaps.rst` by `tools/import_gaps.py` from a capture
+# of `ubc agent gaps`. The PAGE is committed; the capture is gitignored, being
+# re-derivable from the sources at any moment.
 #
 # RED, and the only red-filled type in the ontology apart from `risk` — a gap is the
 # one thing on a traceability page a reader must not have to hunt for. `risk` is the

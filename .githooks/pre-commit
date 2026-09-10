@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Refresh the derived files so a commit leaves CI nothing to change:
 #
-#     ubc agent gaps -> reports/gaps/gaps.json -> specs/_global/gaps.rst
-#     reports/junit/testresults.xml            -> specs/_global/test_results.rst
+#     ubc agent gaps                -> specs/_global/gaps.rst
+#     reports/junit/testresults.xml -> specs/_global/test_results.rst
 #
 # Install once per clone (git will not, by design): git config core.hooksPath .githooks
 #
@@ -16,7 +16,7 @@ set -uo pipefail
 root="$(git rev-parse --show-toplevel)" || exit 0
 cd "$root" || exit 0
 
-GENERATED=(reports/gaps/gaps.json specs/_global/gaps.rst specs/_global/test_results.rst)
+GENERATED=(specs/_global/gaps.rst specs/_global/test_results.rst)
 
 INPUTS=(specs src tests reports tools ubproject.toml)
 
@@ -63,35 +63,26 @@ fi
 # Whatever version you have. CI installs the newest published one, so an older
 # extension can still produce a snapshot CI then rewrites — one bot commit, not a
 # reason to refuse to help.
+# reports/gaps/ is gitignored, so this file is scratch: capture straight into it.
 if [ -z "$ubc_bin" ]; then
-  echo "pre-commit: no ubc found — not refreshing reports/gaps/gaps.json (CI will)" >&2
+  echo "pre-commit: no ubc found — importing gaps from the last capture (CI re-captures)" >&2
 else
-  # Copied in only once it parses: redirecting into the snapshot would truncate it
-  # before ubc produced a byte. A found gap exits non-zero, so the code is no test.
-  _snapshot="$(mktemp)"
-  "$ubc_bin" agent gaps -p . > "$_snapshot" 2>/dev/null || true
-  if "${PY[@]}" -c "import json,sys; d=json.load(open(sys.argv[1])); raise SystemExit(0 if 'gaps' in d and 'ok' in d else 1)" \
-       "$_snapshot" 2>/dev/null; then
-    cp "$_snapshot" reports/gaps/gaps.json
-  else
-    echo "pre-commit: 'ubc agent gaps' produced no usable report — leaving the snapshot alone" >&2
-  fi
-  rm -f "$_snapshot"
+  mkdir -p reports/gaps
+  "$ubc_bin" agent gaps -p . > reports/gaps/gaps.json 2>/dev/null || true
 fi
 
 failed=0
 for importer in tools/import_gaps.py tools/import_test_results.py; do
-  # Swallowed on success: both importers list every need they wrote.
+  # Swallowed on success: each importer lists every need it wrote.
   if ! out="$("${PY[@]}" "$importer" 2>&1)"; then
-    echo "pre-commit: $importer failed — leaving the generated files as they are:" >&2
+    echo "pre-commit: $importer failed — leaving its output as it is:" >&2
     echo "$out" >&2
     failed=1
   fi
 done
 
 if [ "$failed" -eq 1 ]; then
-  # Usually `import_gaps.py` rejecting a snapshot older than a spec edit.
-  echo "pre-commit: committing anyway; CI refreshes both files and pushes the result." >&2
+  echo "pre-commit: committing anyway; CI refreshes and pushes the result." >&2
   exit 0
 fi
 

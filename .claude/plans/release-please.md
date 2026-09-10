@@ -2,6 +2,12 @@
 
 Status: **shelved** (drafted 2026-09-09, decisions confirmed, nothing implemented)
 
+> **Two premises have since changed (2026-09-10).** `ubc` now runs in CI via
+> [useblocks/ubc-action](https://github.com/useblocks/ubc-action), and
+> `.github/workflows/ubtrace.yml` now REFRESHES the imported artefacts and commits
+> the result instead of gating on their staleness. Both affect the decisions below;
+> the corrected statements are marked inline.
+
 ## Goal
 
 1. Commits follow conventional commits.
@@ -17,7 +23,7 @@ Status: **shelved** (drafted 2026-09-09, decisions confirmed, nothing implemente
 
 | Question | Decision |
 |---|---|
-| How the Pharaoh gates run in CI, given `ubc` has no public distribution | **Full gate, non-blocking for now** — wire every `ubc` step in with `continue-on-error` and a loud step-summary note, so the workflow is complete and flips to blocking the moment the CLI is available in CI. |
+| How the Pharaoh gates run in CI, given `ubc` has no public distribution | **Full gate, non-blocking for now** — wire every `ubc` step in with `continue-on-error` and a loud step-summary note, so the workflow is complete and flips to blocking the moment the CLI is available in CI. <br>**Superseded:** the CLI *is* available in CI now (`ubc-action`, version resolved from the marketplace), so `ubc check` already blocks in `ubtrace.yml` while `trace`/`verdict-check` stay advisory by choice, not by necessity. |
 | Treatment of the deliberate test defects and the deliberate structural gap | **Gap baselined, failing tests block** — `REQ_CELL_BALANCING_WINDOW` goes into the accepted-gap baseline; the two planted defects make the candidate RED, and the dashboard goes green only once they are fixed. |
 | How the release candidate appears in ubTrace | **Fixed `rc` slot, overwritten** on every push to the release branch. Nothing accumulates, no version deletion ever needed; the real semver is shown inside the artefact. |
 | Where release notes live | **`CHANGELOG.md` + `myst-parser`** — release-please owns the changelog, and it ships inside the ubTrace artefact via the toctree. |
@@ -30,9 +36,13 @@ Status: **shelved** (drafted 2026-09-09, decisions confirmed, nothing implemente
 - `ubc agent release-check --baseline <file> --with-verdicts` is exactly the release
   gate wanted: it ratchets structural gaps against accepted debt and folds the
   verdict (substance) gate into the same pass.
-- The repo idiom for "is the analysis in sync with the code" is established:
-  committed snapshots (`reports/gaps/gaps.json`, `reports/junit/testresults.xml`)
-  plus `--check` staleness guards on both import tools.
+- The repo idiom for "is the analysis in sync with the code" is established, though
+  it has moved on from `--check`: the committed artefacts are the generated PAGES
+  (`specs/_global/gaps.rst`, `specs/_global/test_results.rst`), and the pipeline
+  captures `ubc agent gaps`, re-runs both importers and pushes whatever changed.
+  `reports/gaps/gaps.json` is gitignored (re-derivable); only
+  `reports/junit/testresults.xml` is still a committed snapshot, because a test run
+  cannot be re-derived from the sources.
 - No git tags exist yet, so the release-please bootstrap is clean.
 
 ## Files to create
@@ -65,9 +75,9 @@ Status: **shelved** (drafted 2026-09-09, decisions confirmed, nothing implemente
 |---|---|---|
 | `ubc agent config-validate` / `doctor` | the process config still matches the ontology | no (advisory) |
 | `pytest --junitxml` | the code does what the specs say | **yes** |
-| `tools/import_test_results.py --check` | the committed test evidence matches what the code *actually* does now | **yes** |
+| ~~`tools/import_test_results.py --check`~~ | **Superseded** — `ubtrace.yml` re-runs the importer and pushes the result, so a second workflow gating on staleness would fail on something already being fixed. `--check` survives for asking, not gating. | no |
 | `ubc agent gaps` | the structural gap list | no (advisory) |
-| `tools/import_gaps.py --check` | the committed gap needs match what the gate *actually* finds now | **yes** |
+| ~~`tools/import_gaps.py --check`~~ | **Superseded**, same reason. | no |
 | `ubc agent trace` | both directions of every trace edge are covered | no (advisory) |
 | `ubc agent release-check --baseline reports/release/gap-baseline.json --with-verdicts` | no *new* structural gaps, and no missing/failing/**outdated** verdicts — an outdated verdict is precisely "a need changed and nobody re-reviewed it" | no (advisory) |
 | `sphinx-build -b ubtrace -W --keep-going` | the artefact still builds warning-free | **yes** |
