@@ -17,29 +17,41 @@ graph, or `ubc check`, `ubc agent *` and the IDE are blind to the ~51 imported
 needs until someone runs a script. So they are generated *and* in git, which
 means they can go stale.
 
-Refresh them after any change to `specs/`, `src/` or `tests/`:
+Refresh them after any change to `specs/`, `src/` or `tests/` — **all three
+steps**, which is what the pre-commit hook and CI each do (`$UBC` is resolved
+below):
 
 ```bash
-python3 tools/import_gaps.py           # -> specs/_global/gaps.rst
-python3 tools/import_test_results.py   # -> specs/_global/test_results.rst
+snap="$(mktemp)"
+"$UBC" agent gaps -p . > "$snap" || true    # exits 1 when it finds a gap — expected
+python3 -c 'import json,sys; json.load(open(sys.argv[1]))' "$snap" \
+  && mv "$snap" reports/gaps/gaps.json      # only once it parses
+python3 tools/import_gaps.py                # -> specs/_global/gaps.rst
+python3 tools/import_test_results.py        # -> specs/_global/test_results.rst
 ```
 
-Both are standard-library-only, take no arguments, and are safe to re-run: an
-unchanged input rewrites the same bytes. Run them before `ubc build needs` or
-`ubc agent gaps`, or the graph you are reasoning about is missing the current
-`gap` and `test_result` needs.
+**Re-capture the snapshot, do not skip to the importers.** Closing a gap (a test
+that satisfies a requirement) or opening one (a need with no parent) changes
+`reports/gaps/gaps.json` without making either importer fail, so importing alone
+re-derives `gaps.rst` from the old graph — describing the one place you just
+changed incorrectly.
 
-`import_gaps.py` exits 1 when `reports/gaps/gaps.json` names a need the sources
-no longer contain — the snapshot predates a spec edit. Re-capture it first:
+Never redirect `ubc agent gaps` straight into the committed file: the shell
+truncates it before `ubc` writes a byte, so a failed run leaves an empty snapshot.
 
-```bash
-"$UBC" agent gaps -p . > reports/gaps/gaps.json   # exits 1 when it finds a gap
-```
+Both importers are standard-library-only, take no arguments, and are safe to
+re-run: an unchanged input rewrites the same bytes. Run all three before
+`ubc build needs` or `ubc agent gaps`, or the graph you reason about is missing the
+current `gap` and `test_result` needs.
 
-Two things you do **not** have to do: the `.githooks/pre-commit` hook re-captures
-the snapshot and re-runs both importers when a human commits, and the pipeline
-does the same and commits the result. Leaving them stale is recoverable;
-hand-editing them is not.
+With no `ubc` available, run the two importers alone and say so — the snapshot
+keeps what it had, and CI re-captures it. `import_gaps.py` exits 1 when the
+snapshot names a need the sources no longer contain, which is the same staleness
+seen from the other side.
+
+You do **not** have to install or run the hook: it does this on a human's commit,
+and the pipeline does it again and commits the result. Leaving these files stale is
+recoverable; hand-editing them is not.
 
 ## The `ubc` CLI is not on PATH
 

@@ -113,7 +113,7 @@ not part of it either: it lives in the optional `ubtrace` extra, installed with
 [derived file](#the-generated-spec-files-refresh-themselves) up to date and stages
 what moved, so a commit records what CI would produce and CI has nothing left to
 change. Git deliberately refuses to install hooks that arrive with a clone, so
-this is the one step that cannot be automated away:
+this stays an explicit opt-in:
 
 ```bash
 git config core.hooksPath .githooks   # once per clone
@@ -143,7 +143,7 @@ The version-matched CLI is what the IDE extension ships; a bare `ubc` on `$PATH`
 may be a different build.
 
 ```bash
-UBC=/home/lrhenisch/.vscode/extensions/useblocks.ubcode-0.31.2-linux-x64/server/cli/ubc
+UBC=~/.vscode/extensions/useblocks.ubcode-0.31.2-linux-x64/server/cli/ubc
 
 $UBC check                                  # parse the sources, report RST problems
 $UBC build needs                            # compile the graph into needs.json
