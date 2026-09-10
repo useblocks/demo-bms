@@ -108,13 +108,23 @@ schema_definitions_from_json = "schemas.json"
 # Switch the profile per build without editing a single need:
 #   ubc build needs -c "needs.variant_data_file = 'variants/lfp.json'"
 #   ubc diff       -c "needs.variant_data_file = 'variants/lfp.json'"   # = `ubc script variant-diff`
+# RUN THOSE FROM THIS DIRECTORY (or through `ubc script`, which does). A path given
+# with `-c` is resolved against the WORKING DIRECTORY, not against this file, and a
+# variant data file that is not found resolves SILENTLY: no warning, every `var.*`
+# value empty, `chemistry` "" (observed with ubc 0.33). From the repository root the
+# path has to be `docs/variants/lfp.json`.
 # Sphinx reads the same key through `needs_from_toml`, overridable with
-# `-D needs_variant_data_file=variants/lfp.json`.
+# `-D needs_variant_data_file=...` (see the README for the path to use there).
 #
 # `[[source.variant_sources]]` (per-variant FILE selection) is deliberately not
 # used: sphinx-build honours it only with sphinx-mounts installed, and without
 # that the `-W` publish would build a different document set than ubc does.
-variant_data_file = "variants/nmc.json"
+# Quick switch for a live demo: comment the NMC line, uncomment the LFP one, save —
+# the IDE re-indexes on save and the cell-protection page reads 3.65 V, and every
+# command and the Sphinx build follow. The `-c` override above and the
+# `variant-diff` / `needs:lfp` scripts switch one command at a time instead.
+# variant_data_file = "variants/nmc.json"
+variant_data_file = "variants/lfp.json"
 
 # --- FIELDS ---
 # Fields the built-in need schema does not carry, in two groups, one per IMPORTED

@@ -222,7 +222,16 @@ ubc script --path docs variant-diff   # ubc diff -c "needs.variant_data_file = '
 ubc script --path docs needs:lfp      # the LFP graph as docs/needs.lfp.json
 ```
 
-Sphinx reads the same key (`-D needs_variant_data_file=docs/variants/lfp.json`).
+To flip the **whole project** — the IDE, every command, the Sphinx build — swap
+the commented `variant_data_file` line in [docs/ubproject.toml](docs/ubproject.toml)
+instead; the extension re-indexes on save and the cell-protection page reads
+3.65 V. Two resolution rules to know (ubc 0.33): a path given with `-c` is
+resolved against the **working directory**, not the toml, and a variant data
+file that is not found resolves *silently* — no warning, every `var.*` value
+empty — which is why the scripts above run in `docs/`. Sphinx is the other way
+round: `-D needs_variant_data_file=variants/lfp.json` resolves against the
+source directory, so it works from the repository root, and a wrong path fails
+the build loudly.
 Per-variant *file* selection (`[[source.variant_sources]]`) is deliberately not
 used: the Sphinx side honours it only with `sphinx-mounts` installed, and the
 `-W` publish must build the same document set as `ubc`. The implementation and
