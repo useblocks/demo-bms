@@ -8,6 +8,33 @@ version = "0.1.0"
 # Skip framework-internal directories so they are not parsed as needs.
 extend_exclude = [".specify"]
 
+# --- PARSERS: reStructuredText AND Markdown (MyST) ---
+# Declaring parsers switches ubCode into parser mode, where discovery follows
+# each parser's own `include` globs. BOTH must be declared: an `md` table alone
+# would drop `*.rst` discovery. The Markdown include is scoped to `specs/` so
+# README.md, presentation.md, `.claude/**` and `.github/agents/*.md` never parse
+# as documents — the same hygiene conf.py's `exclude_patterns` provides on the
+# Sphinx side. (`*` crosses `/` in these globs, so `specs/*.md` is recursive.)
+# The one Markdown-authored stream is `specs/isolation-monitoring/`.
+[parse.parsers.rst]
+
+[parse.parsers.md]
+flavour = "myst"
+include = ["specs/*.md"]
+
+# --- SCRIPTS (`ubc script <name>`) ---
+# The demo beats as one-liners. A value is split like a shell command line, so
+# the quoted `-c` override travels as one argument.
+[scripts]
+check = "ubc check"
+schema = "ubc schema validate"
+needs = "ubc build needs -o needs.json"
+"needs:lfp" = "ubc build needs -c \"needs.variant_data_file = 'variants/lfp.json'\" -o needs.lfp.json"
+variant-diff = "ubc diff -c \"needs.variant_data_file = 'variants/lfp.json'\""
+html = "ubc build html --deny none -o _build/ubc-html"
+report = "ubc report traceability_coverage.html.j2"
+sphinx = "uv run --extra ubtrace sphinx-build -W --keep-going -b html . _build/html"
+
 [needs]
 id_required = true
 id_regex = "^[A-Z]+_[A-Z][A-Z0-9_]*$"
@@ -52,6 +79,26 @@ flow_engine = "graphviz"
 # still exits successfully-looking, so re-run `ubc schema validate` after every edit
 # rather than trusting a clean build.
 schema_definitions_from_json = "schemas.json"
+
+# --- VARIANTS (the 150 % model) ---
+# One specification, several product variants. The pack chemistry is the axis:
+# `variants/nmc.json` is the default profile, `variants/lfp.json` the alternative.
+# Both hold `pack.chemistry`, `pack.cell_v_min` and `pack.cell_v_max`, exposed as
+# `var.*` in field values (`<{ var.pack.chemistry }>`), in filters and in the
+# `:variant:` role that REQ_CELL_VOLTAGE_LIMITS renders its limits with. The
+# voltage values are STRINGS on purpose: they are rendered into prose ("2.50 V"),
+# where a JSON number would print as 2.5.
+#
+# Switch the profile per build without editing a single need:
+#   ubc build needs -c "needs.variant_data_file = 'variants/lfp.json'"
+#   ubc diff       -c "needs.variant_data_file = 'variants/lfp.json'"   # = `ubc script variant-diff`
+# Sphinx reads the same key through `needs_from_toml`, overridable with
+# `-D needs_variant_data_file=variants/lfp.json`.
+#
+# `[[source.variant_sources]]` (per-variant FILE selection) is deliberately not
+# used: sphinx-build honours it only with sphinx-mounts installed, and without
+# that the `-W` publish would build a different document set than ubc does.
+variant_data_file = "variants/nmc.json"
 
 # --- FIELDS ---
 # Fields the built-in need schema does not carry, in two groups, one per IMPORTED
@@ -275,6 +322,23 @@ schema = { type = "string", enum = [
 [needs.fields.status]
 description = "Lifecycle state of an authored spec need: draft -> review -> approved."
 schema = { type = "string", enum = ["draft", "review", "approved"] }
+
+# Named variant expressions, usable as `<<lfp: <value>, <fallback>>>` in any
+# field that sets `parse_variants = true`.
+[needs.variants]
+lfp = "var.pack.chemistry == 'LFP'"
+
+# The field the variant data is INJECTED into: REQ_CELL_VOLTAGE_LIMITS carries
+# `:chemistry: <{ var.pack.chemistry }>`. Global like every field, so "" is
+# admissible for the needs that are not chemistry-specific; the enum is the
+# vocabulary, written once here. `parse_variants` is what lets the value be a
+# `<{ }>` reference or a `<<...>>` function instead of a literal.
+[needs.fields.chemistry]
+description = "Pack cell chemistry a chemistry-specific need is resolved for: NMC or LFP, from the variant data."
+default = ""
+nullable = false
+parse_variants = true
+schema = { type = "string", enum = ["", "NMC", "LFP"] }
 
 # BATTERY MANAGEMENT SYSTEM (BMS) — everything-as-code, MINIMIZED V-MODEL.
 #
@@ -668,6 +732,8 @@ orphan_exempt_types = ["user_story", "req", "arch", "swreq", "gap"]
 enabled = false
 format = "mermaid"
 
+# The route names `.rst`; the `isolation-monitoring` stream is authored in
+# Markdown and is complete, so no stage ever resolves an authoring route into it.
 [[workflow.stages]]
 id = "user_stories"
 produces = "user_story"

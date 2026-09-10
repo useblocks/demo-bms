@@ -13,3 +13,6 @@ __pycache__/
 # uv's environment — recreated from `uv.lock` by `uv sync`. `uv.lock` itself IS
 # a source and stays committed: it is what makes the build reproducible.
 /.venv/
+
+# Per-variant needs export written by `ubc script needs:lfp` — build output.
+/needs.lfp.json

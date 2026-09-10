@@ -2,36 +2,36 @@
   "agent": "claude-code",
   "axes": {
     "atomicity": {
-      "reason": "Two thresholds for two distinct fault mechanisms (undervoltage below 2.50 V, overvoltage above 4.25 V); each would stand alone as a complete protection requirement, though both are facets of one 'cell voltage window' obligation.",
-      "score": 1,
-      "suggestion": "Split into a separate undervoltage and overvoltage requirement, matching the per-limit granularity already used for overtemperature and overcurrent."
-    },
-    "comprehensibility": {
-      "reason": "Self-contained - the reader needs nothing else to know what is required.",
+      "reason": "One obligation: open the contactors when a valid cell voltage is outside the window.",
       "score": 2
     },
+    "comprehensibility": {
+      "reason": "The limits are not literals but variant references, so the body as authored (and as the audit shows it) does not carry the numbers; a reader needs the active variant data file to know the window.",
+      "score": 1,
+      "suggestion": "Name the default profile and its values in prose next to the references, e.g. '(2.50 V to 4.25 V in the NMC profile)', so the requirement reads on its own."
+    },
     "feasibility": {
-      "reason": "Standard per-cell voltage monitoring against a static limit table; contradicts nothing else stated.",
+      "reason": "Cell-voltage supervision against fixed limits is the standard reaction; contradicts nothing else stated.",
       "score": 2
     },
     "parent_fit": {
-      "reason": "Squarely addresses the parent story's voltage arm - a single cell leaving its safe voltage window disconnects the pack.",
+      "reason": "Implements the story's 'leaves its safe voltage window' for the voltage dimension, per cell, exactly as the story frames it.",
       "score": 2
     },
     "unambiguity": {
-      "reason": "One reading; the explicit 'regardless of the pack voltage' clause forecloses the obvious misreading.",
+      "reason": "Per-cell application and the validity precondition are both explicit; one reading.",
       "score": 2
     },
     "verifiability": {
-      "reason": "Both limits carry values and units, the per-cell scope is explicit, and the reaction is externally observable at the contactors.",
+      "reason": "In any given build the window resolves to two concrete limits (2.50 V and 4.25 V in the default NMC profile), so a bench test is unambiguous per variant.",
       "score": 2
     }
   },
   "criteria": "requirement",
   "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
-  "model": "claude-opus-5[1m]",
+  "model": "claude-fable-5-1",
   "need": "REQ_CELL_VOLTAGE_LIMITS",
-  "reviewed_fingerprint": "ad32d0b57589375a7a4e2c9015a615072d9012e1d8d964d19488d6bd898bf501",
+  "reviewed_fingerprint": "23f1f3a6aabad3666f56dac61365048401fe3c9552bbf99883851c02d02d62dc",
   "schema": 2,
-  "summary": "Precise and testable, but it bundles undervoltage and overvoltage protection into one requirement while the comparable overtemperature and overcurrent limits each get their own."
+  "summary": "The 150 % formulation keeps one obligation across chemistries; its cost is that the source text no longer states the numbers, which the body should compensate for."
 }

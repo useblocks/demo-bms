@@ -1,0 +1,37 @@
+{
+  "agent": "claude-code",
+  "axes": {
+    "atomicity": {
+      "reason": "One obligation: the state of one flag in every cycle.",
+      "score": 2
+    },
+    "comprehensibility": {
+      "reason": "Relies on 'valid isolation ratio', which is defined by the sibling software requirement rather than restated here.",
+      "score": 1,
+      "suggestion": "Add the half-sentence '(a ratio computed at 50 V pack voltage or more)' so the requirement reads without the sibling."
+    },
+    "feasibility": {
+      "reason": "A comparison guarded by a flag.",
+      "score": 2
+    },
+    "parent_fit": {
+      "reason": "Pins down the fault derivation the element owns, including the de-energised case.",
+      "score": 2
+    },
+    "unambiguity": {
+      "reason": "'Strictly below' and 'every other cycle' leave one reading.",
+      "score": 2
+    },
+    "verifiability": {
+      "reason": "Strict threshold and the invalid case are both directly testable, and the paired test covers the boundary at exactly 500 ohm/V.",
+      "score": 2
+    }
+  },
+  "criteria": "requirement",
+  "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
+  "model": "claude-fable-5-1",
+  "need": "SWREQ_ISOLATION_FAULT_FLAG",
+  "reviewed_fingerprint": "76be5c89613e5de859dd4a9468721295207ef57176213cdaf57128d444838877",
+  "schema": 2,
+  "summary": "Complete and boundary-aware; leans on the sibling for the definition of validity."
+}

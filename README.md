@@ -46,8 +46,9 @@ project — see [src/code_trace.rst](src/code_trace.rst) and
 
 ## Streams
 
-One directory per root user story. Three are decomposed all the way to code and
-tests; the fourth is deliberately not.
+One directory per root user story. Four are decomposed all the way to code and
+tests — one of them authored in Markdown rather than RST — and the fifth is
+deliberately not.
 
 | Stream | Root story | Depth | What it is good for demoing |
 |---|---|---|---|
@@ -55,6 +56,7 @@ tests; the fourth is deliberately not.
 | [specs/state-estimation/](specs/state-estimation/) | `US_STATE_ESTIMATION` | full V | accuracy budgets, persistence, a fused estimator |
 | [specs/thermal-management/](specs/thermal-management/) | `US_THERMAL_MANAGEMENT` | full V | hysteresis vs. ramps, derating, actuator failsafe |
 | [specs/cell-balancing/](specs/cell-balancing/) | `US_CELL_BALANCING` | **requirement only** | **the gap view, and driving the agent workflow live** |
+| [specs/isolation-monitoring/](specs/isolation-monitoring/) | `US_ISOLATION_MONITORING` | full V, **in Markdown (MyST)** | RST and Markdown in one graph |
 
 Global, cross-stream artefacts live in [specs/_global/](specs/_global/):
 five [risks](specs/_global/risks.rst), five
@@ -132,7 +134,7 @@ The tests are plain pytest, no dependencies beyond the standard library. Two of
 them fail on purpose — see [Two tests are red, on purpose](#two-tests-are-red-on-purpose):
 
 ```bash
-uv run pytest -q     # 2 failed, 48 passed
+uv run pytest -q     # 2 failed, 50 passed
 ```
 
 Both imported artefacts are refreshed the same way — capture a snapshot, then turn
@@ -143,6 +145,43 @@ $UBC agent gaps > reports/gaps/gaps.json || true   # the gate exits 1 when it fi
 uv run python tools/import_gaps.py                 # -> specs/_global/gaps.rst
 uv run python tools/import_gaps.py --check         # CI guard: fail if it is stale
 ```
+
+## Variants: the 150 % model
+
+The specification describes more than one product. The pack chemistry is the
+axis: [variants/nmc.json](variants/nmc.json) is the default profile and
+[variants/lfp.json](variants/lfp.json) the alternative, wired through
+`[needs] variant_data_file` in [ubproject.toml](ubproject.toml) and exposed as
+`var.*`. [`REQ_CELL_VOLTAGE_LIMITS`](specs/cell-protection/requirements.rst)
+is the one requirement that reads it: its limits are `:variant:` references
+resolved from the profile, its `chemistry` field is injected with
+`<{ var.pack.chemistry }>`, and an `.. if::` block on the same page only
+renders for the LFP profile. Nothing else in the graph depends on the variant,
+so the diff between the two builds is exactly that one need:
+
+```bash
+ubc script variant-diff     # ubc diff -c "needs.variant_data_file = 'variants/lfp.json'"
+ubc script needs:lfp        # the LFP graph as needs.lfp.json
+```
+
+Sphinx reads the same key (`-D needs_variant_data_file=variants/lfp.json`).
+Per-variant *file* selection (`[[source.variant_sources]]`) is deliberately not
+used: the Sphinx side honours it only with `sphinx-mounts` installed, and the
+`-W` publish must build the same document set as `ubc`. The implementation and
+verification arms in this repository are the NMC build.
+
+## Markdown next to RST
+
+[specs/isolation-monitoring/](specs/isolation-monitoring/) is a complete stream
+— user story, requirement, architecture element, software requirements —
+authored in Markdown (MyST) instead of reStructuredText, traced to
+[src/isolation_monitoring/](src/isolation_monitoring/) and its tests through
+the same one-line markers as every other stream. `ubc` routes `specs/**/*.md`
+to its MyST parser (`[parse.parsers.md]` in ubproject.toml, scoped so no other
+Markdown in the repository is ever parsed as a document); Sphinx renders it
+through `myst_parser`. The importers under [tools/](tools/) read both
+spellings, so a gap or a test chain resolves through a Markdown need exactly as
+through an RST one.
 
 ## Traceability, as a page
 
@@ -187,7 +226,7 @@ The sources have a **second consumer**. `ubc build needs` compiles
 sources through Sphinx into the artefact that
 [upload_ubtrace.sh](upload_ubtrace.sh) ships to
 [team.useblocks.com](https://team.useblocks.com). Both sides produce the same
-193 needs, because neither side owns the data model: the need types, the link
+205 needs, because neither side owns the data model: the need types, the link
 types and the extra options are declared once in
 [ubproject.toml](ubproject.toml) and read from there by both — `needs_from_toml`
 for the needs, `src_trace_config_from_toml` for the code markers. There is no
@@ -256,7 +295,7 @@ instead of an exception.
 private, so the free open-source mode does not apply — ubCode grants that only to
 projects under an [OSI licence](https://opensource.org/licenses) in a *publicly
 reachable* Git repo, and it probes the remote to decide. Unlicensed, `ubc` caps
-indexing at **5 files and 100 needs**; this project has 22 and 194, so every gate
+indexing at **5 files and 100 needs**; this project has 26 and 205, so every gate
 fails with `exceeds maximum without license`. Two repository secrets are required,
 and **both** of them — useblocks keys are user-based, so the key does not activate
 without the e-mail it was issued to:
@@ -342,7 +381,7 @@ The outcome, runtime and run id are need **fields** (`outcome`, `runtime_s`,
 
 ### Two tests are red, on purpose
 
-`uv run pytest -q` reports **2 failed, 48 passed**, and the committed report
+`uv run pytest -q` reports **2 failed, 50 passed**, and the committed report
 records those two as `outcome: failed`. The failures are real — the report is not
 hand-edited, so running the suite live during a demo tells the same story the
 graph does.
@@ -391,7 +430,7 @@ so the editor preview, a browser and print all look the same.
 It answers three questions: what is structurally *missing* from the graph, how many
 system requirements have a full chain down to a test, and of those, how many are
 backed by passing versus failing tests. Right now: **1 open structural gap**,
-**18 / 19** with a chain (94.7 %), and **14 verified vs 4 failing** (3.5 : 1). Both
+**19 / 20** with a chain (95.0 %), and **15 verified vs 4 failing**. Both
 the gap and the requirement with no evidence are `REQ_CELL_BALANCING_WINDOW`, and
 the report shows them as separate facts — the structural half says the rung is
 missing, the evidence half says no outcome reaches it. That is the distinction the

@@ -53,6 +53,15 @@ project was authored.
 
 .. toctree::
    :maxdepth: 2
+   :caption: Isolation monitoring (Markdown)
+
+   specs/isolation-monitoring/user_stories
+   specs/isolation-monitoring/requirements
+   specs/isolation-monitoring/architecture
+   specs/isolation-monitoring/software_requirements
+
+.. toctree::
+   :maxdepth: 2
    :caption: Implementation and verification arms
 
    src/code_trace

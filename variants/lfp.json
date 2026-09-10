@@ -1,0 +1,7 @@
+{
+  "pack": {
+    "chemistry": "LFP",
+    "cell_v_min": "2.50",
+    "cell_v_max": "3.65"
+  }
+}

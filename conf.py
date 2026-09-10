@@ -37,6 +37,7 @@ version = "0.1.0"
 # -- General configuration ------------------------------------------------------
 
 extensions = [
+    "myst_parser",  # the Markdown-authored stream, specs/isolation-monitoring/
     "sphinx_needs",
     "sphinx_codelinks",  # materialises the one-line markers in src/ and tests/
     "sphinxcontrib.mermaid",  # the `.. mermaid::` component diagrams
@@ -56,7 +57,14 @@ exclude_patterns = [
     ".agents",
     ".pharaoh",
     "reports/_build",
-    "README.md",
+    # With myst_parser on, every `.md` under the source directory is a page unless
+    # excluded. Documentation Markdown lives under specs/ only; a Markdown file at
+    # the repository root (README.md, presentation.md, ...) is never a page. `*`
+    # does not cross `/` in Sphinx patterns, so this is exactly the root level.
+    # `.claude/` also holds other worktrees' full spec copies.
+    "*.md",
+    ".claude",
+    ".vscode",
     "Thumbs.db",
     ".DS_Store",
 ]

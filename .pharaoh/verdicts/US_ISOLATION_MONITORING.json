@@ -1,0 +1,33 @@
+{
+  "agent": "claude-code",
+  "axes": {
+    "naming_clarity": {
+      "reason": "Stakeholder vocabulary throughout, but 'insulation' and 'isolation' are used for the same barrier, which a non-implementer may read as two things.",
+      "score": 1,
+      "suggestion": "Pick one term - 'isolation' matches the requirement and the fault name - and use it in both title and body."
+    },
+    "no_mechanism_leak": {
+      "reason": "Names interfaces a user sees (dashboard, diagnostic interface) and no implementation construct.",
+      "score": 2
+    },
+    "parent_fit": {
+      "reason": "Root story of its stream: no parent exists to trace to, which the pack scores as full fit.",
+      "score": 2
+    },
+    "single_user_capability": {
+      "reason": "Exactly one capability - report a degrading isolation barrier - with the neighbouring reactions explicitly ruled out of scope.",
+      "score": 2
+    },
+    "user_observable": {
+      "reason": "Observable from the driver's seat (dashboard fault) and from the workshop (diagnostic readout confirmable with a hand-held tester).",
+      "score": 2
+    }
+  },
+  "criteria": "feat",
+  "criteria_fingerprint": "bb61c1a1cf63adcf67ee69adf932c3812909a595fa4b3037b66f097932231afe",
+  "model": "claude-fable-5-1",
+  "need": "US_ISOLATION_MONITORING",
+  "reviewed_fingerprint": "7cfbd0c3b98eaefe3e1cd35f505a0d407ee5ebe11d86ac68dbe33888030ac0c9",
+  "schema": 2,
+  "summary": "Clean single-capability story with a strong observability paragraph; the only wobble is the insulation/isolation synonym pair."
+}

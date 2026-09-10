@@ -2,33 +2,32 @@
   "agent": "claude-code",
   "axes": {
     "completeness": {
-      "reason": "The contactor reaction is explicitly delegated ('before any limit is evaluated'), but REQ_CELL_OVERTEMPERATURE is qualified on a *valid* temperature measurement and this element's only validity mechanism is the median of cell VOLTAGES - nothing here (or in any sibling) establishes temperature validity.",
+      "reason": "For REQ_CELL_VOLTAGE_LIMITS and REQ_CELL_OVERTEMPERATURE the element covers acquisition only; the contactor reaction is delegated to the safety supervisor, so each of those two parents is covered partially by this element alone.",
       "score": 1,
-      "suggestion": "State how a cell temperature reading is qualified valid or invalid (e.g. sensor range/open-circuit check, or a per-module temperature plausibility band), so the 'valid cell temperature measurement' qualifier in REQ_CELL_OVERTEMPERATURE has an owner."
+      "suggestion": "State explicitly that the limit evaluation and reaction are owned by the safety supervisor, so the split is visible from this element's text."
     },
     "consistency": {
-      "reason": "Consistent with ARCH_SAFETY_SUPERVISOR, its sibling on both limit requirements: this element tags invalid, the supervisor ignores tagged-invalid samples, and both run the same 10 ms cycle that ARCH_CONTACTOR_ACTUATOR's 40 ms residual budget assumes.",
+      "reason": "Acquisition owns plausibility and the supervisor consumes the invalid tag; responsibilities are disjoint and reconciled.",
       "score": 2
     },
     "design_clarity": {
-      "reason": "Names concrete choices rather than goals: daisy-chained AFE readout, fixed 10 ms cycle, mV and 0.1 degC engineering units, cycle timestamp as the budget origin, per-module median with a 250 mV invalidation band.",
+      "reason": "Concrete choices named: 10 ms cycle, millivolt and tenth-of-a-degree units, module-median plausibility at 250 mV, cycle timestamping.",
       "score": 2
     },
     "implementability": {
-      "reason": "Realisable and clearly bounded, but two boundaries need an implementer judgement call: behaviour when an AFE readout fails or returns no data for a cycle is unspecified, and ownership of cell-temperature acquisition overlaps ARCH_THERMAL_STATE_EVALUATOR, which claims to read temperature sensors directly.",
-      "score": 1,
-      "suggestion": "Specify the fallback for a failed/absent AFE readout (tag the affected cells invalid, hold the previous sample, or fault out), and reconcile temperature acquisition with ARCH_THERMAL_STATE_EVALUATOR - one element should own the sensor readout and hand valid temperatures to the other."
+      "reason": "A single bounded acquisition element.",
+      "score": 2
     },
     "parent_fit": {
-      "reason": "Fully covers REQ_MEASUREMENT_PLAUSIBILITY (module median, 250 mV band, tagged before limit evaluation) and substantively owns a distinct part of the two limit requirements by acquiring every cell's voltage/temperature and stamping the sample the 50 ms budget is measured from.",
+      "reason": "Addresses the measurement half of the voltage, temperature and plausibility requirements, a distinct part of each parent's obligation.",
       "score": 2
     }
   },
   "criteria": "arch",
   "criteria_fingerprint": "48337dfa0b294b1882460a938500fa11eb3e8fd873d5cd9afa31ff1f7923f377",
-  "model": "claude-opus-5[1m]",
+  "model": "claude-fable-5-1",
   "need": "ARCH_CELL_MEASUREMENT_ACQ",
-  "reviewed_fingerprint": "7cfcd282bd23dc8af503469496ed0d64d6cf54216d50d62b822a71c731c7d5c8",
+  "reviewed_fingerprint": "b53737ce71c91bd28c612f738de39a1322f16fda369607807250e3eca8540615",
   "schema": 2,
-  "summary": "Solid acquisition element: fully owns the plausibility obligation and supplies the timestamped, validity-tagged measurements the supervisor decides on. Weak points are temperature validity (the plausibility check is voltage-only, yet REQ_CELL_OVERTEMPERATURE is qualified on a 'valid' temperature) and unspecified behaviour when an AFE readout is unavailable."
+  "summary": "Re-reviewed after REQ_CELL_VOLTAGE_LIMITS became variant-resolved; the element is unaffected by that change and still covers the measurement half cleanly."
 }

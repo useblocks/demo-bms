@@ -2,34 +2,32 @@
   "agent": "claude-code",
   "axes": {
     "completeness": {
-      "reason": "REQ_FAULT_LATCH is covered fully and the voltage/temperature reactions are covered, but the overcurrent obligation is covered only shallowly - the element lists overcurrent in its limit table without saying whether it consumes the already-debounced condition or re-evaluates raw current, so the 100 ms continuity part is left implicit. Behaviour when several limits are violated in the same cycle is also unaddressed.",
+      "reason": "REQ_CELL_VOLTAGE_LIMITS now derives its limits from the pack chemistry variant, and the element's 'static limit table' does not say how the table follows the chemistry profile of the build.",
       "score": 1,
-      "suggestion": "State the overcurrent input explicitly (a debounced boolean condition from ARCH_CURRENT_PATH_MONITOR rather than a raw sample) and say what is recorded and reported when more than one limit is violated in the same 10 ms cycle."
+      "suggestion": "State that the static table is selected per chemistry profile at build time (NMC today), which also keeps DEC_SUPERVISOR_LIMIT_TABLE's non-calibratable stance intact."
     },
     "consistency": {
-      "reason": "No outright contradiction, but the overlap with its sibling ARCH_CURRENT_PATH_MONITOR on REQ_PACK_OVERCURRENT is not reconciled: the monitor compares samples to 350 A and debounces them, while this element's static limit table also contains overcurrent, so both appear to own the threshold comparison.",
-      "score": 1,
-      "suggestion": "Remove overcurrent from this element's static limit table and describe it as a pre-qualified condition input, or state that the monitor only timestamps samples and this element owns the 350 A comparison - one of the two, not both."
+      "reason": "Disjoint from the acquisition element (it consumes the invalid tag rather than deciding it) and aligned with the limit-table decision.",
+      "score": 2
     },
     "design_clarity": {
-      "reason": "Names concrete choices rather than intent: a static limit table evaluated once per 10 ms cycle, a two-state machine with both states named and a single named exit transition, invalid-tagged samples ignored, and two named emissions on the first violation.",
+      "reason": "Concrete choices: static limit table, two-state machine with a named single exit, 10 ms evaluation, invalid-tag filtering.",
       "score": 2
     },
     "implementability": {
-      "reason": "Realisable as one bounded decision element, but an implementer must decide the form of the overcurrent input, the arbitration between simultaneous violations, and whether the open command is emitted before or after the fault record write is acknowledged.",
-      "score": 1,
-      "suggestion": "Fix the ordering guarantee between the open command and the fault record emission (the reaction time budget suggests the open command must not wait on the NVM write) and the multi-violation arbitration rule."
+      "reason": "A single bounded evaluator plus a two-state machine.",
+      "score": 2
     },
     "parent_fit": {
-      "reason": "Substantively addresses all four parents: it is the element that decides a limit violation and emits the contactor-open command for the voltage, temperature and current limits, and it holds REQ_FAULT_LATCH's hold-until-service-reset behaviour as an explicit two-state machine.",
+      "reason": "The single decision point for all four parent requirements, exactly what their contactor-open obligations need.",
       "score": 2
     }
   },
   "criteria": "arch",
   "criteria_fingerprint": "48337dfa0b294b1882460a938500fa11eb3e8fd873d5cd9afa31ff1f7923f377",
-  "model": "claude-opus-5[1m]",
+  "model": "claude-fable-5-1",
   "need": "ARCH_SAFETY_SUPERVISOR",
-  "reviewed_fingerprint": "08eef59982cfab72782fae80fa0faf4d8c1698889f0cad76a6b1ae47891325f8",
+  "reviewed_fingerprint": "d77f578067b78e2041e08f50c142abeb4172ec20a83dfe7042f5d540727cb0c5",
   "schema": 2,
-  "summary": "The latch and the single-decision-point structure are excellent. The overcurrent path is the weak spot: listing overcurrent in this element's static limit table duplicates the 350 A comparison that ARCH_CURRENT_PATH_MONITOR also claims, leaving the shared responsibility unreconciled."
+  "summary": "Re-reviewed because its parent became variant-resolved: the design still fits, but the static table now needs a sentence on how it follows the chemistry profile."
 }

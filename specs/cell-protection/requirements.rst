@@ -1,16 +1,34 @@
 Cell Protection — Requirements
 ==================================
 
-.. req:: The battery management system shall open the high-voltage contactors when any cell voltage leaves the range 2.50 V to 4.25 V
+This page is a **150 % specification**. The cell voltage limits below are not
+literals: they are resolved from the pack chemistry in the active variant data
+(``variants/nmc.json`` unless overridden), which currently selects
+:variant:`pack.chemistry` and keeps every cell between
+:variant:`pack.cell_v_min` V and :variant:`pack.cell_v_max` V. Build the LFP
+profile with ``ubc script variant-diff`` to see exactly which requirement
+changes. The implementation and verification arms in this repository are the
+NMC build.
+
+.. if:: var.pack.chemistry == 'LFP'
+
+   .. note::
+
+      LFP profile. The flat open-circuit-voltage plateau of lithium iron
+      phosphate leaves little headroom between "full" and the upper limit, so
+      cell balancing is what keeps a full pack clear of this reaction.
+
+.. req:: The battery management system shall open the high-voltage contactors when any cell voltage leaves the safe window of the pack chemistry
    :id: REQ_CELL_VOLTAGE_LIMITS
    :status: draft
    :traces_to: US_CELL_PROTECTION
+   :chemistry: <{ var.pack.chemistry }>
 
    The battery management system shall command the high-voltage contactors open
-   whenever a valid cell voltage measurement is below 2.50 V or above 4.25 V.
-   The limits apply to every cell of the pack individually, so a single cell
-   outside the range is sufficient to trigger the reaction, regardless of the
-   pack voltage.
+   whenever a valid cell voltage measurement is below :variant:`pack.cell_v_min` V
+   or above :variant:`pack.cell_v_max` V. The limits apply to every cell of the
+   pack individually, so a single cell outside the range is sufficient to trigger
+   the reaction, regardless of the pack voltage.
 
 .. req:: The battery management system shall open the high-voltage contactors when the pack discharge current exceeds 350 A for more than 100 ms
    :id: REQ_PACK_OVERCURRENT

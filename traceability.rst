@@ -73,6 +73,21 @@ shows the hole rather than hiding it.
    :show_link_names:
    :align: center
 
+Isolation monitoring
+~~~~~~~~~~~~~~~~~~~~
+
+The stream authored in Markdown (MyST) rather than reStructuredText. Same
+ontology, same links, same diagram — the format of the source file is not a
+property of the graph.
+
+.. needflow:: Isolation monitoring — full chain
+   :root_id: US_ISOLATION_MONITORING
+   :root_direction: incoming
+   :link_types: traces_to, satisfies, refines, implements, verifies, results_for, gap_for
+   :direction: LR
+   :show_link_names:
+   :align: center
+
 Level by level
 --------------
 

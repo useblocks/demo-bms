@@ -40,10 +40,14 @@ DEFAULT_SPECS_DIR = REPO_ROOT / "specs"
 DEFAULT_OUTPUT = REPO_ROOT / "specs" / "_global" / "test_results.rst"
 
 #: Directive id line and the two upward link fields the roll-up walks, as they
-#: appear in the spec RST. Parsed from source rather than from `needs.json` so the
-#: import never depends on a build having already run.
+#: appear in the spec sources. Parsed from source rather than from `needs.json` so
+#: the import never depends on a build having already run. Two directive
+#: spellings: the RST `.. swreq::` and the MyST fence ```{swreq} used by the
+#: Markdown-authored `specs/isolation-monitoring/` stream; the field lines are
+#: the same in both, indented in RST and at column 0 in Markdown.
 RST_DIRECTIVE = re.compile(r"^\.\.\s+(?P<type>[a-z_]+)::")
-RST_FIELD = re.compile(r"^\s+:(?P<name>id|refines|satisfies):\s*(?P<value>.+?)\s*$")
+MD_DIRECTIVE = re.compile(r"^\s*(?:`{3,}|:{3,})\{(?P<type>[a-z_]+)\}")
+RST_FIELD = re.compile(r"^\s*:(?P<name>id|refines|satisfies):\s*(?P<value>.+?)\s*$")
 
 #: The one-line codelinks marker grammar declared in `[codelinks.projects.tests]`.
 MARKER = re.compile(
@@ -89,11 +93,11 @@ def collect_spec_links(specs_dir: Path) -> dict[str, list[str]]:
     ``swreq -> arch -> req`` without tracking which rung a hop is on.
     """
     parents: dict[str, list[str]] = {}
-    for source in sorted(specs_dir.rglob("*.rst")):
+    for source in sorted([*specs_dir.rglob("*.rst"), *specs_dir.rglob("*.md")]):
         current_id: str | None = None
         pending: list[str] = []
         for line in source.read_text().splitlines():
-            if RST_DIRECTIVE.match(line):
+            if RST_DIRECTIVE.match(line) or MD_DIRECTIVE.match(line):
                 current_id, pending = None, []
                 continue
             field = RST_FIELD.match(line)

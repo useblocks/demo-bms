@@ -47,11 +47,15 @@ DEFAULT_SPECS_DIR = REPO_ROOT / "specs"
 DEFAULT_CODE_DIRS = (REPO_ROOT / "src", REPO_ROOT / "tests")
 DEFAULT_OUTPUT = REPO_ROOT / "specs" / "_global" / "gaps.rst"
 
-#: Directive line and `:id:` field as they appear in the spec RST. Parsed from
-#: source rather than from `needs.json` so the import never depends on a build
-#: having already run — `needs.json` is gitignored and may not exist.
+#: Directive line and `:id:` field as they appear in the spec sources. Parsed
+#: from source rather than from `needs.json` so the import never depends on a
+#: build having already run — `needs.json` is gitignored and may not exist. Two
+#: directive spellings: the RST `.. req::` and the MyST fence ```{req} used by
+#: the Markdown-authored `specs/isolation-monitoring/` stream; the `:id:` line
+#: is the same in both, indented in RST and at column 0 in Markdown.
 RST_DIRECTIVE = re.compile(r"^\.\.\s+(?P<type>[a-z_]+)::")
-RST_ID = re.compile(r"^\s+:id:\s*(?P<id>[A-Z][A-Z0-9_]*)\s*$")
+MD_DIRECTIVE = re.compile(r"^\s*(?:`{3,}|:{3,})\{(?P<type>[a-z_]+)\}")
+RST_ID = re.compile(r"^\s*:id:\s*(?P<id>[A-Z][A-Z0-9_]*)\s*$")
 
 #: The one-line codelinks marker grammar shared by both `[codelinks.projects]`
 #: blocks: `# @<title>, <ID>, <type>, [<PARENT_ID>, ...]`. `impl` and `test` needs
@@ -124,16 +128,17 @@ class Gap:
 def collect_need_types(specs_dir: Path, code_dirs: tuple[Path, ...]) -> dict[str, str]:
     """Return `need id -> type` for every need authored in the sources.
 
-    Both authoring forms are read: the RST directives under ``specs/``, and the
-    one-line codelinks markers under ``src/`` and ``tests/`` that materialise the
-    ``impl`` and ``test`` needs. A gap can be attributed to any of them.
+    Every authoring form is read: the RST directives and the MyST fences under
+    ``specs/``, and the one-line codelinks markers under ``src/`` and ``tests/``
+    that materialise the ``impl`` and ``test`` needs. A gap can be attributed to
+    any of them.
     """
     types: dict[str, str] = {}
 
-    for source in sorted(specs_dir.rglob("*.rst")):
+    for source in sorted([*specs_dir.rglob("*.rst"), *specs_dir.rglob("*.md")]):
         current_type: str | None = None
         for line in source.read_text().splitlines():
-            directive = RST_DIRECTIVE.match(line)
+            directive = RST_DIRECTIVE.match(line) or MD_DIRECTIVE.match(line)
             if directive is not None:
                 current_type = directive.group("type")
                 continue
