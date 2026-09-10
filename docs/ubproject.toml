@@ -595,12 +595,12 @@ outgoing = "gap_for"
 # from each. Neither back-attaches a ref URL; both author needs.
 #
 # - `code` (the implementation arm) scans the production source (../src) for
-#   `# @<title>, <IMPL_ID>, impl, [<SWREQ_ID>]` markers. The marker's link field is
+#   `# @<title>, <IMPL_ID>, [<SWREQ_ID>]` markers. The marker's link field is
 #   named `implements` (not the default `links`) so the `implements`-keyed trace gate
 #   sees it.
 #
 # - `tests` (the verification arm) scans the test source (../tests) for
-#   `# @<title>, <TEST_ID>, test, [<SWREQ_ID>]` markers. The marker's link field is
+#   `# @<title>, <TEST_ID>, [<SWREQ_ID>]` markers. The marker's link field is
 #   named `verifies` so the `verifies`-keyed trace gate sees it.
 #
 # One-line needs ONLY materialise where a `.. src-trace:: :project: <name>` directive
@@ -623,19 +623,24 @@ get_oneline_needs = true
 get_need_id_refs = false
 get_rst = false
 
-# The one-line marker grammar: `# @<title>, <IMPL_ID>, impl, [<SWREQ_ID>]`. The
-# fourth field is NAMED `implements` (a `list[str]` link) so the materialised `impl`
-# need carries an outgoing `implements` link — the link the `code` stage's trace edge
+# The one-line marker grammar: `# @<title>, <IMPL_ID>, [<SWREQ_ID>]`. The third
+# field is NAMED `implements` (a `list[str]` link) so the materialised `impl` need
+# carries an outgoing `implements` link — the link the `code` stage's trace edge
 # counts. `implements` is declared in `[needs.links]` above, so it resolves to a real
 # link instead of being silently dropped.
+#
+# `type` is the LAST field and carries the default, so no marker has to spell it:
+# everything under ../src is an implementation by construction, and a marker that
+# does name a type (`..., [<SWREQ_ID>], impl`) is still accepted. Trailing fields with
+# a default are the only ones a marker may leave out, which is why the order matters.
 [codelinks.projects.code.analyse.oneline_comment_style]
 field_split_char = ","
 needs_fields = [
   { name = "title", type = "str" },
   { name = "id", type = "str" },
-  { name = "type", type = "str", default = "impl" },
   { name = "implements", type = "list[str]", default = [
   ] },
+  { name = "type", type = "str", default = "impl" },
 ]
 
 # The verification-arm project. `get_oneline_needs = true` materialises a `test`
@@ -651,19 +656,22 @@ get_oneline_needs = true
 get_need_id_refs = false
 get_rst = false
 
-# The one-line marker grammar: `# @<title>, <TEST_ID>, test, [<SWREQ_ID>]`. The
-# fourth field is NAMED `verifies` (a `list[str]` link) so the materialised `test`
-# need carries an outgoing `verifies` link — the link the `tests` stage's trace edge
+# The one-line marker grammar: `# @<title>, <TEST_ID>, [<SWREQ_ID>]`. The third
+# field is NAMED `verifies` (a `list[str]` link) so the materialised `test` need
+# carries an outgoing `verifies` link — the link the `tests` stage's trace edge
 # counts. `verifies` is declared in `[needs.links]` above, so it resolves to a real
 # link instead of being silently dropped.
+#
+# `type` is the LAST field and carries the default, exactly as in the `code`
+# project: everything under ../tests is a test case by construction.
 [codelinks.projects.tests.analyse.oneline_comment_style]
 field_split_char = ","
 needs_fields = [
   { name = "title", type = "str" },
   { name = "id", type = "str" },
-  { name = "type", type = "str", default = "test" },
   { name = "verifies", type = "list[str]", default = [
   ] },
+  { name = "type", type = "str", default = "test" },
 ]
 
 # --- AGENT RUNNER (consumed by `ubc agent run`) ---
@@ -825,7 +833,7 @@ up = "arch"
 
 # --- CODE STAGE (the implementation arm) ---
 # This stage PRODUCES an `impl` need authored as a one-line codelinks marker in the
-# production source (`# @<title>, <IMPL_ID>, impl, [<SWREQ_ID>]`), which
+# production source (`# @<title>, <IMPL_ID>, [<SWREQ_ID>]`), which
 # `implements`-links the swreq it realises. The bidirectional `implements` trace edge
 # UP to `swreq` drives coverage: it counts every swreq's incoming `implements_back`, so
 # a swreq with no implementing element fails the gate and the stage stays `ready`
@@ -853,7 +861,7 @@ up = "swreq"
 
 # --- TESTS STAGE (the verification arm) ---
 # This stage PRODUCES a `test` need authored as a one-line codelinks marker in the
-# test source (`# @<title>, <TEST_ID>, test, [<SWREQ_ID>]`), which `verifies`-links
+# test source (`# @<title>, <TEST_ID>, [<SWREQ_ID>]`), which `verifies`-links
 # the swreq it covers. The bidirectional `verifies` trace edge UP to `swreq` drives
 # coverage: it counts every swreq's incoming `verifies_back`, so a swreq with no
 # verifying test fails the gate and the stage stays `ready` until a test covers it.

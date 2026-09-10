@@ -20,7 +20,7 @@ class ValidityMonitor:
     def staleness_s(self) -> float:
         return self._staleness_s
 
-    # @Raise the unreliable verdict after 5 s without a valid current sample, IMPL_CURRENT_STALENESS_TIMER, impl, [SWREQ_CURRENT_STALENESS_TIMER]
+    # @Raise the unreliable verdict after 5 s without a valid current sample, IMPL_CURRENT_STALENESS_TIMER, [SWREQ_CURRENT_STALENESS_TIMER]
     def tick(self, dt_s: float, current_sample_valid: bool) -> bool:
         """Advance the staleness timer and latch the unreliable verdict.
 

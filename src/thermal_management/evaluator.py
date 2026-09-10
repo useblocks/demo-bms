@@ -57,7 +57,7 @@ class ThermalStateEvaluator:
         self._imbalance = self.update_imbalance(picture.spread_dk)
         return picture
 
-    # @Reduce the valid cell temperatures to highest lowest and spread, IMPL_TEMP_EXTREMA, impl, [SWREQ_TEMP_EXTREMA]
+    # @Reduce the valid cell temperatures to highest lowest and spread, IMPL_TEMP_EXTREMA, [SWREQ_TEMP_EXTREMA]
     def _reduce(
         self, temperatures_dc: tuple[tuple[int, bool], ...]
     ) -> ThermalPicture | None:
@@ -74,7 +74,7 @@ class ThermalStateEvaluator:
             highest_dc=highest, lowest_dc=lowest, spread_dk=highest - lowest
         )
 
-    # @Raise the cooling request above 35 C and withdraw it at or below 30 C, IMPL_COOLING_HYSTERESIS, impl, [SWREQ_COOLING_HYSTERESIS]
+    # @Raise the cooling request above 35 C and withdraw it at or below 30 C, IMPL_COOLING_HYSTERESIS, [SWREQ_COOLING_HYSTERESIS]
     def update_cooling(self, highest_dc: int) -> bool:
         """Schmitt-trigger the cooling request across the 35/30 °C band.
 
@@ -87,7 +87,7 @@ class ThermalStateEvaluator:
             self._cooling = False
         return self._cooling
 
-    # @Raise the heating request below 5 C and withdraw it at or above 10 C, IMPL_HEATING_HYSTERESIS, impl, [SWREQ_HEATING_HYSTERESIS]
+    # @Raise the heating request below 5 C and withdraw it at or above 10 C, IMPL_HEATING_HYSTERESIS, [SWREQ_HEATING_HYSTERESIS]
     def update_heating(self, lowest_dc: int) -> bool:
         """Schmitt-trigger the heating request across the 5/10 °C band."""
         if lowest_dc < HEAT_ON_DC:
@@ -102,7 +102,7 @@ class ThermalStateEvaluator:
     # boundary error: the code is one operator away from the requirement, the
     # trace gate is fully satisfied, and only the recorded test outcome shows it.
     # TEST_IMBALANCE_WARNING catches it and is RED.
-    # @Set the thermal imbalance warning above an 8 K spread, IMPL_IMBALANCE_WARNING, impl, [SWREQ_IMBALANCE_WARNING]
+    # @Set the thermal imbalance warning above an 8 K spread, IMPL_IMBALANCE_WARNING, [SWREQ_IMBALANCE_WARNING]
     def update_imbalance(self, spread_dk: int) -> bool:
         """Set or clear the imbalance warning from this cycle's spread alone.
 

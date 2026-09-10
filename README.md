@@ -37,8 +37,14 @@ the level a test can assert against.
 production or test source *is* the need:
 
 ```python
-# @De-energise both coil channels within 10 ms of the open command, IMPL_CONTACTOR_DEENERGISE, impl, [SWREQ_CONTACTOR_DEENERGISE]
+# @De-energise both coil channels within 10 ms of the open command, IMPL_CONTACTOR_DEENERGISE, [SWREQ_CONTACTOR_DEENERGISE]
 ```
+
+Title, id, and the link up to the software requirement — the need *type* is not
+spelled out. It is the last field of the marker grammar and carries a default
+per codelinks project (`[codelinks.projects.*.analyse.oneline_comment_style]` in
+[docs/ubproject.toml](docs/ubproject.toml)): everything under `src/` is an
+`impl`, everything under `tests/` is a `test`, by construction.
 
 Those markers only materialise where a `.. src-trace::` directive names their
 project — see [docs/arms/implementation.rst](docs/arms/implementation.rst) and

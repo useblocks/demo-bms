@@ -14,7 +14,7 @@ def _cell(mv: int = 3600, dc: int = 250, invalid: bool = False) -> CellSample:
     )
 
 
-# @Supervisor evaluates each valid sample against the four limit table entries, TEST_LIMIT_EVALUATION, test, [SWREQ_LIMIT_EVALUATION]
+# @Supervisor evaluates each valid sample against the four limit table entries, TEST_LIMIT_EVALUATION, [SWREQ_LIMIT_EVALUATION]
 def test_each_limit_table_entry_is_evaluated() -> None:
     """All four entries produce a violation naming that entry."""
     assert SafetySupervisor().evaluate(_set(_cell(mv=2499))).limit is Limit.UNDERVOLTAGE
@@ -26,7 +26,7 @@ def test_each_limit_table_entry_is_evaluated() -> None:
     )
 
 
-# @A sample inside every limit produces no violation, TEST_LIMIT_EVALUATION_NOMINAL, test, [SWREQ_LIMIT_EVALUATION]
+# @A sample inside every limit produces no violation, TEST_LIMIT_EVALUATION_NOMINAL, [SWREQ_LIMIT_EVALUATION]
 def test_nominal_sample_produces_no_violation() -> None:
     """The gate must not fire on healthy measurements."""
     supervisor = SafetySupervisor()
@@ -36,7 +36,7 @@ def test_nominal_sample_produces_no_violation() -> None:
     assert supervisor.open_command is False
 
 
-# @An invalid sample can never command the contactors open, TEST_IGNORE_INVALID_SAMPLES, test, [SWREQ_IGNORE_INVALID_SAMPLES]
+# @An invalid sample can never command the contactors open, TEST_IGNORE_INVALID_SAMPLES, [SWREQ_IGNORE_INVALID_SAMPLES]
 def test_invalid_samples_are_excluded_from_evaluation() -> None:
     """A single failed sensor reading past a limit is dropped, not acted on."""
     supervisor = SafetySupervisor()
@@ -48,7 +48,7 @@ def test_invalid_samples_are_excluded_from_evaluation() -> None:
     assert supervisor.evaluate(_set(_cell(mv=5000))) is not None
 
 
-# @A cycle of only invalid samples produces no event at all, TEST_IGNORE_INVALID_ALL, test, [SWREQ_IGNORE_INVALID_SAMPLES]
+# @A cycle of only invalid samples produces no event at all, TEST_IGNORE_INVALID_ALL, [SWREQ_IGNORE_INVALID_SAMPLES]
 def test_fully_invalid_cycle_is_silent() -> None:
     """Losing the whole AFE chain must not be read as a limit violation."""
     supervisor = SafetySupervisor()
@@ -61,7 +61,7 @@ def test_fully_invalid_cycle_is_silent() -> None:
     assert supervisor.state is SafetyState.RUN
 
 
-# @FAULT_LATCHED is left only on a diagnostic service reset, TEST_LATCH_STATE_MACHINE, test, [SWREQ_LATCH_STATE_MACHINE]
+# @FAULT_LATCHED is left only on a diagnostic service reset, TEST_LATCH_STATE_MACHINE, [SWREQ_LATCH_STATE_MACHINE]
 def test_latch_survives_healthy_samples_and_clears_only_on_reset() -> None:
     """Healthy measurements must not release the latch — only a service action does."""
     supervisor = SafetySupervisor()
@@ -78,7 +78,7 @@ def test_latch_survives_healthy_samples_and_clears_only_on_reset() -> None:
     assert supervisor.open_command is False
 
 
-# @The latched violation keeps the first cause not the latest, TEST_LATCH_FIRST_CAUSE, test, [SWREQ_LATCH_STATE_MACHINE]
+# @The latched violation keeps the first cause not the latest, TEST_LATCH_FIRST_CAUSE, [SWREQ_LATCH_STATE_MACHINE]
 def test_latch_retains_the_first_violation() -> None:
     """The workshop needs the cause that started the fault, not the last symptom."""
     supervisor = SafetySupervisor()

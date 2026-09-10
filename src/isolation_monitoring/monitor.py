@@ -25,7 +25,7 @@ class IsolationRatio:
     valid: bool
 
 
-# @Compute the isolation ratio in ohm per volt and mark it invalid below 50 V pack voltage, IMPL_ISOLATION_RATIO, impl, [SWREQ_ISOLATION_RATIO]
+# @Compute the isolation ratio in ohm per volt and mark it invalid below 50 V pack voltage, IMPL_ISOLATION_RATIO, [SWREQ_ISOLATION_RATIO]
 def isolation_ratio(resistance_ohm: float, pack_voltage_v: float) -> IsolationRatio:
     """Normalise the measured resistance to the pack voltage."""
     if pack_voltage_v < MIN_PACK_VOLTAGE_V:
@@ -33,7 +33,7 @@ def isolation_ratio(resistance_ohm: float, pack_voltage_v: float) -> IsolationRa
     return IsolationRatio(ohm_per_volt=resistance_ohm / pack_voltage_v, valid=True)
 
 
-# @Set the isolation fault flag when a valid ratio is below 500 ohm per volt, IMPL_ISOLATION_FAULT_FLAG, impl, [SWREQ_ISOLATION_FAULT_FLAG]
+# @Set the isolation fault flag when a valid ratio is below 500 ohm per volt, IMPL_ISOLATION_FAULT_FLAG, [SWREQ_ISOLATION_FAULT_FLAG]
 def isolation_fault(ratio: IsolationRatio) -> bool:
     """Strictly below the limit, and only on a ratio that could be computed."""
     return ratio.valid and ratio.ohm_per_volt < ISOLATION_LIMIT_OHM_PER_V

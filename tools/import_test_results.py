@@ -9,7 +9,7 @@ next to it.
 The mapping is deterministic, not heuristic. Every test case in this project
 carries a one-line codelinks marker directly above its function::
 
-    # @<title>, <TEST_ID>, test, [<SWREQ_ID>]
+    # @<title>, <TEST_ID>, [<SWREQ_ID>]
     def test_something() -> None:
 
 so the pair (test module, function name) identifies exactly one ``test`` need.
@@ -49,10 +49,12 @@ RST_DIRECTIVE = re.compile(r"^\.\.\s+(?P<type>[a-z_]+)::")
 MD_DIRECTIVE = re.compile(r"^\s*(?:`{3,}|:{3,})\{(?P<type>[a-z_]+)\}")
 RST_FIELD = re.compile(r"^\s*:(?P<name>id|refines|satisfies):\s*(?P<value>.+?)\s*$")
 
-#: The one-line codelinks marker grammar declared in `[codelinks.projects.tests]`.
+#: The one-line codelinks marker grammar declared in `[codelinks.projects.tests]`:
+#: title, id, the `verifies` list — and the type LAST, defaulted to `test`, so the
+#: markers leave it out (an explicit trailing `, test` is still accepted).
 MARKER = re.compile(
-    r"^\s*#\s*@(?P<title>[^,]+),\s*(?P<id>TEST_[A-Z][A-Z0-9_]*),\s*test\s*,\s*"
-    r"\[(?P<verifies>[^\]]*)\]\s*$"
+    r"^\s*#\s*@(?P<title>[^,]+),\s*(?P<id>TEST_[A-Z][A-Z0-9_]*),\s*"
+    r"\[(?P<verifies>[^\]]*)\](?:\s*,\s*test)?\s*$"
 )
 DEF_LINE = re.compile(r"^\s*def\s+(?P<name>test_[A-Za-z0-9_]+)\s*\(")
 

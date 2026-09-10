@@ -42,7 +42,7 @@ class StatePublisher:
         if unreliable is not None:
             self._unreliable = unreliable
 
-    # @Send the battery state frame every 100 ms regardless of producer updates, IMPL_STATE_FRAME_PERIOD, impl, [SWREQ_STATE_FRAME_PERIOD]
+    # @Send the battery state frame every 100 ms regardless of producer updates, IMPL_STATE_FRAME_PERIOD, [SWREQ_STATE_FRAME_PERIOD]
     def cycle(self, now_ms: int) -> BatteryStateFrame | None:
         """Send a frame when one is due, repeating the last held values.
 

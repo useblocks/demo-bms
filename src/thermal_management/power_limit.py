@@ -17,7 +17,7 @@ class PowerLimitCalculator:
     def published_pct(self) -> float:
         return self._published_pct
 
-    # @Ramp the temperature-driven power share from 100 percent at 55 C to zero at 60 C, IMPL_TEMP_DERATE_RAMP, impl, [SWREQ_TEMP_DERATE_RAMP]
+    # @Ramp the temperature-driven power share from 100 percent at 55 C to zero at 60 C, IMPL_TEMP_DERATE_RAMP, [SWREQ_TEMP_DERATE_RAMP]
     def temperature_share_pct(self, highest_dc: int) -> float:
         """The linear derating ramp over the 55–60 °C band.
 
@@ -35,7 +35,7 @@ class PowerLimitCalculator:
         """The flat fallback share while the actuator has not confirmed."""
         return ACTUATOR_FALLBACK_SHARE_PCT if unconfirmed else 100.0
 
-    # @Publish the minimum of the temperature and actuator power shares, IMPL_LIMIT_MINIMUM, impl, [SWREQ_LIMIT_MINIMUM]
+    # @Publish the minimum of the temperature and actuator power shares, IMPL_LIMIT_MINIMUM, [SWREQ_LIMIT_MINIMUM]
     def publish(self, highest_dc: int, unconfirmed: bool) -> float:
         """Combine both independent causes of derating by taking the minimum.
 

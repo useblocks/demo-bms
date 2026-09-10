@@ -44,7 +44,10 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_REPORT = REPO_ROOT / "docs" / "reports" / "gaps" / "gaps.json"
 DEFAULT_SPECS_DIR = REPO_ROOT / "docs" / "specs"
-DEFAULT_CODE_DIRS = (REPO_ROOT / "src", REPO_ROOT / "tests")
+#: The two codelinks projects: the tree each scans, and the need type its marker
+#: grammar defaults to. Mirrors `[codelinks.projects.*]` in docs/ubproject.toml,
+#: where `type` is the LAST field with a default so no marker has to spell it.
+DEFAULT_CODE_DIRS = ((REPO_ROOT / "src", "impl"), (REPO_ROOT / "tests", "test"))
 DEFAULT_OUTPUT = REPO_ROOT / "docs" / "specs" / "_global" / "gaps.rst"
 
 #: Directive line and `:id:` field as they appear in the spec sources. Parsed
@@ -58,11 +61,14 @@ MD_DIRECTIVE = re.compile(r"^\s*(?:`{3,}|:{3,})\{(?P<type>[a-z_]+)\}")
 RST_ID = re.compile(r"^\s*:id:\s*(?P<id>[A-Z][A-Z0-9_]*)\s*$")
 
 #: The one-line codelinks marker grammar shared by both `[codelinks.projects]`
-#: blocks: `# @<title>, <ID>, <type>, [<PARENT_ID>, ...]`. `impl` and `test` needs
-#: exist only as these markers, so a gap attributed to one resolves through here.
+#: blocks: `# @<title>, <ID>, [<PARENT_ID>, ...]`, optionally followed by an explicit
+#: `, <type>`. The type is the grammar's LAST field and defaults per project (`impl`
+#: under src/, `test` under tests/), so the markers leave it out; a marker that does
+#: spell it wins over the default. `impl` and `test` needs exist only as these
+#: markers, so a gap attributed to one resolves through here.
 MARKER = re.compile(
-    r"^\s*#\s*@(?P<title>[^,]+),\s*(?P<id>[A-Z][A-Z0-9_]*),\s*(?P<type>[a-z_]+)\s*,\s*"
-    r"\[(?P<links>[^\]]*)\]\s*$"
+    r"^\s*#\s*@(?P<title>[^,]+),\s*(?P<id>[A-Z][A-Z0-9_]*),\s*"
+    r"\[(?P<links>[^\]]*)\](?:\s*,\s*(?P<type>[a-z_]+))?\s*$"
 )
 
 #: `category` -> the phrase that completes "<NEED_ID> — ...", and the id suffix
@@ -125,7 +131,9 @@ class Gap:
         return f"{self.have} of {self.want}"
 
 
-def collect_need_types(specs_dir: Path, code_dirs: tuple[Path, ...]) -> dict[str, str]:
+def collect_need_types(
+    specs_dir: Path, code_dirs: tuple[tuple[Path, str], ...]
+) -> dict[str, str]:
     """Return `need id -> type` for every need authored in the sources.
 
     Every authoring form is read: the RST directives and the MyST fences under
@@ -146,14 +154,14 @@ def collect_need_types(specs_dir: Path, code_dirs: tuple[Path, ...]) -> dict[str
             if found is not None and current_type is not None:
                 types[found.group("id")] = current_type
 
-    for code_dir in code_dirs:
+    for code_dir, default_type in code_dirs:
         if not code_dir.is_dir():
             continue
         for source in sorted(code_dir.rglob("*.py")):
             for line in source.read_text().splitlines():
                 marker = MARKER.match(line)
                 if marker is not None:
-                    types[marker.group("id")] = marker.group("type")
+                    types[marker.group("id")] = marker.group("type") or default_type
 
     return types
 
@@ -334,7 +342,13 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--report", type=Path, default=DEFAULT_REPORT)
     parser.add_argument("--specs-dir", type=Path, default=DEFAULT_SPECS_DIR)
-    parser.add_argument("--code-dir", type=Path, action="append", dest="code_dirs")
+    parser.add_argument(
+        "--code-dir",
+        action="append",
+        dest="code_dirs",
+        metavar="TYPE=PATH",
+        help="a codelinks tree and the need type its markers default to, e.g. impl=src",
+    )
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument(
         "--check",
@@ -360,7 +374,12 @@ def main() -> int:
         )
         return 2
 
-    code_dirs = tuple(args.code_dirs) if args.code_dirs else DEFAULT_CODE_DIRS
+    if args.code_dirs:
+        code_dirs = tuple(
+            (Path(path), need_type) for need_type, _, path in (spec.partition("=") for spec in args.code_dirs)
+        )
+    else:
+        code_dirs = DEFAULT_CODE_DIRS
     types = collect_need_types(args.specs_dir, code_dirs)
     gaps, unmapped = join(report["gaps"], types)
 
