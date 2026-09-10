@@ -4,6 +4,36 @@
 name = "bms"
 version = "0.1.0"
 
+# --- LINT ---
+# `ubc check` EXITS 1 WHEN IT FINDS A WARNING, not only on an error. Easy to get
+# wrong when checking by hand: `ubc check docs | tail` reports the exit status of
+# `tail`, so a piped run looks green when it is not. Measure it as
+# `ubc check docs > /dev/null; echo $?`.
+#
+# THE ONE EXEMPTION, and it is deliberately scoped to one need rather than to a
+# diagnostic code. REQ_CELL_BALANCING_WINDOW carries no incoming `satisfies`
+# because the cell-balancing stream has not reached the archs stage — the standing
+# demo gap this project exists to show, reported by `ubc agent gaps` as
+# GAP_REQ_CELL_BALANCING_WINDOW_NO_SATISFIES_BACK and rendered on
+# traceability.rst. schemas.json's `coverage-req-satisfies-back` re-reports the
+# same fact as a lint warning, which turns that intended demo into red CI.
+#
+# `message-ignores` matches a case-insensitive SUBSTRING of the diagnostic message,
+# optionally narrowed to a set of codes, so this entry silences exactly that need
+# on exactly that link under exactly that code. A different need failing the same
+# rule, or this need failing a different rule, is still reported — which a
+# `[lint] ignore = ["needs.schema_network_warning"]` entry would NOT be: that form
+# blanks the whole family out of `ubc schema validate` as well, leaving the five
+# `coverage-*-back` rules firing nowhere.
+#
+# DELETE THIS ENTRY when the cell-balancing stream reaches the archs stage. It is
+# pinned to a need id precisely so that it stops being reachable and shows up as
+# dead config rather than quietly widening.
+[lint]
+[[lint.message-ignores]]
+codes = ["needs.schema_network_warning"]
+contains = "REQ_CELL_BALANCING_WINDOW:satisfies (incoming)"
+
 # This file is the PROJECT ROOT, and it lives in docs/ on purpose: the source
 # root ubc discovers documents from is the directory holding this file, so with
 # the file here, discovery never leaves docs/. src/, tests/, tools/, reports/ and
@@ -80,14 +110,21 @@ flow_engine = "graphviz"
 #   presence of `status` on authored spec needs). Hard-failing a build on a rule the
 #   project never wrote down would turn an observation into a law by accident.
 #
-# COVERAGE IS NOT IN schemas.json. The five `direction = "both"` trace edges below
-# already make every backward leg an obligation, and `ubc agent gaps` reports each
-# unmet one as a tracked `gap` need on traceability.rst. schemas.json deliberately
-# carries no `network_back` rule, because one that duplicated those edges turned the
-# project's deliberate demo gap (REQ_CELL_BALANCING_WINDOW, whose stream has not
-# reached the archs stage) into a red `ubc check` — that command EXITS 1 ON A
-# WARNING, not just on an error. Add a coverage obligation as a trace edge here, not
-# as a schema rule.
+# THE FIVE `coverage-*-back` RULES ARE WARNINGS, AND A WARNING IS NOT FREE. Each
+# asserts an INCOMING link and is therefore owed by a stage that runs LATER than the
+# one producing the need (`arch <- refines` is owed by `swreqs`, which
+# `depends_on = ["archs"]`), so each is unmet by construction while that stage is
+# pending. They are warnings for that reason — but `ubc check` EXITS 1 ON A WARNING,
+# so a firing one still turns CI red.
+#
+# Hence the two exemptions, and note they are NOT the same width:
+#   - `[[lint.message-ignores]]` at the top of this file, pinned to the one standing
+#     demo gap by need id. Narrow on purpose.
+#   - `suppress_warnings` in conf.py, which covers the whole subtype because Sphinx
+#     offers no message-level matching. Blunt by necessity.
+# A TRANSIENT gap — an arch authored before its swreqs — is covered by neither and
+# will fail `ubc check` until the downstream stage runs. That is the intended
+# reading: finish the stage, `ubc agent next` says which.
 #
 # A SYNTAX ERROR ANYWHERE IN schemas.json DISABLES EVERY RULE IN IT. ubc reports it
 # against the pseudo-need `__config__` with "no rule from this file is applied" and

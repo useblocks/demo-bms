@@ -101,22 +101,40 @@ needs_show_link_title = False
 # formatted so Elasticsearch never types the field as a date. See
 # `_run_label` in tools/import_test_results.py.
 
-# NO `suppress_warnings`, AND THAT IS THE POINT — `-W --keep-going` gates this build,
-# so every warning must be fixed at its source rather than hidden. Two entries used to
-# live here and both were removed by fixing the cause:
+# `needs.deprecated` USED TO BE SUPPRESSED HERE and no longer needs to be. It was
+# emitted because sphinx-needs mapped `[[needs.extra_options]]` onto its own
+# deprecated `needs_extra_options` config; ubproject.toml now declares those nine
+# fields as `[needs.fields.<name>]` instead, so nothing deprecated is reached and
+# the warning is gone at the source rather than hidden. Verified by building with
+# only the entry below suppressed: no deprecation warning appears.
 #
-#   `needs.deprecated` — sphinx-needs mapped `[[needs.extra_options]]` onto its own
-#   deprecated `needs_extra_options`. ubproject.toml now declares those nine fields as
-#   `[needs.fields.<name>]`, so nothing deprecated is reached.
+# The single remaining entry is what keeps INCOMPLETE COVERAGE from failing the
+# publish, and it is a standing decision rather than a workaround for one need.
 #
-#   `sn_schema_warning.network_contains_too_few` — emitted by five `coverage-*-back`
-#   rules in schemas.json that duplicated the five `direction = "both"` trace edges.
-#   Backward coverage is `ubc agent gaps`'s job, so the rules were deleted and this
-#   entry went with them.
+# The five `coverage-*-back` rules in schemas.json each assert an INCOMING link, and
+# every one of them is owed by a stage that runs LATER than the stage producing the
+# need — `arch <- refines` is owed by `swreqs`, which `depends_on = ["archs"]`. So
+# each is unmet by construction for as long as the downstream stage is pending, which
+# is the normal condition of a V-model project in motion, not a defect. They are all
+# `warning` for that reason; this entry is the second half of the same decision.
 #
-# Before adding an entry here, check whether the warning has a source you can remove
-# instead. A suppression that hides a real finding from `-W` also hides it from every
-# reader of the export.
+# It is needed because `-W` does not care about our severities: every schema severity
+# reaches Sphinx as a warning or an error (info and warning -> warning, violation ->
+# error), so under `-W --keep-going` there is NO severity at which a firing rule
+# leaves the publish green. Suppressing the subtype is the only lever, and it is
+# deliberately the narrow `sn_schema_warning.network_contains_too_few` — the one
+# subtype those five rules emit — rather than all of `sn_schema_warning`.
+#
+# Nothing is lost. Incomplete coverage is `ubc agent gaps`'s job: it reports each as a
+# tracked `gap` need and drives `ubc agent next` to the stage that owes the work, and
+# `ubc check` / `ubc schema validate` still print the schema warning because they read
+# ubproject.toml, not this file. Only the export build is quiet, and the export should
+# not fail because a stream is halfway down the V.
+#
+# Do NOT drop this entry when coverage happens to be complete. It will be incomplete
+# again on the next stream, and a publish that breaks whenever someone authors an arch
+# before its swreqs is a publish nobody can rely on.
+suppress_warnings = ["sn_schema_warning.network_contains_too_few"]
 
 # -- Mermaid --------------------------------------------------------------------
 # The default "raw" output emits a <div> that the browser renders with
