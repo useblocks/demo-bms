@@ -4,7 +4,7 @@ Cell Protection — Requirements
 .. req:: The battery management system shall open the high-voltage contactors when any cell voltage leaves the range 2.50 V to 4.25 V
    :id: REQ_CELL_VOLTAGE_LIMITS
    :status: draft
-   :traces_to:
+   :traces_to: US_CELL_PROTECTION
 
    The battery management system shall command the high-voltage contactors open
    whenever a valid cell voltage measurement is below 2.50 V or above 4.25 V.

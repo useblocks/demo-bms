@@ -1,38 +1,20 @@
 {
   "gaps": [
     {
-      "id": "REQ_CELL_VOLTAGE_LIMITS",
-      "type": "req",
-      "link": "traces_to",
-      "have": 0,
-      "need": 1,
-      "category": "trace_forward"
-    },
-    {
       "id": "REQ_CELL_BALANCING_WINDOW",
       "type": "req",
       "link": "satisfies",
       "have": 0,
       "need": 1,
       "category": "trace_backward"
-    },
-    {
-      "id": "REQ_CELL_VOLTAGE_LIMITS",
-      "type": "req",
-      "link": "review",
-      "have": 0,
-      "need": 1,
-      "category": "review"
     }
   ],
   "by_category": {
-    "trace_forward": 1,
-    "trace_backward": 1,
-    "review": 1
+    "trace_backward": 1
   },
   "summary": {
     "total_needs": 196,
-    "total_gaps": 3
+    "total_gaps": 1
   },
   "ok": false
 }
