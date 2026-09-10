@@ -17,30 +17,35 @@
         "              recorded at `warning` so it guides authors without hard-failing a",
         "              build on a convention the project never committed to.",
         "",
-        "FORWARD IS A VIOLATION, BACKWARD IS A WARNING -- read this before changing any",
-        "severity. Both directions are declared by the same `direction = \"both\"` trace",
-        "edge, so it is tempting to give them the same weight. They are not the same:",
+        "THIS FILE DOES NOT CHECK BACKWARD COVERAGE, and that is deliberate. Read this",
+        "before adding a `network_back` rule -- one was added here once and removed.",
         "",
-        "  An OUTGOING obligation is owed by the need being authored, at the moment it is",
-        "  authored. A req written without `traces_to` is wrong on the spot, and the",
-        "  author can fix it without touching anything else. `violation`.",
+        "An OUTGOING obligation is owed by the need being authored, at the moment it is",
+        "authored: a req written without `traces_to` is wrong on the spot and its author",
+        "can fix it alone. Those are the `trace-*` rules below, and they are violations.",
         "",
-        "  An INCOMING obligation is owed by a LATER STAGE. Every backward rule below",
-        "  spans a `depends_on` boundary -- arch <- refines is owed by `swreqs`, which by",
-        "  construction runs after `archs` -- so it is UNMET BY CONSTRUCTION for as long",
-        "  as the downstream stage is pending. That is not a defect in the graph, it is",
-        "  the workflow in motion. `warning`.",
+        "An INCOMING obligation is owed by a LATER STAGE. `arch <- refines` is owed by",
+        "`swreqs`, which `depends_on = [\"archs\"]`, so it is unmet BY CONSTRUCTION for as",
+        "long as that stage is pending. That is a V-model project in motion, not a defect,",
+        "and it is ALREADY GATED: the five `direction = \"both\"` trace edges in",
+        "ubproject.toml are exactly the five backward legs, and `ubc agent gaps` reports",
+        "each unmet one as a tracked `gap` need, puts it on traceability.rst, and points",
+        "`ubc agent next` at the stage that owes the work. CI runs that gate separately",
+        "and deliberately does not fail on it.",
         "",
-        "This was learned the hard way: these five started as violations because a census",
-        "of a COMPLETE graph found them all satisfied. The moment three arch elements were",
-        "authored for a stream whose swreqs did not exist yet, `coverage-arch-refines-back`",
-        "failed the build on three needs that were exactly where the workflow expected them",
-        "to be. A snapshot of a finished V says nothing about the states it passes through.",
+        "Five `coverage-*-back` rules used to live here and were a strict duplicate of",
+        "those five edges. They cost more than they were worth. As violations they failed",
+        "the build on three arch needs that were exactly where the workflow expected them",
+        "to be. Demoted to warnings they still failed `ubc check`, WHICH EXITS 1 ON A",
+        "WARNING -- so they turned the project's one deliberate demo gap into red CI. And",
+        "silencing them needed `[lint] ignore`, which blanks them out of",
+        "`ubc schema validate` too, leaving rules that fired nowhere. Deleting them fixed",
+        "the cause instead of the symptom, and took the conf.py `suppress_warnings` entry",
+        "with it.",
         "",
-        "Nothing is lost by the demotion. Incomplete coverage is `ubc agent gaps`'s whole",
-        "job: it reports each one as a tracked `gap` need and drives `ubc agent next` to",
-        "the stage that owes the work. This file re-reports them so they surface in an",
-        "editor too; it should not also be the thing that fails a publish.",
+        "So: coverage is the gap gate's; SHAPE is this file's. If you want a coverage",
+        "obligation, add a `direction = \"both\"` trace edge in ubproject.toml -- do not",
+        "add it here.",
         "",
         "The census, AS A SNAPSHOT and nothing more (194 needs / 194 links):",
         "  user_story 4   req 19   arch 14   swreq 23   impl 23",
@@ -48,11 +53,8 @@
         "Every outgoing trace link resolved to exactly one target type, and every",
         "non-root need carried at least one -- those are the facts the `violation` rules",
         "rest on, and they are properties of the ONTOLOGY, true of any state the graph",
-        "can be in. Backward coverage was complete on every gated leg except",
-        "`req <- satisfies` (18 of 19). Treat that last number as expired the moment you",
-        "read it: it describes one stream mid-workflow, it has already changed once, and",
-        "NO SEVERITY IN THIS FILE DEPENDS ON IT -- see the note above for why every",
-        "backward rule is a warning regardless of how complete coverage happens to be.",
+        "can be in. Do not set a severity from a count that only holds in a finished",
+        "graph; that is the mistake the deleted rules were built on.",
         "",
         "THIS FILE vs ubproject.toml. A field is GLOBAL in ubCode: declared once,",
         "present on every type, left at its `default` on the types that do not use it.",
@@ -340,77 +342,6 @@
         "local": {
           "properties": { "gap_for": { "minItems": 1, "maxItems": 1 } },
           "required": ["gap_for"]
-        }
-      }
-    },
-
-    {
-      "id": "coverage-user_story-traces_to-back",
-      "severity": "warning",
-      "message": "DECLARED (stage `reqs`, direction=both): every user_story must be decomposed into at least one req. OBSERVED 4/4, fan-in 1..7. BACKWARD, so `warning`, not `violation`: this is owed by a later stage and is unmet by construction while that stage is pending -- see the FORWARD IS A VIOLATION, BACKWARD IS A WARNING note in $defs._readme.",
-      "select": { "$ref": "#/$defs/type-user_story" },
-      "validate": {
-        "network_back": {
-          "traces_to": {
-            "contains": { "local": { "$ref": "#/$defs/type-req" } },
-            "minContains": 1
-          }
-        }
-      }
-    },
-    {
-      "id": "coverage-arch-refines-back",
-      "severity": "warning",
-      "message": "DECLARED (stage `swreqs`, direction=both): every arch must be refined by at least one swreq, so no component is left without stated behaviour. OBSERVED 14/14, fan-in 1..4. BACKWARD, so `warning`, not `violation`: this is owed by a later stage and is unmet by construction while that stage is pending -- see the FORWARD IS A VIOLATION, BACKWARD IS A WARNING note in $defs._readme.",
-      "select": { "$ref": "#/$defs/type-arch" },
-      "validate": {
-        "network_back": {
-          "refines": {
-            "contains": { "local": { "$ref": "#/$defs/type-swreq" } },
-            "minContains": 1
-          }
-        }
-      }
-    },
-    {
-      "id": "coverage-swreq-implements-back",
-      "severity": "warning",
-      "message": "DECLARED (stage `code`, direction=both): every swreq must be implemented. OBSERVED 23/23, exactly one impl each. BACKWARD, so `warning`, not `violation`: this is owed by a later stage and is unmet by construction while that stage is pending -- see the FORWARD IS A VIOLATION, BACKWARD IS A WARNING note in $defs._readme.",
-      "select": { "$ref": "#/$defs/type-swreq" },
-      "validate": {
-        "network_back": {
-          "implements": {
-            "contains": { "local": { "$ref": "#/$defs/type-impl" } },
-            "minContains": 1
-          }
-        }
-      }
-    },
-    {
-      "id": "coverage-swreq-verifies-back",
-      "severity": "warning",
-      "message": "DECLARED (stage `tests`, direction=both): every swreq must be verified. OBSERVED 23/23, fan-in 1..3. BACKWARD, so `warning`, not `violation`: this is owed by a later stage and is unmet by construction while that stage is pending -- see the FORWARD IS A VIOLATION, BACKWARD IS A WARNING note in $defs._readme.",
-      "select": { "$ref": "#/$defs/type-swreq" },
-      "validate": {
-        "network_back": {
-          "verifies": {
-            "contains": { "local": { "$ref": "#/$defs/type-test" } },
-            "minContains": 1
-          }
-        }
-      }
-    },
-    {
-      "id": "coverage-req-satisfies-back",
-      "severity": "warning",
-      "message": "DECLARED (stage `archs`, direction=both): every req should be satisfied by at least one arch. BACKWARD, so `warning`, not `violation`: this is owed by the `archs` stage, which by construction runs after `reqs`, so a req authored before its architecture exists is exactly where the workflow expects it to be -- see the FORWARD IS A VIOLATION, BACKWARD IS A WARNING note in $defs._readme. The finding is `ubc agent gaps`'s to own; it reports it as a tracked gap need and points `ubc agent next` at the stage that owes the work. Not carved out by id either: a carve-out would need `not` in `select`, which sphinx-needs rejects, and an id-free carve-out would silently stop checking whole streams.",
-      "select": { "$ref": "#/$defs/type-req" },
-      "validate": {
-        "network_back": {
-          "satisfies": {
-            "contains": { "local": { "$ref": "#/$defs/type-arch" } },
-            "minContains": 1
-          }
         }
       }
     },

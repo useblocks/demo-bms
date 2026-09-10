@@ -80,15 +80,14 @@ flow_engine = "graphviz"
 #   presence of `status` on authored spec needs). Hard-failing a build on a rule the
 #   project never wrote down would turn an observation into a law by accident.
 #
-# ONE RULE IS DECLARED-BUT-NOT-MET and is held at `warning` for that reason alone:
-# `coverage-req-satisfies-back`. The `archs` stage declares `satisfies` bidirectional,
-# so every req owes an incoming link, and 18 of 19 have one —
-# REQ_CELL_BALANCING_WINDOW does not, because the cell-balancing stream has no
-# `architecture.rst` yet. That is the same finding the gap gate already reports as
-# GAP_REQ_CELL_BALANCING_WINDOW_NO_SATISFIES_BACK. At `violation` it would fail the
-# `-W --keep-going` ubtrace publish in .github/workflows/ubtrace.yml on a gap the
-# project is already tracking. PROMOTE IT TO `violation` once that stream reaches the
-# archs stage — the rule's own message says so too.
+# COVERAGE IS NOT IN schemas.json. The five `direction = "both"` trace edges below
+# already make every backward leg an obligation, and `ubc agent gaps` reports each
+# unmet one as a tracked `gap` need on traceability.rst. schemas.json deliberately
+# carries no `network_back` rule, because one that duplicated those edges turned the
+# project's deliberate demo gap (REQ_CELL_BALANCING_WINDOW, whose stream has not
+# reached the archs stage) into a red `ubc check` — that command EXITS 1 ON A
+# WARNING, not just on an error. Add a coverage obligation as a trace edge here, not
+# as a schema rule.
 #
 # A SYNTAX ERROR ANYWHERE IN schemas.json DISABLES EVERY RULE IN IT. ubc reports it
 # against the pseudo-need `__config__` with "no rule from this file is applied" and
