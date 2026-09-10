@@ -37,12 +37,13 @@ jobs:
     # Write, to push the regenerated files back. The credential is NOT persisted
     # into .git/config (see the checkout) because this job also runs PR-authored
     # code — the importers and gate_summary.py — which must never find a token
-    # lying around. Only the git commands in the write-back step get one.
+    # lying around. Only the push step, which runs git and nothing else, gets one.
     permissions:
       contents: write
-    # The commit this run validated, and the only one `publish` may build.
+    # The commit this run validated, and the only one `publish` may build: the
+    # refresh commit when one was pushed, the triggering commit otherwise.
     outputs:
-      sha: ${{ steps.writeback.outputs.sha }}
+      sha: ${{ steps.push.outputs.sha || steps.refresh.outputs.sha }}
     # Cancellable: nothing here is published, and a cancelled gate job also stops
     # the run before `publish`. `inputs.ref` is in the key because `github.ref` for
     # a dispatch is the branch the workflow file was read from.
@@ -53,7 +54,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           # A PR's head commit, not its merge commit: the refresh has to be
-          # committable onto a branch. Full history, so it can be rebased.
+          # committable onto a branch. Full history, so it can be pushed.
           ref: ${{ github.event.inputs.ref || github.event.pull_request.head.sha || github.ref }}
           fetch-depth: 0
           persist-credentials: false
@@ -124,35 +125,31 @@ jobs:
         run: ubc check
 
       - name: Refresh the imported artefacts and commit them
-        id: writeback
+        id: refresh
         # Staleness is not a failure here; an unusable report, an importer
         # rejecting a freshly captured snapshot, or generated RST that does not
         # parse, are.
         #
-        # The token reaches only the git commands that need it: it is moved out of
-        # the environment into a shell variable before any other process starts, so
-        # the PR-authored importers and `ubc check` this step runs cannot read it,
-        # and it is never persisted in .git/config either. Pushing needs no
-        # re-trigger guard: GitHub raises no workflow runs for GITHUB_TOKEN's
-        # events. The cost is a branch tip carrying no checks of its own.
+        # NO credential is present in this step. Everything it runs is
+        # repository-authored — the two importers and `ubc` — and a write-scoped
+        # token given to this step would be readable by all of it, including out of
+        # this shell's own /proc entry, which `unset` does not scrub. So the token
+        # lives in the next step, which runs git and nothing else.
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HEAD_REF: ${{ github.head_ref }}
           IS_FORK: ${{ github.event.pull_request.head.repo.fork }}
         run: |
           set -uo pipefail
 
-          # FIRST, before anything spawns a child: a shell variable is not
-          # inherited by child processes, an environment variable is.
-          token="$GH_TOKEN"
-          unset GH_TOKEN
-
           generated=(reports/gaps/gaps.json specs/_global/gaps.rst specs/_global/test_results.rst)
           probe="import json,sys; d=json.load(open(sys.argv[1])); raise SystemExit(0 if 'gaps' in d and 'ok' in d else 1)"
 
-          # Every exit path names a commit that exists on the remote, never this
-          # working tree.
-          publishes() { echo "sha=$1" >> "$GITHUB_OUTPUT"; echo "publishing $1"; }
+          # Every exit path that publishes names a commit that exists on the
+          # remote, never this working tree.
+          publishes() {
+            { echo "push=false"; echo "sha=$1"; } >> "$GITHUB_OUTPUT"
+            echo "publishing $1"
+          }
 
           # Derive the generated files from the tree at HEAD, then re-check them:
           # `ubc check` before this step parsed the sources, not the RST this step
@@ -161,38 +158,24 @@ jobs:
           # the exit code is no test — the output has to parse. Captured to a temp
           # file and copied in afterwards: redirecting into the snapshot would
           # truncate it before `ubc` produced a byte.
-          refresh() {
-            local out="$RUNNER_TEMP/gaps.json" rc=0
-            ubc agent gaps > "$out" || rc=$?
-            if ! python3 -c "$probe" "$out" 2>/dev/null; then
-              echo "::error::ubc agent gaps produced no usable report (exit $rc)"
-              cat "$out" || true
-              return 1
-            fi
-            cp "$out" reports/gaps/gaps.json
-            python3 tools/import_gaps.py || return 1
-            python3 tools/import_test_results.py || return 1
-            ubc check || return 1
-          }
+          out="$RUNNER_TEMP/gaps.json"
+          rc=0
+          ubc agent gaps > "$out" || rc=$?
+          if ! python3 -c "$probe" "$out" 2>/dev/null; then
+            echo "::error::ubc agent gaps produced no usable report (exit $rc)"
+            cat "$out" || true
+            exit 1
+          fi
+          cp "$out" reports/gaps/gaps.json
+          python3 tools/import_gaps.py || exit 1
+          python3 tools/import_test_results.py || exit 1
+          ubc check || exit 1
 
-          # Confines the credential to one git invocation.
-          with_token() {
-            local rc=0
-            git remote set-url origin \
-              "https://x-access-token:${token}@github.com/${GITHUB_REPOSITORY}"
-            "$@" || rc=$?
-            git remote set-url origin "https://github.com/${GITHUB_REPOSITORY}"
-            return $rc
-          }
-
-          # `git status --porcelain`, not `git diff`: a generated file DELETED by
-          # the triggering commit and recreated by `refresh` is untracked, and
-          # `git diff` reports no change for it.
-          moved() { [ -n "$(git status --porcelain -- "${generated[@]}")" ]; }
-
-          refresh || exit 1
           original="$(git rev-parse HEAD)"
-          if ! moved; then
+          # `git status --porcelain`, not `git diff`: a generated file DELETED by
+          # the triggering commit and recreated here is untracked, and `git diff`
+          # reports no change for it.
+          if [ -z "$(git status --porcelain -- "${generated[@]}")" ]; then
             echo "the generated specs were already current"
             publishes "$original"
             exit 0
@@ -200,7 +183,7 @@ jobs:
           git status --short -- "${generated[@]}"
           git diff -- "${generated[@]}"
 
-          # Only a branch this token may write, and never a tag.
+          # Only a branch the token may write, and never a tag.
           target=""
           if [ -n "${HEAD_REF:-}" ]; then
             if [ "${IS_FORK:-false}" != "true" ]; then target="$HEAD_REF"; fi
@@ -213,38 +196,44 @@ jobs:
             exit 0
           fi
 
+          # Committing needs no credential either, so the next step is left with
+          # one thing to do: push what is already recorded here.
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- "${generated[@]}"
+          git commit -q -m "chore: refresh generated specs"
+          { echo "push=true"; echo "target=$target"; } >> "$GITHUB_OUTPUT"
 
-          for attempt in 1 2 3; do
-            git add -- "${generated[@]}"
-            git commit -q -m "chore: refresh generated specs"
-            if with_token git push origin "HEAD:refs/heads/$target"; then
-              echo "pushed the refresh to $target"
-              publishes "$(git rev-parse HEAD)"
-              exit 0
-            fi
-
-            # Someone pushed mid-run. Start again FROM THEIR TIP and regenerate
-            # there: replaying this commit onto it would publish artefacts derived
-            # from the previous tree as validated. Explicit refspec, because
-            # checkout leaves a narrow `remote.origin.fetch` behind.
-            echo "push to $target rejected (attempt $attempt) — regenerating on the new tip"
-            if ! with_token git fetch origin \
-                 "+refs/heads/$target:refs/remotes/origin/$target" \
-               || ! git reset -q --hard "origin/$target"; then
-              echo "::error::Could not move onto $target. Refresh the generated specs locally and commit them."
-              exit 1
-            fi
-            refresh || exit 1
-            if ! moved; then
-              echo "$target already carries a current refresh"
-              publishes "$(git rev-parse HEAD)"
-              exit 0
-            fi
-          done
-          echo "::error::Gave up pushing the refresh to $target after 3 attempts."
-          exit 1
+      - name: Push the refresh
+        id: push
+        if: steps.refresh.outputs.push == 'true'
+        # The one step that holds the token, and it runs git and nothing else — no
+        # importer, no `ubc`, no repository-authored script — so nothing that a
+        # pull request can author ever shares a process tree with the credential.
+        # It is not persisted in .git/config either. Pushing needs no re-trigger
+        # guard: GitHub raises no workflow runs for GITHUB_TOKEN's events. The cost
+        # is a branch tip carrying no checks of its own.
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TARGET: ${{ steps.refresh.outputs.target }}
+        run: |
+          set -uo pipefail
+          git remote set-url origin \
+            "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}"
+          rc=0
+          git push origin "HEAD:refs/heads/$TARGET" || rc=$?
+          git remote set-url origin "https://github.com/${GITHUB_REPOSITORY}"
+          if [ "$rc" -ne 0 ]; then
+            # Someone pushed mid-run. Regenerating on their tip would mean running
+            # the importers again, which cannot happen here without handing them
+            # the token; replaying this commit onto it would publish artefacts
+            # derived from the previous tree as validated. So the run stops, and
+            # the run their own push triggered does the refresh.
+            echo "::error::Push to $TARGET was rejected — the branch moved during this run, so the refresh committed here derives from a tip that is no longer current. Nothing is published; the run triggered by that newer commit refreshes it, or re-run this workflow."
+            exit 1
+          fi
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "pushed the refresh to $TARGET"
 
       - name: Report the trace matrix and the substance gate
         # Informational. Both exit non-zero by design here — `trace` on the
@@ -264,7 +253,8 @@ jobs:
           python3 tools/gate_summary.py \
             --ubc-version "$UBC_VERSION" \
             --result "Sources parse=${{ steps.parse.outcome }}" \
-            --result "Imported artefacts refreshed and committed=${{ steps.writeback.outcome }}" \
+            --result "Imported artefacts refreshed=${{ steps.refresh.outcome }}" \
+            --result "Refresh pushed=${{ steps.push.outcome }}" \
             --gaps "$RUNNER_TEMP/gaps.json" \
             --trace "$RUNNER_TEMP/trace.json" \
             --verdicts "$RUNNER_TEMP/verdicts.json" \
