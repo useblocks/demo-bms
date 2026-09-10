@@ -120,17 +120,20 @@ git config core.hooksPath .githooks   # once per clone
 ```
 
 It re-captures `reports/gaps/gaps.json` too. `ubc` is not on `PATH`, so the hook
-resolves it from `$UBC`, then `PATH`, then the newest ubCode extension install,
-and warns when the version it found is not the one `UBC_VERSION` pins — a
-different engine can produce a different snapshot, which is the bot commit the
-hook exists to avoid. It does **not** re-run pytest to recapture
+resolves it from `$UBC`, then `PATH`, then the newest ubCode extension install. It
+does not care which version that is: CI installs the newest published one, so an
+older extension may produce a snapshot CI then rewrites — one bot commit, which is
+cheaper than a hook that refuses to help. It does **not** re-run pytest to
+recapture
 `reports/junit/testresults.xml`, for [the reason that snapshot stays a human
 act](#test-results-from-a-static-xml-report).
 
 The hook is **best-effort and never blocks a commit**: every failure path warns
-and exits 0 — no `ubc` found, an unusable gap report, an importer refusing a
-stale snapshot. It needs no virtualenv, since both importers are
-standard-library-only. Skipping the install costs you nothing but a bot commit —
+and exits 0 — no version-matched `ubc`, an unusable gap report, an importer
+refusing a stale snapshot. It also stands aside when a watched input is modified
+but not staged, since the importers read the working tree while the commit records
+the index, and generating then would stage artefacts the commit does not match. It
+needs no virtualenv, since both importers are standard-library-only. Skipping the install costs you nothing but a bot commit —
 the pipeline refreshes the same files and pushes the result. A hook that could
 block a commit would only teach everyone to reach for `--no-verify`.
 
@@ -372,13 +375,18 @@ licence cache is always cold and every run performs one online activation.
 
 Three things about it are deliberate:
 
-1. **The ubc version is pinned in the workflow, not left to the action.** The
-   action's own default is `0.27.0` and its only tag, `0.1`, is two commits older
-   still. `UBC_VERSION` at the top of the workflow has to track whatever
-   `ubc --version` says in your ubCode extension, because that is the engine that
-   produced the committed snapshots. The action itself is pinned to a full commit
-   SHA — a composite action is plain YAML executed inside your job, so a moving
-   ref is a moving payload.
+1. **The ubc version is resolved, not pinned.** Everyone on the rollout team runs
+   the ubCode extension, so the engine that produces the committed snapshots is
+   whatever the newest published extension ships — and a pin in this repository
+   would simply rot behind it. The workflow therefore asks the VS Code Marketplace
+   for the newest `useblocks.ubcode` version and installs that `ubc`. Note it
+   resolves a *number*: the action's `version: latest` builds
+   `download.useblocks.com/ubc/latest/ubc-linux-x64-latest`, which the bucket
+   answers with 403, and the action downloads with `curl -sSL` and no `--fail`, so
+   that 403 body would land on `PATH` named `ubc`. Hence the `ubc --version` step
+   right after the install. The action itself is pinned to a full commit SHA, since
+   a composite action is plain YAML executed inside your job and a moving ref is a
+   moving payload.
 2. **`ubc agent gaps` is captured, not obeyed.** It exits non-zero whenever it
    finds a gap, and this project [has one on purpose](#the-deliberate-gap), so its
    exit code would fail every run. The step requires the output to parse as a gap

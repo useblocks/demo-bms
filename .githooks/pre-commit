@@ -18,9 +18,19 @@ cd "$root" || exit 0
 
 GENERATED=(reports/gaps/gaps.json specs/_global/gaps.rst specs/_global/test_results.rst)
 
+INPUTS=(specs src tests reports tools ubproject.toml)
+
 # Skip when nothing staged could invalidate them (docs- or CI-only commits).
-if ! git diff --cached --name-only \
-     -- specs src tests reports tools ubproject.toml | grep -q .; then
+if ! git diff --cached --name-only -- "${INPUTS[@]}" | grep -q .; then
+  exit 0
+fi
+
+# The importers read the WORKING TREE, but the commit records the INDEX. When an
+# input is modified and not staged, generating now would stage artefacts derived
+# from sources this commit does not contain, so leave them to CI instead.
+if ! git diff --quiet -- "${INPUTS[@]}" \
+   || [ -n "$(git ls-files --others --exclude-standard -- "${INPUTS[@]}")" ]; then
+  echo "pre-commit: inputs modified but not staged — not regenerating, since the result would not match this commit (CI will refresh)" >&2
   exit 0
 fi
 
@@ -50,17 +60,12 @@ else
   done
 fi
 
+# Whatever version you have. CI installs the newest published one, so an older
+# extension can still produce a snapshot CI then rewrites — one bot commit, not a
+# reason to refuse to help.
 if [ -z "$ubc_bin" ]; then
   echo "pre-commit: no ubc found — not refreshing reports/gaps/gaps.json (CI will)" >&2
 else
-  # A different engine can produce a different snapshot — the very bot commit
-  # this hook exists to avoid.
-  _pinned="$(sed -n 's/^  UBC_VERSION: "\(.*\)"$/\1/p' .github/workflows/ubtrace.yml)"
-  _local="$("$ubc_bin" --version 2>/dev/null | awk '{print $NF}')"
-  if [ -n "$_pinned" ] && [ -n "$_local" ] && [ "$_pinned" != "$_local" ]; then
-    echo "pre-commit: ubc $_local is not the $_pinned CI pins — the snapshot may still differ" >&2
-  fi
-
   # Copied in only once it parses: redirecting into the snapshot would truncate it
   # before ubc produced a byte. A found gap exits non-zero, so the code is no test.
   _snapshot="$(mktemp)"

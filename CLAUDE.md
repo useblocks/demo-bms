@@ -51,9 +51,10 @@ UBC="$(echo ~/.vscode/extensions/useblocks.ubcode-*/server/cli/ubc)"
 "$UBC" check
 ```
 
-If no such path exists, `ubc` is genuinely unavailable here — report that rather
-than substituting a `ubc` from PATH, which may be a different build than the one
-that produced this project's committed snapshots.
+A `ubc` from `PATH` is fine too. Prefer the newest extension build when several
+are available, since CI installs the newest published version and an older engine
+may regenerate the snapshots differently. If no binary exists at all, `ubc` is
+unavailable here — report that rather than guessing.
 
 ## The workflow skills are generated too
 

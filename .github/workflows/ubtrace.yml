@@ -27,20 +27,19 @@ on:
         required: true
         default: "main"
 
-# `graph-gates` pushes the regenerated files back to the branch.
 permissions:
-  contents: write
-
-# Must track the `ubc --version` of the ubCode extension the team runs, since that
-# engine produced the committed snapshots. Passed to ubc-action explicitly: its own
-# default is 0.27.0.
-env:
-  UBC_VERSION: "0.34.0"
+  contents: read
 
 jobs:
   graph-gates:
     name: Graph gates (ubc)
     runs-on: ubuntu-latest
+    # Write, to push the regenerated files back. The credential is NOT persisted
+    # into .git/config (see the checkout) because this job also runs PR-authored
+    # code — the importers and gate_summary.py — which must never find a token
+    # lying around. Only the git commands in the write-back step get one.
+    permissions:
+      contents: write
     # The commit this run validated, and the only one `publish` may build.
     outputs:
       sha: ${{ steps.writeback.outputs.sha }}
@@ -57,6 +56,31 @@ jobs:
           # committable onto a branch. Full history, so it can be rebased.
           ref: ${{ github.event.inputs.ref || github.event.pull_request.head.sha || github.ref }}
           fetch-depth: 0
+          persist-credentials: false
+
+      - name: Resolve the newest ubc version
+        # The engine that produced the committed snapshots is whatever the team's
+        # ubCode extension ships, so CI tracks the newest published extension
+        # version rather than a pin that rots. Resolved as a NUMBER, not with the
+        # action's `version: latest`, which builds
+        # download.useblocks.com/ubc/latest/ubc-linux-x64-latest — a path the
+        # bucket answers with 403.
+        run: |
+          set -uo pipefail
+          version="$(curl -sSf -X POST \
+            "https://marketplace.visualstudio.com/_apis/public/gallery/extensionquery" \
+            -H "Content-Type: application/json" \
+            -H "Accept: application/json;api-version=7.2-preview.1" \
+            -d '{"filters":[{"criteria":[{"filterType":7,"value":"useblocks.ubcode"}]}],"flags":914}' \
+            | jq -r '[.results[0].extensions[0].versions[].version] | first // empty')"
+          # Fail loudly: the action's own default is 0.27.0, so a silent fallback
+          # would gate this project with a years-old engine.
+          if ! printf '%s' "$version" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::Could not resolve the newest ubc version from the marketplace (got '${version:-nothing}')"
+            exit 1
+          fi
+          echo "UBC_VERSION=$version" >> "$GITHUB_ENV"
+          echo "resolved ubc $version"
 
       - name: Require a ubCode license
         # Unlicensed, `ubc` caps indexing at 5 files and 100 needs (this project has
@@ -84,6 +108,12 @@ jobs:
           license-key: ${{ secrets.UBCODE_LICENSE_KEY }}
           license-user: ${{ secrets.UBCODE_LICENSE_USER }}
 
+      - name: Prove ubc runs
+        # The action downloads with `curl -sSL` and no `--fail`, so a bad version
+        # leaves an S3 error page on PATH named `ubc` and exits 0. Catch that here
+        # rather than three steps later as "cannot execute binary file".
+        run: ubc --version
+
       - name: Set up Python
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
@@ -93,51 +123,68 @@ jobs:
         id: parse
         run: ubc check
 
-      - name: Refresh the imported artefacts
-        id: refresh
-        # Staleness is not a failure here; an unusable report or an importer
-        # rejecting a freshly captured snapshot is.
-        run: |
-          set -uo pipefail
-          out="$RUNNER_TEMP/gaps.json"
-          # A found gap exits non-zero (one is deliberate here), so the exit code is
-          # not the test — the output has to parse. Captured to a temp file and
-          # copied in afterwards: redirecting into the snapshot would truncate it
-          # before `ubc` produced a byte.
-          rc=0
-          ubc agent gaps > "$out" || rc=$?
-          probe="import json,sys; d=json.load(open(sys.argv[1])); raise SystemExit(0 if 'gaps' in d and 'ok' in d else 1)"
-          if ! python3 -c "$probe" "$out" 2>/dev/null; then
-            echo "::error::ubc agent gaps produced no usable report (exit $rc)"
-            cat "$out" || true
-            exit 1
-          fi
-          cp "$out" reports/gaps/gaps.json
-          python3 tools/import_gaps.py
-          python3 tools/import_test_results.py
-
-      - name: Commit the refresh
+      - name: Refresh the imported artefacts and commit them
         id: writeback
-        # Pushes with the GITHUB_TOKEN `actions/checkout` persisted, which is the
-        # loop guard: GitHub raises no workflow runs for that token's events. The
-        # cost is a branch tip carrying no checks of its own.
+        # Staleness is not a failure here; an unusable report, an importer
+        # rejecting a freshly captured snapshot, or generated RST that does not
+        # parse, are.
+        #
+        # The push uses a token supplied per git command rather than one persisted
+        # in .git/config, so the PR-authored code this job runs never has access to
+        # a write credential. Pushing needs no re-trigger guard: GitHub raises no
+        # workflow runs for GITHUB_TOKEN's events. The cost is a branch tip
+        # carrying no checks of its own.
         env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HEAD_REF: ${{ github.head_ref }}
           IS_FORK: ${{ github.event.pull_request.head.repo.fork }}
         run: |
           set -uo pipefail
+          generated=(reports/gaps/gaps.json specs/_global/gaps.rst specs/_global/test_results.rst)
+          probe="import json,sys; d=json.load(open(sys.argv[1])); raise SystemExit(0 if 'gaps' in d and 'ok' in d else 1)"
+
           # Every exit path names a commit that exists on the remote, never this
           # working tree.
           publishes() { echo "sha=$1" >> "$GITHUB_OUTPUT"; echo "publishing $1"; }
+
+          # Derive the generated files from the tree at HEAD, then re-check them:
+          # `ubc check` before this step parsed the sources, not the RST this step
+          # writes, so without a second check an importer could commit RST that
+          # does not parse. A found gap exits non-zero (one is deliberate here), so
+          # the exit code is no test — the output has to parse. Captured to a temp
+          # file and copied in afterwards: redirecting into the snapshot would
+          # truncate it before `ubc` produced a byte.
+          refresh() {
+            local out="$RUNNER_TEMP/gaps.json" rc=0
+            ubc agent gaps > "$out" || rc=$?
+            if ! python3 -c "$probe" "$out" 2>/dev/null; then
+              echo "::error::ubc agent gaps produced no usable report (exit $rc)"
+              cat "$out" || true
+              return 1
+            fi
+            cp "$out" reports/gaps/gaps.json
+            python3 tools/import_gaps.py || return 1
+            python3 tools/import_test_results.py || return 1
+            ubc check || return 1
+          }
+
+          # Confines the credential to one git invocation.
+          with_token() {
+            local rc=0
+            git remote set-url origin \
+              "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}"
+            "$@" || rc=$?
+            git remote set-url origin "https://github.com/${GITHUB_REPOSITORY}"
+            return $rc
+          }
+
+          refresh || exit 1
           original="$(git rev-parse HEAD)"
-          generated=(reports/gaps/gaps.json specs/_global/gaps.rst specs/_global/test_results.rst)
           if git diff --quiet -- "${generated[@]}"; then
             echo "the generated specs were already current"
-            echo "refreshed=false" >> "$GITHUB_OUTPUT"
             publishes "$original"
             exit 0
           fi
-          echo "refreshed=true" >> "$GITHUB_OUTPUT"
           git diff -- "${generated[@]}"
 
           # Only a branch this token may write, and never a tag.
@@ -155,25 +202,32 @@ jobs:
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -- "${generated[@]}"
-          git commit -m "chore: refresh generated specs"
 
-          # A push to the branch mid-run makes this a non-fast-forward: rebase and
-          # retry, never force.
           for attempt in 1 2 3; do
-            if git push origin "HEAD:refs/heads/$target"; then
+            git add -- "${generated[@]}"
+            git commit -q -m "chore: refresh generated specs"
+            if with_token git push origin "HEAD:refs/heads/$target"; then
               echo "pushed the refresh to $target"
               publishes "$(git rev-parse HEAD)"
               exit 0
             fi
-            echo "push to $target rejected (attempt $attempt) — rebasing onto the new tip"
-            # Explicit refspec: checkout leaves a narrow `remote.origin.fetch`
-            # behind after a SHA checkout.
-            if ! git fetch origin "+refs/heads/$target:refs/remotes/origin/$target" \
-               || ! git rebase "origin/$target"; then
-              git rebase --abort 2>/dev/null || true
-              echo "::error::Could not rebase the refresh onto $target. Refresh the generated specs locally and commit them."
+
+            # Someone pushed mid-run. Start again FROM THEIR TIP and regenerate
+            # there: replaying this commit onto it would publish artefacts derived
+            # from the previous tree as validated. Explicit refspec, because
+            # checkout leaves a narrow `remote.origin.fetch` behind.
+            echo "push to $target rejected (attempt $attempt) — regenerating on the new tip"
+            if ! with_token git fetch origin \
+                 "+refs/heads/$target:refs/remotes/origin/$target" \
+               || ! git reset -q --hard "origin/$target"; then
+              echo "::error::Could not move onto $target. Refresh the generated specs locally and commit them."
               exit 1
+            fi
+            refresh || exit 1
+            if git diff --quiet -- "${generated[@]}"; then
+              echo "$target already carries a current refresh"
+              publishes "$(git rev-parse HEAD)"
+              exit 0
             fi
           done
           echo "::error::Gave up pushing the refresh to $target after 3 attempts."
@@ -197,8 +251,7 @@ jobs:
           python3 tools/gate_summary.py \
             --ubc-version "$UBC_VERSION" \
             --result "Sources parse=${{ steps.parse.outcome }}" \
-            --result "Imported artefacts refreshed=${{ steps.refresh.outcome }}" \
-            --result "Refresh committed=${{ steps.writeback.outcome }}" \
+            --result "Imported artefacts refreshed and committed=${{ steps.writeback.outcome }}" \
             --gaps "$RUNNER_TEMP/gaps.json" \
             --trace "$RUNNER_TEMP/trace.json" \
             --verdicts "$RUNNER_TEMP/verdicts.json" \
