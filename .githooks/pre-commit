@@ -98,7 +98,7 @@ fi
 # Never `git add -A`: a hook must not widen the commit beyond what was staged.
 staged=()
 for f in "${GENERATED[@]}"; do
-  if ! git diff --quiet -- "$f" 2>/dev/null; then
+  if [ -n "$(git status --porcelain -- "$f" 2>/dev/null)" ]; then
     git add -- "$f" && staged+=("$f")
   fi
 done

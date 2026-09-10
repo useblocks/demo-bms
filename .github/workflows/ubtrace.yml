@@ -129,17 +129,24 @@ jobs:
         # rejecting a freshly captured snapshot, or generated RST that does not
         # parse, are.
         #
-        # The push uses a token supplied per git command rather than one persisted
-        # in .git/config, so the PR-authored code this job runs never has access to
-        # a write credential. Pushing needs no re-trigger guard: GitHub raises no
-        # workflow runs for GITHUB_TOKEN's events. The cost is a branch tip
-        # carrying no checks of its own.
+        # The token reaches only the git commands that need it: it is moved out of
+        # the environment into a shell variable before any other process starts, so
+        # the PR-authored importers and `ubc check` this step runs cannot read it,
+        # and it is never persisted in .git/config either. Pushing needs no
+        # re-trigger guard: GitHub raises no workflow runs for GITHUB_TOKEN's
+        # events. The cost is a branch tip carrying no checks of its own.
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           HEAD_REF: ${{ github.head_ref }}
           IS_FORK: ${{ github.event.pull_request.head.repo.fork }}
         run: |
           set -uo pipefail
+
+          # FIRST, before anything spawns a child: a shell variable is not
+          # inherited by child processes, an environment variable is.
+          token="$GH_TOKEN"
+          unset GH_TOKEN
+
           generated=(reports/gaps/gaps.json specs/_global/gaps.rst specs/_global/test_results.rst)
           probe="import json,sys; d=json.load(open(sys.argv[1])); raise SystemExit(0 if 'gaps' in d and 'ok' in d else 1)"
 
@@ -172,19 +179,25 @@ jobs:
           with_token() {
             local rc=0
             git remote set-url origin \
-              "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}"
+              "https://x-access-token:${token}@github.com/${GITHUB_REPOSITORY}"
             "$@" || rc=$?
             git remote set-url origin "https://github.com/${GITHUB_REPOSITORY}"
             return $rc
           }
 
+          # `git status --porcelain`, not `git diff`: a generated file DELETED by
+          # the triggering commit and recreated by `refresh` is untracked, and
+          # `git diff` reports no change for it.
+          moved() { [ -n "$(git status --porcelain -- "${generated[@]}")" ]; }
+
           refresh || exit 1
           original="$(git rev-parse HEAD)"
-          if git diff --quiet -- "${generated[@]}"; then
+          if ! moved; then
             echo "the generated specs were already current"
             publishes "$original"
             exit 0
           fi
+          git status --short -- "${generated[@]}"
           git diff -- "${generated[@]}"
 
           # Only a branch this token may write, and never a tag.
@@ -224,7 +237,7 @@ jobs:
               exit 1
             fi
             refresh || exit 1
-            if git diff --quiet -- "${generated[@]}"; then
+            if ! moved; then
               echo "$target already carries a current refresh"
               publishes "$(git rev-parse HEAD)"
               exit 0
