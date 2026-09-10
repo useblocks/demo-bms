@@ -16,7 +16,9 @@
       "Bash(ubc build needs:*)",
       "Bash(ubc query:*)",
       "Bash(ubc check:*)",
-      "Bash(ubc config:*)"
+      "Bash(ubc config:*)",
+      "Bash(python3 tools/import_gaps.py:*)",
+      "Bash(python3 tools/import_test_results.py:*)"
     ]
   }
 }

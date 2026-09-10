@@ -1,0 +1,104 @@
+#!/usr/bin/env bash
+# Refresh the derived files so a commit leaves CI nothing to change:
+#
+#     ubc agent gaps -> reports/gaps/gaps.json -> specs/_global/gaps.rst
+#     reports/junit/testresults.xml            -> specs/_global/test_results.rst
+#
+# Install once per clone (git will not, by design): git config core.hooksPath .githooks
+#
+# Best-effort and never blocking — every failure path warns and exits 0, because CI
+# does the same refresh anyway and a blocking hook only earns `--no-verify`.
+#
+# The JUnit snapshot is captured by hand: its timestamp, runtime and hostname
+# change on every pytest run, rewriting all 50 needs for no change in meaning.
+set -uo pipefail
+
+root="$(git rev-parse --show-toplevel)" || exit 0
+cd "$root" || exit 0
+
+GENERATED=(reports/gaps/gaps.json specs/_global/gaps.rst specs/_global/test_results.rst)
+
+# Skip when nothing staged could invalidate them (docs- or CI-only commits).
+if ! git diff --cached --name-only \
+     -- specs src tests reports tools ubproject.toml | grep -q .; then
+  exit 0
+fi
+
+# Both importers are standard-library-only, so no virtualenv need be active.
+if command -v python3 >/dev/null 2>&1; then
+  PY=(python3)
+elif command -v uv >/dev/null 2>&1; then
+  PY=(uv run --no-sync python)
+else
+  echo "pre-commit: no python3 and no uv — skipping the spec refresh (CI will do it)" >&2
+  exit 0
+fi
+
+# `ubc` is not on PATH — it ships inside the ubCode extension.
+ubc_bin=""
+if [ -n "${UBC:-}" ] && [ -x "${UBC:-}" ]; then
+  ubc_bin="$UBC"
+elif command -v ubc >/dev/null 2>&1; then
+  ubc_bin="$(command -v ubc)"
+else
+  for _root in "$HOME"/.vscode/extensions "$HOME"/.vscode-insiders/extensions \
+               "$HOME"/.vscode-server/extensions "$HOME"/.cursor/extensions; do
+    # Newest by mtime; `sort -V` cannot portably rank a version mid-path.
+    for _candidate in $(ls -dt "$_root"/useblocks.ubcode-*/server/cli/ubc 2>/dev/null); do
+      if [ -x "$_candidate" ]; then ubc_bin="$_candidate"; break 2; fi
+    done
+  done
+fi
+
+if [ -z "$ubc_bin" ]; then
+  echo "pre-commit: no ubc found — not refreshing reports/gaps/gaps.json (CI will)" >&2
+else
+  # A different engine can produce a different snapshot — the very bot commit
+  # this hook exists to avoid.
+  _pinned="$(sed -n 's/^  UBC_VERSION: "\(.*\)"$/\1/p' .github/workflows/ubtrace.yml)"
+  _local="$("$ubc_bin" --version 2>/dev/null | awk '{print $NF}')"
+  if [ -n "$_pinned" ] && [ -n "$_local" ] && [ "$_pinned" != "$_local" ]; then
+    echo "pre-commit: ubc $_local is not the $_pinned CI pins — the snapshot may still differ" >&2
+  fi
+
+  # Copied in only once it parses: redirecting into the snapshot would truncate it
+  # before ubc produced a byte. A found gap exits non-zero, so the code is no test.
+  _snapshot="$(mktemp)"
+  "$ubc_bin" agent gaps -p . > "$_snapshot" 2>/dev/null || true
+  if "${PY[@]}" -c "import json,sys; d=json.load(open(sys.argv[1])); raise SystemExit(0 if 'gaps' in d and 'ok' in d else 1)" \
+       "$_snapshot" 2>/dev/null; then
+    cp "$_snapshot" reports/gaps/gaps.json
+  else
+    echo "pre-commit: 'ubc agent gaps' produced no usable report — leaving the snapshot alone" >&2
+  fi
+  rm -f "$_snapshot"
+fi
+
+failed=0
+for importer in tools/import_gaps.py tools/import_test_results.py; do
+  # Swallowed on success: both importers list every need they wrote.
+  if ! out="$("${PY[@]}" "$importer" 2>&1)"; then
+    echo "pre-commit: $importer failed — leaving the generated files as they are:" >&2
+    echo "$out" >&2
+    failed=1
+  fi
+done
+
+if [ "$failed" -eq 1 ]; then
+  # Usually `import_gaps.py` rejecting a snapshot older than a spec edit.
+  echo "pre-commit: committing anyway; CI refreshes both files and pushes the result." >&2
+  exit 0
+fi
+
+# Never `git add -A`: a hook must not widen the commit beyond what was staged.
+staged=()
+for f in "${GENERATED[@]}"; do
+  if ! git diff --quiet -- "$f" 2>/dev/null; then
+    git add -- "$f" && staged+=("$f")
+  fi
+done
+
+if [ "${#staged[@]}" -gt 0 ]; then
+  echo "pre-commit: refreshed and staged ${staged[*]}"
+fi
+exit 0
