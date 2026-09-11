@@ -3,7 +3,7 @@
 from src.state_estimation.publisher import FRAME_PERIOD_MS, StatePublisher
 
 
-# @The battery state frame is sent every 100 ms, TEST_STATE_FRAME_PERIOD, test, [SWREQ_STATE_FRAME_PERIOD]
+# @The battery state frame is sent every 100 ms, TEST_STATE_FRAME_PERIOD, [SWREQ_STATE_FRAME_PERIOD]
 def test_frame_is_sent_once_per_period() -> None:
     """A cycle call inside the period sends nothing; at the period it sends."""
     publisher = StatePublisher()
@@ -14,7 +14,7 @@ def test_frame_is_sent_once_per_period() -> None:
     assert len(publisher.sent) == 2
 
 
-# @A producer that did not update does not suppress the frame, TEST_STATE_FRAME_REPEATS_LAST, test, [SWREQ_STATE_FRAME_PERIOD]
+# @A producer that did not update does not suppress the frame, TEST_STATE_FRAME_REPEATS_LAST, [SWREQ_STATE_FRAME_PERIOD]
 def test_stale_producer_values_are_repeated_not_skipped() -> None:
     """The bus sees a fixed cadence even when an estimator misses a cycle."""
     publisher = StatePublisher()
@@ -29,7 +29,7 @@ def test_stale_producer_values_are_repeated_not_skipped() -> None:
     assert [f.timestamp_ms for f in (first, second, third)] == [0, 100, 200]
 
 
-# @A frame carries the latest SOC capacity and validity values, TEST_STATE_FRAME_CONTENT, test, [SWREQ_STATE_FRAME_PERIOD]
+# @A frame carries the latest SOC capacity and validity values, TEST_STATE_FRAME_CONTENT, [SWREQ_STATE_FRAME_PERIOD]
 def test_frame_carries_the_latest_values() -> None:
     """An update between two frames is visible in the next frame."""
     publisher = StatePublisher()

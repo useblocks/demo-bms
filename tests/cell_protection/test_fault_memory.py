@@ -15,7 +15,7 @@ def _violation(channel: str = "C7", measured: int = 4300, ts: int = 500) -> Limi
     )
 
 
-# @A fault record is written inside 20 ms carrying channel limit and value, TEST_FAULT_RECORD_WRITE, test, [SWREQ_FAULT_RECORD_WRITE]
+# @A fault record is written inside 20 ms carrying channel limit and value, TEST_FAULT_RECORD_WRITE, [SWREQ_FAULT_RECORD_WRITE]
 def test_record_carries_the_required_fields_and_fixed_size() -> None:
     """The record identifies the cell, the limit and the measured value."""
     memory = FaultMemory()
@@ -30,7 +30,7 @@ def test_record_carries_the_required_fields_and_fixed_size() -> None:
     assert len(record.encode()) == RECORD_SIZE_BYTES
 
 
-# @The 64 entry ring overwrites its oldest record when full, TEST_FAULT_RECORD_RING, test, [SWREQ_FAULT_RECORD_WRITE]
+# @The 64 entry ring overwrites its oldest record when full, TEST_FAULT_RECORD_RING, [SWREQ_FAULT_RECORD_WRITE]
 def test_ring_overwrites_the_oldest_record() -> None:
     """A long-lived pack keeps the newest 64 faults, never more."""
     memory = FaultMemory()

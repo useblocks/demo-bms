@@ -3,7 +3,7 @@
 from src.state_estimation.coulomb_counter import CoulombCounter
 
 
-# @Charge is integrated trapezoidally on every 10 ms tick, TEST_CHARGE_INTEGRATION, test, [SWREQ_CHARGE_INTEGRATION]
+# @Charge is integrated trapezoidally on every 10 ms tick, TEST_CHARGE_INTEGRATION, [SWREQ_CHARGE_INTEGRATION]
 def test_trapezoidal_integration_over_three_ticks() -> None:
     """Each tick adds the mean of this and the previous sample times the period."""
     counter = CoulombCounter()
@@ -13,7 +13,7 @@ def test_trapezoidal_integration_over_three_ticks() -> None:
     assert round(counter.tick(10.0), 6) == 0.15  # + (10 + 10) / 2 * 0.01
 
 
-# @A ramping current integrates to the exact trapezoid area, TEST_CHARGE_INTEGRATION_RAMP, test, [SWREQ_CHARGE_INTEGRATION]
+# @A ramping current integrates to the exact trapezoid area, TEST_CHARGE_INTEGRATION_RAMP, [SWREQ_CHARGE_INTEGRATION]
 def test_linear_ramp_matches_the_analytic_area() -> None:
     """A linear ramp is the case trapezoidal integration is exact for."""
     counter = CoulombCounter()
@@ -25,7 +25,7 @@ def test_linear_ramp_matches_the_analytic_area() -> None:
     assert round(counter.accumulated_as, 6) == round(0.5 * 100 * 1.0, 6)
 
 
-# @Throughput accumulates the absolute charge in both directions, TEST_CHARGE_THROUGHPUT, test, [SWREQ_CHARGE_INTEGRATION]
+# @Throughput accumulates the absolute charge in both directions, TEST_CHARGE_THROUGHPUT, [SWREQ_CHARGE_INTEGRATION]
 def test_throughput_counts_charge_and_discharge_alike() -> None:
     """The net integral cancels out; the throughput must not."""
     counter = CoulombCounter()

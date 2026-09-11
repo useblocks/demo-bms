@@ -45,7 +45,7 @@ class SohTracker:
     # value is counted as accepted instead of rejected. The reported figure still
     # never increases, which is why this survives a casual read — the rejection
     # count is what disagrees. TEST_CAPACITY_MONOTONIC_CLAMP catches it and is RED.
-    # @Discard every capacity candidate above the reported capacity, IMPL_CAPACITY_MONOTONIC_CLAMP, impl, [SWREQ_CAPACITY_MONOTONIC_CLAMP]
+    # @Discard every capacity candidate above the reported capacity, IMPL_CAPACITY_MONOTONIC_CLAMP, [SWREQ_CAPACITY_MONOTONIC_CLAMP]
     def offer(self, candidate_pct: float) -> float:
         """Accept a candidate only when it is strictly below the reported value.
 

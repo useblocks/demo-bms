@@ -1,15 +1,24 @@
 # `ubc build needs` output — regenerated from the sources, not a source itself.
+# It lands next to ubproject.toml, i.e. in docs/, or wherever `-o` says.
 /needs.json
+/docs/needs.json
+/docs/needs.lfp.json
 
 # Python bytecode and pytest scratch — regenerated, never a source.
 __pycache__/
 *.py[cod]
 .pytest_cache/
 
-# Rendered reports are build output, not sources.
-/reports/_build/
+# Rendered reports are build output, not sources. Sphinx and `ubc build html`
+# write to _build/ at the root when run from there, or to docs/_build/ when run
+# through `ubc script` (whose working directory is the project root, docs/).
+/docs/reports/_build/
 /_build/
+/docs/_build/
 
 # uv's environment — recreated from `uv.lock` by `uv sync`. `uv.lock` itself IS
 # a source and stays committed: it is what makes the build reproducible.
 /.venv/
+
+# Per-variant needs export written by `ubc script needs:lfp` — build output.
+/needs.lfp.json

@@ -30,7 +30,7 @@ class ContactorActuator:
             return None
         return self._deenergised_at_ms - self._last_command_ms
 
-    # @De-energise both coil channels within 10 ms of the open command, IMPL_CONTACTOR_DEENERGISE, impl, [SWREQ_CONTACTOR_DEENERGISE]
+    # @De-energise both coil channels within 10 ms of the open command, IMPL_CONTACTOR_DEENERGISE, [SWREQ_CONTACTOR_DEENERGISE]
     def open(self, now_ms: int) -> int:
         """Drive both coil channels to their de-energised level.
 

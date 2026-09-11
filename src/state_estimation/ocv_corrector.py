@@ -53,7 +53,7 @@ class OcvCorrector:
     def corrections(self) -> int:
         return self._corrections
 
-    # @Report a rest condition after 30 minutes below 1 A absolute current, IMPL_REST_DETECTION, impl, [SWREQ_REST_DETECTION]
+    # @Report a rest condition after 30 minutes below 1 A absolute current, IMPL_REST_DETECTION, [SWREQ_REST_DETECTION]
     def update_rest(self, current_a: float, dt_s: float) -> bool:
         """Advance the rest timer by one tick and report the rest condition.
 
@@ -79,7 +79,7 @@ class OcvCorrector:
         return max(0.0, min(100.0, self._anchor_soc + delta_pct))
 
 
-# @Interpolate the SOC linearly in the 21-point OCV table, IMPL_OCV_TABLE_LOOKUP, impl, [SWREQ_OCV_TABLE_LOOKUP]
+# @Interpolate the SOC linearly in the 21-point OCV table, IMPL_OCV_TABLE_LOOKUP, [SWREQ_OCV_TABLE_LOOKUP]
 def soc_from_ocv(mean_cell_voltage_mv: float) -> float:
     """Map a settled mean cell voltage to a state of charge in percent.
 

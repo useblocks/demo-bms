@@ -3,7 +3,7 @@
 from src.thermal_management.power_limit import PowerLimitCalculator
 
 
-# @The temperature power share ramps linearly from 55 C to 60 C, TEST_TEMP_DERATE_RAMP, test, [SWREQ_TEMP_DERATE_RAMP]
+# @The temperature power share ramps linearly from 55 C to 60 C, TEST_TEMP_DERATE_RAMP, [SWREQ_TEMP_DERATE_RAMP]
 def test_derating_ramp_endpoints_and_midpoint() -> None:
     """Full power at 55 °C, zero at 60 °C, exactly half in the middle."""
     calc = PowerLimitCalculator()
@@ -15,7 +15,7 @@ def test_derating_ramp_endpoints_and_midpoint() -> None:
     assert calc.temperature_share_pct(650) == 0.0
 
 
-# @The ramp decreases monotonically across the derating band, TEST_TEMP_DERATE_MONOTONIC, test, [SWREQ_TEMP_DERATE_RAMP]
+# @The ramp decreases monotonically across the derating band, TEST_TEMP_DERATE_MONOTONIC, [SWREQ_TEMP_DERATE_RAMP]
 def test_ramp_is_monotonically_decreasing() -> None:
     """The driver must lose power predictably, never see it rise as it heats up."""
     calc = PowerLimitCalculator()
@@ -25,7 +25,7 @@ def test_ramp_is_monotonically_decreasing() -> None:
     assert shares == sorted(shares, reverse=True)
 
 
-# @The published limit is the minimum of both derating causes, TEST_LIMIT_MINIMUM, test, [SWREQ_LIMIT_MINIMUM]
+# @The published limit is the minimum of both derating causes, TEST_LIMIT_MINIMUM, [SWREQ_LIMIT_MINIMUM]
 def test_published_limit_takes_the_minimum() -> None:
     """Either cause alone is enough to cap the power; they never cancel out."""
     calc = PowerLimitCalculator()
@@ -37,7 +37,7 @@ def test_published_limit_takes_the_minimum() -> None:
     assert calc.publish(highest_dc=500, unconfirmed=False) == 100.0
 
 
-# @The actuator fallback share is flat at 30 percent while unconfirmed, TEST_LIMIT_ACTUATOR_SHARE, test, [SWREQ_LIMIT_MINIMUM]
+# @The actuator fallback share is flat at 30 percent while unconfirmed, TEST_LIMIT_ACTUATOR_SHARE, [SWREQ_LIMIT_MINIMUM]
 def test_actuator_share_is_flat_and_conditional() -> None:
     """The fallback does not depend on temperature, only on the confirmation."""
     calc = PowerLimitCalculator()

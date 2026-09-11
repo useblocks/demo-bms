@@ -46,7 +46,7 @@ done < <(find "${BUILD_ROOT}" -mindepth 3 -maxdepth 3 -type d 2>/dev/null | sort
 if [[ ${#VERSION_DIRS[@]} -eq 0 ]]; then
   echo "ERROR: no built version directory under ${BUILD_ROOT}${UBTRACE_VERSION:+ for version '${UBTRACE_VERSION}'}" >&2
   echo "Run the ubtrace build first:" >&2
-  echo "  uv run --extra ubtrace sphinx-build -b ubtrace -W --keep-going . _build/ubtrace" >&2
+  echo "  uv run --extra ubtrace sphinx-build -b ubtrace -W --keep-going docs _build/ubtrace" >&2
   exit 1
 fi
 if [[ ${#VERSION_DIRS[@]} -gt 1 ]]; then

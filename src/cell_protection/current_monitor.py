@@ -22,7 +22,7 @@ class CurrentPathMonitor:
     def above_threshold_ms(self) -> int:
         return self._above_ms
 
-    # @Report overcurrent only after 100 ms continuously above 350 A, IMPL_OVERCURRENT_DEBOUNCE, impl, [SWREQ_OVERCURRENT_DEBOUNCE]
+    # @Report overcurrent only after 100 ms continuously above 350 A, IMPL_OVERCURRENT_DEBOUNCE, [SWREQ_OVERCURRENT_DEBOUNCE]
     def update(self, current_a: float, period_ms: int = SAMPLE_PERIOD_MS) -> bool:
         """Advance the debounce timer with one 1 ms current sample.
 
