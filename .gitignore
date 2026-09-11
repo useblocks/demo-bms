@@ -16,6 +16,13 @@ __pycache__/
 /_build/
 /docs/_build/
 
+# `ubc agent gaps` output: re-derivable from the sources at any moment, so it is a
+# transient input to `tools/import_gaps.py` rather than a source. Its product,
+# docs/specs/_global/gaps.rst, IS committed. Contrast
+# docs/reports/junit/testresults.xml, which records an execution that cannot be
+# re-derived and so stays committed.
+/docs/reports/gaps/
+
 # uv's environment — recreated from `uv.lock` by `uv sync`. `uv.lock` itself IS
 # a source and stays committed: it is what makes the build reproducible.
 /.venv/

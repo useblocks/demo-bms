@@ -1,0 +1,104 @@
+#!/usr/bin/env bash
+# Refresh the derived files so a commit leaves CI nothing to change:
+#
+#     ubc agent gaps                     -> docs/specs/_global/gaps.rst
+#     docs/reports/junit/testresults.xml -> docs/specs/_global/test_results.rst
+#
+# Install once per clone (git will not, by design): git config core.hooksPath .githooks
+#
+# Best-effort and never blocking — every failure path warns and exits 0, because CI
+# does the same refresh anyway and a blocking hook only earns `--no-verify`.
+#
+# The JUnit snapshot is captured by hand: its timestamp, runtime and hostname
+# change on every pytest run, rewriting all 50 needs for no change in meaning.
+set -uo pipefail
+
+root="$(git rev-parse --show-toplevel)" || exit 0
+cd "$root" || exit 0
+
+GENERATED=(docs/specs/_global/gaps.rst docs/specs/_global/test_results.rst)
+
+# `docs` covers the specs, the ontology and the committed JUnit report — the ubc
+# project lives there, not at the repository root.
+INPUTS=(docs src tests tools)
+
+# Skip when nothing staged could invalidate them (docs- or CI-only commits).
+if ! git diff --cached --name-only -- "${INPUTS[@]}" | grep -q .; then
+  exit 0
+fi
+
+# The importers read the WORKING TREE, but the commit records the INDEX. When an
+# input is modified and not staged, generating now would stage artefacts derived
+# from sources this commit does not contain, so leave them to CI instead.
+if ! git diff --quiet -- "${INPUTS[@]}" \
+   || [ -n "$(git ls-files --others --exclude-standard -- "${INPUTS[@]}")" ]; then
+  echo "pre-commit: inputs modified but not staged — not regenerating, since the result would not match this commit (CI will refresh)" >&2
+  exit 0
+fi
+
+# Both importers are standard-library-only, so no virtualenv need be active.
+if command -v python3 >/dev/null 2>&1; then
+  PY=(python3)
+elif command -v uv >/dev/null 2>&1; then
+  PY=(uv run --no-sync python)
+else
+  echo "pre-commit: no python3 and no uv — skipping the spec refresh (CI will do it)" >&2
+  exit 0
+fi
+
+# `ubc` is not on PATH — it ships inside the ubCode extension.
+ubc_bin=""
+if [ -n "${UBC:-}" ] && [ -x "${UBC:-}" ]; then
+  ubc_bin="$UBC"
+elif command -v ubc >/dev/null 2>&1; then
+  ubc_bin="$(command -v ubc)"
+else
+  for _root in "$HOME"/.vscode/extensions "$HOME"/.vscode-insiders/extensions \
+               "$HOME"/.vscode-server/extensions "$HOME"/.cursor/extensions; do
+    # Newest by mtime; `sort -V` cannot portably rank a version mid-path.
+    for _candidate in $(ls -dt "$_root"/useblocks.ubcode-*/server/cli/ubc 2>/dev/null); do
+      if [ -x "$_candidate" ]; then ubc_bin="$_candidate"; break 2; fi
+    done
+  done
+fi
+
+# Whatever version you have. CI installs the newest published one, so an older
+# extension can still produce a snapshot CI then rewrites — one bot commit, not a
+# reason to refuse to help.
+# docs/reports/gaps/ is gitignored, so this file is scratch: capture straight into
+# it. `-p docs` is not optional — without it ubc finds no project at the
+# repository root and succeeds silently.
+if [ -z "$ubc_bin" ]; then
+  echo "pre-commit: no ubc found — importing gaps from the last capture (CI re-captures)" >&2
+else
+  mkdir -p docs/reports/gaps
+  "$ubc_bin" agent gaps -p docs > docs/reports/gaps/gaps.json 2>/dev/null || true
+fi
+
+failed=0
+for importer in tools/import_gaps.py tools/import_test_results.py; do
+  # Swallowed on success: each importer lists every need it wrote.
+  if ! out="$("${PY[@]}" "$importer" 2>&1)"; then
+    echo "pre-commit: $importer failed — leaving its output as it is:" >&2
+    echo "$out" >&2
+    failed=1
+  fi
+done
+
+if [ "$failed" -eq 1 ]; then
+  echo "pre-commit: committing anyway; CI refreshes and pushes the result." >&2
+  exit 0
+fi
+
+# Never `git add -A`: a hook must not widen the commit beyond what was staged.
+staged=()
+for f in "${GENERATED[@]}"; do
+  if [ -n "$(git status --porcelain -- "$f" 2>/dev/null)" ]; then
+    git add -- "$f" && staged+=("$f")
+  fi
+done
+
+if [ "${#staged[@]}" -gt 0 ]; then
+  echo "pre-commit: refreshed and staged ${staged[*]}"
+fi
+exit 0

@@ -10,9 +10,9 @@ Workflow Gaps
       ubc agent gaps > docs/reports/gaps/gaps.json
       python3 tools/import_gaps.py
 
-   The report is a **committed snapshot**: the structural gate is not re-run
-   on every build, so these needs record what ``ubc agent gaps`` found when it
-   last ran, not what it would find now.
+   This page is committed but the report behind it is not: these needs
+   record what ``ubc agent gaps`` found when the page was last regenerated,
+   not what it would find now.
 
 1 open gap(s) — 1 trace_backward.
 

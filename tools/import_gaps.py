@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Import a `ubc agent gaps` JSON report into `gap` needs.
 
-The structural gate is NOT re-run on every build. ``docs/reports/gaps/gaps.json`` is a
-committed snapshot of one real ``ubc agent gaps`` run, and this script turns it
-into needs so the gate's findings are part of the graph rather than an
-untraceable file next to it — the same arrangement as the JUnit snapshot on the
-other side of the V (see ``tools/import_test_results.py``).
+``docs/reports/gaps/gaps.json`` is a CAPTURE, not a source: it is gitignored,
+because ``ubc agent gaps`` can re-derive it from the sources at any moment. What is
+committed is this script's product, ``docs/specs/_global/gaps.rst``, so the gate's
+findings are part of the graph rather than an untraceable file next to it. The
+JUnit report on the other side of the V is committed instead, because it records a
+test run that cannot be re-derived (see ``tools/import_test_results.py``).
 
 Why put the gate's output back INTO the graph at all: because a gap is only
 useful where the reader already is. A JSON file says
@@ -21,14 +22,14 @@ the same file byte for byte and a fixed gap disappears rather than lingering
 under a fresh id.
 
 A record naming a need that does not exist in the sources is a hard error, not a
-silent drop: that means the snapshot is stale, and a stale gap would author a
-dangling ``gap_for`` link that fails the Sphinx build under ``-W``.
+silent drop: that means the capture predates a source edit, and a stale gap would
+author a dangling ``gap_for`` link that fails the Sphinx build under ``-W``.
 
 Usage::
 
-    ubc agent gaps > docs/reports/gaps/gaps.json   # refresh the snapshot (exits 1 on gaps)
-    python3 tools/import_gaps.py              # default paths -> docs/specs/_global/gaps.rst
-    python3 tools/import_gaps.py --check      # fail if the output is stale
+    ubc agent gaps -p docs > docs/reports/gaps/gaps.json   # capture (exits 1 on any gap)
+    python3 tools/import_gaps.py         # default paths -> docs/specs/_global/gaps.rst
+    python3 tools/import_gaps.py --check # fail if docs/specs/_global/gaps.rst is stale
 """
 
 from __future__ import annotations
@@ -260,9 +261,9 @@ def render(gaps: list[Gap], by_category: dict[str, int], report: Path) -> str:
         "      ubc agent gaps > %s" % rel_report,
         "      python3 tools/import_gaps.py",
         "",
-        "   The report is a **committed snapshot**: the structural gate is not re-run",
-        "   on every build, so these needs record what ``ubc agent gaps`` found when it",
-        "   last ran, not what it would find now.",
+        "   This page is committed but the report behind it is not: these needs",
+        "   record what ``ubc agent gaps`` found when the page was last regenerated,",
+        "   not what it would find now.",
         "",
     ]
 

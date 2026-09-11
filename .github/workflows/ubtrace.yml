@@ -1,35 +1,20 @@
-# Gate this project's needs graph with `ubc`, then build its ubTrace artefact and
-# publish it to team.useblocks.com.
+# Check the needs graph with `ubc`, refresh the files derived from it, then build
+# and publish the ubTrace export. See the README for the reasoning behind the
+# write-back, the concurrency split and the commit-based publishing.
 #
-# Two jobs, in order. `graph-gates` runs the ubc CLI against the sources — the same
-# commands you run locally — and `publish` only starts once they pass, so a stale or
-# broken graph is never published. The CLI comes from useblocks/ubc-action, which is
-# nothing more than a download-and-PATH composite action; see the job for why the
-# version is pinned here rather than left to the action's default.
+#   push main / tag    build + publish (as "main", or under the tag name)
+#   push demo**        build only
+#   pull_request        build only
+#   workflow_dispatch   republish "main" or a tag by name
 #
-# Triggers:
-#   push to main    -> builds and publishes as version "main" (overwriting it).
-#   push of a tag   -> builds and publishes under the tag name, alongside "main".
-#   push to demo**  -> builds only, no upload. A demo branch gets the full gate
-#                       and build treatment, but nothing it produces reaches
-#                       team.useblocks.com.
-#   pull request     -> builds only, no upload: the gate that a change keeps the
-#                       ubTrace export building warning-free before it lands.
-#   workflow_dispatch -> republish "main", or re-publish an old tag by name.
-#                       Dispatching a demo branch builds without uploading too:
-#                       the upload is gated on WHAT WAS BUILT, not on the event.
-#
-# Required repository secret:
-#   UBTRACE_INGEST_TOKEN — a token with "Ingest" permission on the
-#   useblocks/rollout-demo-bms project at team.useblocks.com.
+# Needs secrets UBTRACE_INGEST_TOKEN, UBCODE_LICENSE_KEY and UBCODE_LICENSE_USER.
 name: ubTrace publish
 
 on:
   push:
     branches:
       - main
-      # `**`, not `*`: a single star stops at a slash, so it would match
-      # `demo-cell-balancing` but miss `demo/cell-balancing`.
+      # `**` matches across slashes; `demo*` would miss `demo/cell-balancing`.
       - "demo**"
     tags:
       - "v[0-9]+.[0-9]+.[0-9]+*"
@@ -45,61 +30,63 @@ on:
 permissions:
   contents: read
 
-# The ubc CLI version the gates run. Declared here, once, because it has to track
-# the version the team runs locally — ubCode ships the CLI inside the VS Code
-# extension, so `ubc --version` there is the number that belongs in this line.
-# It is passed explicitly to useblocks/ubc-action on purpose: that action's own
-# default is 0.27.0 and lags well behind (its only tag, 0.1, is older still), so
-# relying on the default would silently gate this project with a different engine
-# than the one that produced its committed snapshots.
-env:
-  UBC_VERSION: "0.34.0"
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: false
-
 jobs:
-  # --- THE GRAPH GATES ----------------------------------------------------------
-  # Everything here is `ubc` or a stdlib-only importer, so this job needs no uv, no
-  # graphviz and no mermaid — it is the cheap, fast half of the pipeline and it
-  # fails before the expensive build starts.
-  #
-  # What it is actually defending. This project carries two IMPORTED artefacts,
-  # `test_result` and `gap`, and each is a three-link chain:
-  #
-  #     reality -> committed snapshot -> generated RST -> published artefact
-  #
-  # The importers' `--check` modes have always been able to gate the second link
-  # (snapshot -> RST). The FIRST link had nothing gating it until this job: nothing
-  # in CI could tell whether `docs/reports/gaps/gaps.json` still matched what the engine
-  # actually reports, because there was no `ubc` on the runner. That is exactly the
-  # hole useblocks/ubc-action closes.
   graph-gates:
     name: Graph gates (ubc)
     runs-on: ubuntu-latest
+    # Write, to push the regenerated files back. The credential is NOT persisted
+    # into .git/config (see the checkout) because this job also runs PR-authored
+    # code — the importers and gate_summary.py — which must never find a token
+    # lying around. Only the push step, which runs git and nothing else, gets one.
+    permissions:
+      contents: write
+    # The commit this run validated, and the only one `publish` may build: the
+    # refresh commit when one was pushed, the triggering commit otherwise.
+    outputs:
+      sha: ${{ steps.push.outputs.sha || steps.refresh.outputs.sha }}
+    # Cancellable: nothing here is published, and a cancelled gate job also stops
+    # the run before `publish`. `inputs.ref` is in the key because `github.ref` for
+    # a dispatch is the branch the workflow file was read from.
+    concurrency:
+      group: ${{ github.workflow }}-gates-${{ github.event.inputs.ref || github.ref }}
+      cancel-in-progress: true
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.inputs.ref || github.ref }}
+          # A PR's head commit, not its merge commit: the refresh has to be
+          # committable onto a branch. Full history, so it can be pushed.
+          ref: ${{ github.event.inputs.ref || github.event.pull_request.head.sha || github.ref }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Resolve the newest ubc version
+        # The engine that produced the committed snapshots is whatever the team's
+        # ubCode extension ships, so CI tracks the newest published extension
+        # version rather than a pin that rots. Resolved as a NUMBER, not with the
+        # action's `version: latest`, which builds
+        # download.useblocks.com/ubc/latest/ubc-linux-x64-latest — a path the
+        # bucket answers with 403.
+        run: |
+          set -uo pipefail
+          version="$(curl -sSf -X POST \
+            "https://marketplace.visualstudio.com/_apis/public/gallery/extensionquery" \
+            -H "Content-Type: application/json" \
+            -H "Accept: application/json;api-version=7.2-preview.1" \
+            -d '{"filters":[{"criteria":[{"filterType":7,"value":"useblocks.ubcode"}]}],"flags":914}' \
+            | jq -r '[.results[0].extensions[0].versions[].version] | first // empty')"
+          # Fail loudly: the action's own default is 0.27.0, so a silent fallback
+          # would gate this project with a years-old engine.
+          if ! printf '%s' "$version" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::Could not resolve the newest ubc version from the marketplace (got '${version:-nothing}')"
+            exit 1
+          fi
+          echo "UBC_VERSION=$version" >> "$GITHUB_ENV"
+          echo "resolved ubc $version"
 
       - name: Require a ubCode license
-        # ubc is COMMERCIAL software and this repository is PRIVATE, so the free
-        # open-source mode does not apply: ubCode grants that only to projects under
-        # an OSI licence in a publicly reachable Git repo, and it probes the remote
-        # to decide. Unlicensed, ubc caps indexing at 5 files and 100 needs; this
-        # project has 22 and 194, so every gate below fails with
-        # "exceeds maximum without license".
-        #
-        # This preflight exists because that failure names the wrong culprit. The
-        # action's own `ubc --version` check passes unlicensed, so without this step
-        # the job would install cleanly and then die inside `ubc check` with a
-        # message about file counts — nothing pointing at a missing repository
-        # secret. Fail here instead, naming the secrets.
-        #
-        # BOTH are needed: useblocks licence keys are user-based, so the key without
-        # the e-mail it was issued to does not activate.
-        # https://ubcode.useblocks.com/usage/ublicense.html
+        # Unlicensed, `ubc` caps indexing at 5 files and 100 needs (this project has
+        # 22 and 194) and fails talking about file counts, never about a secret.
+        # Keys are user-based, so both the key and its e-mail are required.
         env:
           UBCODE_LICENSE_KEY: ${{ secrets.UBCODE_LICENSE_KEY }}
           UBCODE_LICENSE_USER: ${{ secrets.UBCODE_LICENSE_USER }}
@@ -114,93 +101,139 @@ jobs:
           echo "license secrets present"
 
       - name: Install ubc
-        # Pinned to the current `main` commit, not to the `0.1` tag: that tag is two
-        # commits behind and predates the version bump, and the action publishes no
-        # moving major tag to follow. A composite action is plain YAML executed in
-        # this job, so pinning the exact SHA is the only way to know what runs.
-        #
-        # The action exports the two inputs as UBCODE_LICENSE_KEY / UBCODE_LICENSE_USER
-        # for every later step in the job, which is how the gates below are licensed.
-        # Note the runner is ephemeral, so ubc's 3-day licence cache is always cold
-        # and each run performs one online activation request.
+        # Pinned to a SHA: a composite action is plain YAML executed in this job,
+        # and this one publishes no moving tag to follow.
         uses: useblocks/ubc-action@393f60bb24e9988cd62f2044e4e200ad253395a7 # main, 2026-03-25
         with:
           version: ${{ env.UBC_VERSION }}
           license-key: ${{ secrets.UBCODE_LICENSE_KEY }}
           license-user: ${{ secrets.UBCODE_LICENSE_USER }}
 
+      - name: Prove ubc runs
+        # The action downloads with `curl -sSL` and no `--fail`, so a bad version
+        # leaves an S3 error page on PATH named `ubc` and exits 0. Catch that here
+        # rather than three steps later as "cannot execute binary file".
+        run: ubc --version
+
       - name: Set up Python
-        # Only for the two importers, which are standard-library-only by design.
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version-file: ".python-version"
 
       - name: Parse the sources
         id: parse
-        # The cheapest real gate there is: `ubc check` reports RST problems and exits
-        # non-zero on an error. Nothing in this pipeline validated the specs as specs
-        # before — the Sphinx build only proved they render.
-        #
         # The project is `docs/` and there is NO configuration at the repository
-        # root by design (see the README's layout section). A bare `ubc check` here
+        # root by design (see the README's layout section). A bare `ubc check`
         # finds no project and passes silently, so the path is not optional.
         run: ubc check docs
 
-      - name: The gap snapshot still matches reality
-        id: snapshot
-        # `docs/reports/gaps/gaps.json` is a COMMITTED snapshot (see the README). This is
-        # the step that stops it drifting: re-run the gate here and require the output
-        # to be byte-identical to what is committed.
+      - name: Refresh the imported artefacts and commit them
+        id: refresh
+        # Staleness is not a failure here; an unusable report, an importer
+        # rejecting a freshly captured capture, or generated RST that does not
+        # parse, are.
         #
-        # The exit code is deliberately NOT the gate. `ubc agent gaps` exits non-zero
-        # whenever it finds a gap, and this project has one ON PURPOSE
-        # (REQ_CELL_BALANCING_WINDOW), so gating on the exit code would fail every run
-        # and gating on `|| true` would hide a crashed binary. Instead the output is
-        # required to parse as a gap report first — that is what proves the command
-        # ran — and only then compared.
+        # NO credential is present in this step. Everything it runs is
+        # repository-authored — the two importers and `ubc` — and a write-scoped
+        # token given to this step would be readable by all of it, including out of
+        # this shell's own /proc entry, which `unset` does not scrub. So the token
+        # lives in the next step, which runs git and nothing else.
+        env:
+          HEAD_REF: ${{ github.head_ref }}
+          IS_FORK: ${{ github.event.pull_request.head.repo.fork }}
         run: |
           set -uo pipefail
-          out="$RUNNER_TEMP/gaps.json"
-          # `run:` executes under `bash -e`, and a found gap exits non-zero, so the
-          # command has to be written in a form that does not abort the step.
-          rc=0
-          ubc agent gaps -p docs > "$out" || rc=$?
-          probe="import json,sys; d=json.load(open(sys.argv[1])); raise SystemExit(0 if 'gaps' in d and 'ok' in d else 1)"
-          # stderr is dropped: a JSONDecodeError traceback tells the reader nothing
-          # the explicit error line below does not, and it buries it.
-          if ! python3 -c "$probe" "$out" 2>/dev/null; then
-            echo "::error::ubc agent gaps produced no usable report (exit $rc)"
-            cat "$out" || true
-            exit 1
-          fi
-          if ! diff -u docs/reports/gaps/gaps.json "$out"; then
-            echo "::error::docs/reports/gaps/gaps.json is stale. Refresh it with 'ubc agent gaps -p docs > docs/reports/gaps/gaps.json' and re-run 'python3 tools/import_gaps.py'."
-            exit 1
-          fi
-          echo "gap snapshot is current"
 
-      - name: The generated specs still match their snapshots
-        id: generated
-        # The second link of both chains. These are the same `--check` modes the
-        # README documents; they were never wired into CI.
+          generated=(docs/specs/_global/gaps.rst docs/specs/_global/test_results.rst)
+
+          # Every exit path that publishes names a commit that exists on the
+          # remote, never this working tree.
+          publishes() {
+            { echo "push=false"; echo "sha=$1"; } >> "$GITHUB_OUTPUT"
+            echo "publishing $1"
+          }
+
+          # Derive the generated files from the tree at HEAD, then re-check them:
+          # `ubc check` before this step parsed the sources, not the RST this step
+          # writes, so without a second check an importer could commit RST that
+          # does not parse. `ubc agent gaps` exits non-zero on any found gap (one
+          # is deliberate here) so its code is no test; import_gaps.py validates
+          # the report it reads. docs/reports/gaps/ is gitignored, so truncating it
+          # here costs nothing. Every `ubc` call names the project: without it the
+          # command finds none at the repository root and passes silently.
+          mkdir -p docs/reports/gaps
+          ubc agent gaps -p docs > docs/reports/gaps/gaps.json || true
+          python3 tools/import_gaps.py || exit 1
+          python3 tools/import_test_results.py || exit 1
+          ubc check docs || exit 1
+
+          original="$(git rev-parse HEAD)"
+          # `git status --porcelain`, not `git diff`: a generated file DELETED by
+          # the triggering commit and recreated here is untracked, and `git diff`
+          # reports no change for it.
+          if [ -z "$(git status --porcelain -- "${generated[@]}")" ]; then
+            echo "the generated specs were already current"
+            publishes "$original"
+            exit 0
+          fi
+          git status --short -- "${generated[@]}"
+          git diff -- "${generated[@]}"
+
+          # Only a branch the token may write, and never a tag.
+          target=""
+          if [ -n "${HEAD_REF:-}" ]; then
+            if [ "${IS_FORK:-false}" != "true" ]; then target="$HEAD_REF"; fi
+          elif [ "$GITHUB_EVENT_NAME" = "push" ] && [ "$GITHUB_REF_TYPE" = "branch" ]; then
+            target="$GITHUB_REF_NAME"
+          fi
+          if [ -z "$target" ]; then
+            echo "::warning::The generated specs are stale and this run cannot push a refresh back (fork PR, tag build, or dispatched republish), so $original is published AS COMMITTED. Run 'git config core.hooksPath .githooks' once, or the two importers by hand, and commit the result."
+            publishes "$original"
+            exit 0
+          fi
+
+          # Committing needs no credential either, so the next step is left with
+          # one thing to do: push what is already recorded here.
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- "${generated[@]}"
+          git commit -q -m "chore: refresh generated specs"
+          { echo "push=true"; echo "target=$target"; } >> "$GITHUB_OUTPUT"
+
+      - name: Push the refresh
+        id: push
+        if: steps.refresh.outputs.push == 'true'
+        # The one step that holds the token, and it runs git and nothing else — no
+        # importer, no `ubc`, no repository-authored script — so nothing that a
+        # pull request can author ever shares a process tree with the credential.
+        # It is not persisted in .git/config either. Pushing needs no re-trigger
+        # guard: GitHub raises no workflow runs for GITHUB_TOKEN's events. The cost
+        # is a branch tip carrying no checks of its own.
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TARGET: ${{ steps.refresh.outputs.target }}
         run: |
-          python3 tools/import_gaps.py --check
-          python3 tools/import_test_results.py --check
+          set -uo pipefail
+          git remote set-url origin \
+            "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}"
+          rc=0
+          git push origin "HEAD:refs/heads/$TARGET" || rc=$?
+          git remote set-url origin "https://github.com/${GITHUB_REPOSITORY}"
+          if [ "$rc" -ne 0 ]; then
+            # Someone pushed mid-run. Regenerating on their tip would mean running
+            # the importers again, which cannot happen here without handing them
+            # the token; replaying this commit onto it would publish artefacts
+            # derived from the previous tree as validated. So the run stops, and
+            # the run their own push triggered does the refresh.
+            echo "::error::Push to $TARGET was rejected — the branch moved during this run, so the refresh committed here derives from a tip that is no longer current. Nothing is published; the run triggered by that newer commit refreshes it, or re-run this workflow."
+            exit 1
+          fi
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "pushed the refresh to $TARGET"
 
       - name: Report the trace matrix and the substance gate
-        # INFORMATIONAL, never blocking, and both for the same reason: this repo is a
-        # demo whose whole point is that it has one real gap and live-editable review
-        # verdicts. `ubc agent trace` exits non-zero on that deliberate gap, and
-        # `ubc agent verdict-check` goes red the moment someone edits a requirement
-        # during a demo — which is the behaviour the README asks people to show off,
-        # not a reason to break main. The numbers are worth having; the exit codes are
-        # not worth gating on.
-        #
-        # `tee` rather than a plain redirect: the JSON feeds the job summary below AND
-        # stays in the step log, so the run page and the log tell the same story. The
-        # trailing `|| true` swallows the expected non-zero exits — `continue-on-error`
-        # would too, but only after marking the step failed, and this step's outcome is
-        # deliberately NOT one of the results the summary reports.
+        # Informational. Both exit non-zero by design here — `trace` on the
+        # deliberate gap, `verdict-check` as soon as anyone edits a requirement.
         continue-on-error: true
         run: |
           set -uo pipefail
@@ -208,41 +241,52 @@ jobs:
           ubc agent verdict-check -p docs | tee "$RUNNER_TEMP/verdicts.json" || true
 
       - name: Job summary
-        # `always()`, because a summary is worth most exactly when a gate failed — and
-        # tools/gate_summary.py is written so that it cannot itself fail: every input is
-        # optional and every unreadable one renders as a note.
-        #
-        # The three `--result` labels are the BLOCKING gates only. The step above is
-        # left out on purpose: it exits non-zero by design here, and listing it would
-        # put a red row in the summary for the one thing that is meant to be red.
+        # `always()`, because a summary is worth most when a gate failed;
+        # gate_summary.py renders every unreadable input as a note rather than
+        # failing. The `--result` labels are the blocking steps only.
         if: always()
         run: |
           python3 tools/gate_summary.py \
             --ubc-version "$UBC_VERSION" \
             --result "Sources parse=${{ steps.parse.outcome }}" \
-            --result "Gap snapshot matches reality=${{ steps.snapshot.outcome }}" \
-            --result "Generated specs match snapshots=${{ steps.generated.outcome }}" \
-            --gaps "$RUNNER_TEMP/gaps.json" \
+            --result "Imported artefacts refreshed=${{ steps.refresh.outcome }}" \
+            --result "Refresh pushed=${{ steps.push.outcome }}" \
+            --gaps docs/reports/gaps/gaps.json \
             --trace "$RUNNER_TEMP/trace.json" \
             --verdicts "$RUNNER_TEMP/verdicts.json" \
             >> "$GITHUB_STEP_SUMMARY"
 
   publish:
     name: Publish ubTrace artefact
-    # Gate first, build second. Remove this line to make the gates advisory — the
-    # one case where that is tempting is a `workflow_dispatch` republish of an OLD
-    # tag, whose committed snapshots were produced by an older engine and may not
-    # reproduce byte-for-byte under the UBC_VERSION pinned above.
+    # Structural, not just ordering: the commit built here comes from this job.
     needs: graph-gates
     runs-on: ubuntu-latest
+    # Never cancelled: upload_ubtrace.sh publishes with one
+    # `curl ?overwrite=true`, so a request killed halfway is a truncated archive
+    # replacing the live version.
+    concurrency:
+      group: ${{ github.workflow }}-publish-${{ github.event.inputs.ref || github.ref }}
+      cancel-in-progress: false
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.inputs.ref || github.ref }}
+          # By SHA, not `github.ref`: re-resolving the branch would build whatever
+          # tip exists now, which may be a commit this run never gated.
+          ref: ${{ needs.graph-gates.outputs.sha }}
+
+      - name: Prove we are on the validated commit
+        env:
+          EXPECTED: ${{ needs.graph-gates.outputs.sha }}
+        run: |
+          actual="$(git rev-parse HEAD)"
+          if [ "$actual" != "$EXPECTED" ]; then
+            echo "::error::Expected to build ${EXPECTED:-<empty>}, but the checkout is at $actual"
+            exit 1
+          fi
+          echo "building $actual"
 
       - name: Install uv
-        # Pinned to an exact release on purpose: setup-uv publishes moving
-        # major tags only up to v7, so `@v10` does not resolve at all.
+        # Exact release: setup-uv publishes moving major tags only up to v7.
         uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
           enable-cache: true
@@ -254,19 +298,11 @@ jobs:
           python-version-file: ".python-version"
 
       - name: Install mermaid-cli, and prove it can render
-        # The three `.. mermaid::` component diagrams are pre-rendered to SVG
-        # when `mmdc` is on PATH (see conf.py) — scripts do not run in the
-        # ubTrace export, so a browser-rendered diagram would be blank there.
-        #
-        # mmdc drives a headless Chromium, which is the fragile part: it broke
-        # the first publish from this workflow with "No usable sandbox!"
-        # (Ubuntu's AppArmor restriction on unprivileged user namespaces), and
-        # under `-W` three failed renders fail the whole build. So this step
-        # RENDERS A PROBE DIAGRAM and, if that does not work, uninstalls mmdc
-        # again — which drops conf.py back to the raw output and keeps the
-        # publish going with three degraded diagrams instead of no artefact.
-        # Never let this step fail the job: the diagrams are a nicety, the
-        # traceability artefact is the point.
+        # Scripts do not run in the ubTrace export, so conf.py pre-renders the
+        # `.. mermaid::` diagrams when `mmdc` is on PATH. mmdc drives a headless
+        # Chromium that has failed on this runner before ("No usable sandbox!"), so
+        # a probe render decides: on failure mmdc is removed and the build falls
+        # back to raw diagrams. Never let this fail the job.
         continue-on-error: true
         run: |
           set -uo pipefail
@@ -282,11 +318,7 @@ jobs:
           fi
 
       - name: Install graphviz
-        # `dot` renders the per-stream needflow diagrams on traceability.rst
-        # (flow_engine = "graphviz" in ubproject.toml). Unlike the mermaid step
-        # above this one is NOT optional: conf.py fails the build when `dot` is
-        # missing, because a traceability page with no diagrams is worse than a
-        # loud failure.
+        # Not optional, unlike mermaid: conf.py fails the build without `dot`.
         run: |
           sudo apt-get update
           sudo apt-get install --yes graphviz
@@ -297,13 +329,11 @@ jobs:
 
       - name: Compute UBTRACE_VERSION
         id: vars
-        # Emits TWO things: the version the artefact is built as, and whether it
-        # may be uploaded. They are decided together, here, because a demo branch
-        # is defined by the second: it is built like everything else and then not
-        # published. Deriving `publish` from the resolved ref rather than from
-        # `github.event_name` is what makes a workflow_dispatch of a demo branch
-        # behave the same as a push of one — dispatch checks out `inputs.ref`, so
-        # it can reach a demo branch just as easily.
+        # Emits the version to build as, and whether it may be uploaded — a demo
+        # branch is defined by the second. Deriving `publish` from the resolved ref
+        # rather than the event makes a dispatch of a demo branch behave like a push
+        # of one. The patterns are enforced because the value becomes a path and a
+        # URL segment, and the dispatch input is free text.
         run: |
           set -euo pipefail
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
@@ -311,20 +341,10 @@ jobs:
           elif [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
             ref="$GITHUB_REF_NAME"
           elif [[ "$GITHUB_REF_NAME" == demo* ]]; then
-            # NOT collapsed into "main" like other branches: publishing is off
-            # for demo branches, so the version only names the build directory,
-            # and naming it after the branch keeps a run log self-explanatory.
             ref="$GITHUB_REF_NAME"
           else
             ref="main"
           fi
-          # Defence in depth: the tag trigger already filters to
-          # `v[0-9]+.[0-9]+.[0-9]+*`, but git tag names may contain shell
-          # metacharacters that the trailing glob accepts, and the dispatch
-          # input is free text. Reject anything outside "main" / a SemVer-ish
-          # tag / a demo branch before it becomes a version segment in a URL and
-          # a path. Demo names are held to the same character set even though
-          # they are never uploaded, because the value still becomes a path.
           publish=true
           if [[ "$ref" == demo* ]]; then
             publish=false
@@ -344,23 +364,16 @@ jobs:
       - name: Build ubTrace artefact
         env:
           UBTRACE_VERSION: ${{ steps.vars.outputs.version }}
-        # `-W --keep-going` is the gate: the export must build warning-free.
-        # `-D ubtrace_version` overrides conf.py so a tag publishes as its own
-        # version; it must stay in sync with what upload_ubtrace.sh packages,
-        # which is why the same value is exported to that script below.
+        # `-W --keep-going`: the export must build warning-free.
         run: |
           uv run --extra ubtrace sphinx-build -b ubtrace -W --keep-going \
             -D "ubtrace_version=${UBTRACE_VERSION}" \
             docs _build/ubtrace
 
       - name: Upload to team.useblocks.com
-        # Pull requests and demo branches build the artefact but never publish
-        # it. `steps.vars.outputs.publish` carries the demo half of that rule so
-        # it holds however the demo branch was reached — a push, or a dispatch
-        # naming it. To start publishing demo versions later, flip that flag —
-        # but note a slashed branch name (`demo/foo`) then needs handling too:
-        # upload_ubtrace.sh locates the built version at exactly depth 3 under
-        # the build root, and such a name nests one level deeper.
+        # To publish demo versions later, flip `publish` above — but note
+        # upload_ubtrace.sh finds the built version at exactly depth 3, so a
+        # slashed name (`demo/foo`) nests one level deeper and needs handling.
         if: github.event_name != 'pull_request' && steps.vars.outputs.publish == 'true'
         env:
           UBTRACE_INGEST_TOKEN: ${{ secrets.UBTRACE_INGEST_TOKEN }}
