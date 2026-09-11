@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Refresh the derived files so a commit leaves CI nothing to change:
 #
-#     ubc agent gaps                -> specs/_global/gaps.rst
-#     reports/junit/testresults.xml -> specs/_global/test_results.rst
+#     ubc agent gaps                     -> docs/specs/_global/gaps.rst
+#     docs/reports/junit/testresults.xml -> docs/specs/_global/test_results.rst
 #
 # Install once per clone (git will not, by design): git config core.hooksPath .githooks
 #
@@ -16,9 +16,11 @@ set -uo pipefail
 root="$(git rev-parse --show-toplevel)" || exit 0
 cd "$root" || exit 0
 
-GENERATED=(specs/_global/gaps.rst specs/_global/test_results.rst)
+GENERATED=(docs/specs/_global/gaps.rst docs/specs/_global/test_results.rst)
 
-INPUTS=(specs src tests reports tools ubproject.toml)
+# `docs` covers the specs, the ontology and the committed JUnit report — the ubc
+# project lives there, not at the repository root.
+INPUTS=(docs src tests tools)
 
 # Skip when nothing staged could invalidate them (docs- or CI-only commits).
 if ! git diff --cached --name-only -- "${INPUTS[@]}" | grep -q .; then
@@ -63,12 +65,14 @@ fi
 # Whatever version you have. CI installs the newest published one, so an older
 # extension can still produce a snapshot CI then rewrites — one bot commit, not a
 # reason to refuse to help.
-# reports/gaps/ is gitignored, so this file is scratch: capture straight into it.
+# docs/reports/gaps/ is gitignored, so this file is scratch: capture straight into
+# it. `-p docs` is not optional — without it ubc finds no project at the
+# repository root and succeeds silently.
 if [ -z "$ubc_bin" ]; then
   echo "pre-commit: no ubc found — importing gaps from the last capture (CI re-captures)" >&2
 else
-  mkdir -p reports/gaps
-  "$ubc_bin" agent gaps -p . > reports/gaps/gaps.json 2>/dev/null || true
+  mkdir -p docs/reports/gaps
+  "$ubc_bin" agent gaps -p docs > docs/reports/gaps/gaps.json 2>/dev/null || true
 fi
 
 failed=0

@@ -34,7 +34,7 @@ class SafetySupervisor:
     def violation(self) -> LimitViolation | None:
         return self._violation
 
-    # @Evaluate every valid sample against the static limit table each cycle, IMPL_LIMIT_EVALUATION, impl, [SWREQ_LIMIT_EVALUATION]
+    # @Evaluate every valid sample against the static limit table each cycle, IMPL_LIMIT_EVALUATION, [SWREQ_LIMIT_EVALUATION]
     def evaluate(
         self, sample_set: SampleSet, overcurrent: bool = False
     ) -> LimitViolation | None:
@@ -70,7 +70,7 @@ class SafetySupervisor:
             )
         return None
 
-    # @Leave FAULT_LATCHED only on a diagnostic service reset, IMPL_LATCH_STATE_MACHINE, impl, [SWREQ_LATCH_STATE_MACHINE]
+    # @Leave FAULT_LATCHED only on a diagnostic service reset, IMPL_LATCH_STATE_MACHINE, [SWREQ_LATCH_STATE_MACHINE]
     def service_reset(self) -> SafetyState:
         """The only transition out of ``FAULT_LATCHED``.
 
@@ -89,7 +89,7 @@ class SafetySupervisor:
         return violation
 
 
-# @Exclude samples flagged invalid from limit evaluation, IMPL_IGNORE_INVALID_SAMPLES, impl, [SWREQ_IGNORE_INVALID_SAMPLES]
+# @Exclude samples flagged invalid from limit evaluation, IMPL_IGNORE_INVALID_SAMPLES, [SWREQ_IGNORE_INVALID_SAMPLES]
 def candidate_samples(samples: tuple[CellSample, ...]) -> tuple[CellSample, ...]:
     """Keep only the samples the supervisor is allowed to judge.
 

@@ -8,7 +8,7 @@ def _sample(channel: str, module: str, mv: int, dc: int = 250) -> CellSample:
     return CellSample(channel=channel, module=module, voltage_mv=mv, temperature_dc=dc)
 
 
-# @Acquisition publishes one complete sample set per 10 ms cycle, TEST_CELL_SAMPLE_CYCLE, test, [SWREQ_CELL_SAMPLE_CYCLE]
+# @Acquisition publishes one complete sample set per 10 ms cycle, TEST_CELL_SAMPLE_CYCLE, [SWREQ_CELL_SAMPLE_CYCLE]
 def test_complete_sample_set_every_cycle() -> None:
     """A set covering every configured channel is complete and carries the cycle time.
 
@@ -34,7 +34,7 @@ def test_complete_sample_set_every_cycle() -> None:
     assert duplicated.complete is False
 
 
-# @Acquisition cycle is due only after the 10 ms period elapsed, TEST_CELL_SAMPLE_CYCLE_PERIOD, test, [SWREQ_CELL_SAMPLE_CYCLE]
+# @Acquisition cycle is due only after the 10 ms period elapsed, TEST_CELL_SAMPLE_CYCLE_PERIOD, [SWREQ_CELL_SAMPLE_CYCLE]
 def test_cycle_is_due_only_after_ten_milliseconds() -> None:
     """The 10 ms period is enforced by the component, not by its caller."""
     acq = Acquisition(channels=("C1",))
@@ -45,7 +45,7 @@ def test_cycle_is_due_only_after_ten_milliseconds() -> None:
     assert acq.due(10) is True
 
 
-# @Cell voltage beyond 250 mV from the module median is flagged invalid, TEST_MODULE_MEDIAN_VALIDITY, test, [SWREQ_MODULE_MEDIAN_VALIDITY]
+# @Cell voltage beyond 250 mV from the module median is flagged invalid, TEST_MODULE_MEDIAN_VALIDITY, [SWREQ_MODULE_MEDIAN_VALIDITY]
 def test_module_median_deviation_marks_sample_invalid() -> None:
     """One implausible cell is flagged; its plausible neighbours are not."""
     samples = (
@@ -63,7 +63,7 @@ def test_module_median_deviation_marks_sample_invalid() -> None:
     assert flagged["C3"] is False
 
 
-# @The plausibility median is taken per module not per pack, TEST_MODULE_MEDIAN_SCOPE, test, [SWREQ_MODULE_MEDIAN_VALIDITY]
+# @The plausibility median is taken per module not per pack, TEST_MODULE_MEDIAN_SCOPE, [SWREQ_MODULE_MEDIAN_VALIDITY]
 def test_median_is_scoped_to_the_module() -> None:
     """A whole module sitting low must not make all of its cells look invalid."""
     samples = (

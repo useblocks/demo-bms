@@ -20,7 +20,7 @@ class Acquisition:
         self._channels = channels
         self._last_publish_ms: int | None = None
 
-    # @Publish one complete validated sample set per 10 ms cycle, IMPL_CELL_SAMPLE_CYCLE, impl, [SWREQ_CELL_SAMPLE_CYCLE]
+    # @Publish one complete validated sample set per 10 ms cycle, IMPL_CELL_SAMPLE_CYCLE, [SWREQ_CELL_SAMPLE_CYCLE]
     def publish(self, raw: tuple[CellSample, ...], timestamp_ms: int) -> SampleSet:
         """Build the cycle's sample set and tag its completeness.
 
@@ -43,7 +43,7 @@ class Acquisition:
         return now_ms - self._last_publish_ms >= ACQUISITION_CYCLE_MS
 
 
-# @Mark a cell voltage invalid beyond 250 mV from its module median, IMPL_MODULE_MEDIAN_VALIDITY, impl, [SWREQ_MODULE_MEDIAN_VALIDITY]
+# @Mark a cell voltage invalid beyond 250 mV from its module median, IMPL_MODULE_MEDIAN_VALIDITY, [SWREQ_MODULE_MEDIAN_VALIDITY]
 def mark_module_validity(samples: tuple[CellSample, ...]) -> tuple[CellSample, ...]:
     """Set ``invalid`` per module on deviation from that module's median.
 

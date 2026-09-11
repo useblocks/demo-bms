@@ -60,13 +60,18 @@ verify, you author:
    comment, in this exact shape:
 
    ```python
-   # @<short title>, <ID>, <type>, [<PARENT_ID>]
+   # @<short title>, <ID>, [<PARENT_ID>]
    ```
 
    - `<ID>` carries the reported prefix and matches the project's `id_regex`.
-   - `<type>` is the type named in your briefing for this stage.
-   - the fourth field is the trace link named in your briefing: a bracketed
+   - the third field is the trace link named in your briefing: a bracketed
      list of the parent ids this test covers (usually one).
+   - the need type is NOT written. It is the LAST field of this project's marker
+     grammar (`[codelinks.projects.*.analyse.oneline_comment_style]` in
+     ubproject.toml) and defaults to the type named in your briefing for this
+     stage, so every marker under the route is that type by construction. Spell
+     it only as an explicit trailing field (`..., [<PARENT_ID>], <type>`) if the
+     briefing ever names a different type.
    - put real test code beneath the marker if you have it; the marker is what
      materialises the need.
 

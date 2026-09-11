@@ -11,7 +11,7 @@ def _filled() -> SocStore:
     return store
 
 
-# @The SOC record is written on shutdown and every 60 seconds, TEST_SOC_PERSIST_WRITE, test, [SWREQ_SOC_PERSIST_WRITE]
+# @The SOC record is written on shutdown and every 60 seconds, TEST_SOC_PERSIST_WRITE, [SWREQ_SOC_PERSIST_WRITE]
 def test_writes_happen_on_shutdown_and_on_the_periodic_interval() -> None:
     """A shutdown always writes; a periodic write only once 60 s have passed."""
     store = SocStore()
@@ -21,7 +21,7 @@ def test_writes_happen_on_shutdown_and_on_the_periodic_interval() -> None:
     assert store.write(52.0, now_s=60.0) is not None
 
 
-# @Each write targets the slot holding the lower write counter, TEST_SOC_PERSIST_ALTERNATION, test, [SWREQ_SOC_PERSIST_WRITE]
+# @Each write targets the slot holding the lower write counter, TEST_SOC_PERSIST_ALTERNATION, [SWREQ_SOC_PERSIST_WRITE]
 def test_writes_alternate_between_the_two_slots() -> None:
     """Overwriting the older slot is what keeps the newer one intact."""
     store = _filled()
@@ -33,7 +33,7 @@ def test_writes_alternate_between_the_two_slots() -> None:
     assert slot_b.soc == 52.0
 
 
-# @Restore returns the checksum valid slot with the higher counter, TEST_SOC_RESTORE_SLOT, test, [SWREQ_SOC_RESTORE_SLOT]
+# @Restore returns the checksum valid slot with the higher counter, TEST_SOC_RESTORE_SLOT, [SWREQ_SOC_RESTORE_SLOT]
 def test_restore_prefers_the_newest_valid_slot() -> None:
     """The newest record wins while it is valid; the older one is the fallback."""
     store = _filled()
@@ -43,7 +43,7 @@ def test_restore_prefers_the_newest_valid_slot() -> None:
     assert store.restore() == 52.0
 
 
-# @Restore reports no stored value when neither slot is valid, TEST_SOC_RESTORE_NO_VALID_SLOT, test, [SWREQ_SOC_RESTORE_SLOT]
+# @Restore reports no stored value when neither slot is valid, TEST_SOC_RESTORE_NO_VALID_SLOT, [SWREQ_SOC_RESTORE_SLOT]
 def test_restore_reports_absence_rather_than_a_default() -> None:
     """A fabricated starting value would be indistinguishable from a real one."""
     store = _filled()

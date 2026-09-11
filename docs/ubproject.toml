@@ -1,0 +1,1066 @@
+"$schema" = "https://ubcode.useblocks.com/ubproject.schema.json"
+
+[project]
+name = "bms"
+version = "0.1.0"
+
+# --- LINT ---
+# `ubc check` EXITS 1 WHEN IT FINDS A WARNING, not only on an error. Easy to get
+# wrong when checking by hand: `ubc check docs | tail` reports the exit status of
+# `tail`, so a piped run looks green when it is not. Measure it as
+# `ubc check docs > /dev/null; echo $?`.
+#
+# THE ONE EXEMPTION, and it is deliberately scoped to one need rather than to a
+# diagnostic code. REQ_CELL_BALANCING_WINDOW carries no incoming `satisfies`
+# because the cell-balancing stream has not reached the archs stage — the standing
+# demo gap this project exists to show, reported by `ubc agent gaps` as
+# GAP_REQ_CELL_BALANCING_WINDOW_NO_SATISFIES_BACK and rendered on
+# traceability.rst. schemas.json's `coverage-req-satisfies-back` re-reports the
+# same fact as a lint warning, which turns that intended demo into red CI.
+#
+# `message-ignores` matches a case-insensitive SUBSTRING of the diagnostic message,
+# optionally narrowed to a set of codes, so this entry silences exactly that need
+# on exactly that link under exactly that code. A different need failing the same
+# rule, or this need failing a different rule, is still reported — which a
+# `[lint] ignore = ["needs.schema_network_warning"]` entry would NOT be: that form
+# blanks the whole family out of `ubc schema validate` as well, leaving the five
+# `coverage-*-back` rules firing nowhere.
+#
+# DELETE THIS ENTRY when the cell-balancing stream reaches the archs stage. It is
+# pinned to a need id precisely so that it stops being reachable and shows up as
+# dead config rather than quietly widening.
+[lint]
+[[lint.message-ignores]]
+codes = ["needs.schema_network_warning"]
+contains = "REQ_CELL_BALANCING_WINDOW:satisfies (incoming)"
+
+# This file is the PROJECT ROOT, and it lives in docs/ on purpose: the source
+# root ubc discovers documents from is the directory holding this file, so with
+# the file here, discovery never leaves docs/. src/, tests/, tools/, reports/ and
+# the host integration directories are siblings of docs/ and are not walked at
+# all — nothing outside docs/ ever has to be excluded by name. Files outside
+# docs/ that ubc still has to read (the codelinks markers in ../src and ../tests)
+# find their way back here through ../src/ubproject.redirect.toml and
+# ../tests/ubproject.redirect.toml. There is deliberately no configuration at
+# the repository root: run ubc in docs/, or name the project (`ubc check docs`,
+# `-p docs` on `ubc agent` verbs, `ubc script --path docs <name>`).
+[source]
+# Skip framework-internal directories so they are not parsed as needs.
+extend_exclude = [".specify"]
+
+# --- PARSERS: reStructuredText AND Markdown (MyST) ---
+# Declaring parsers switches ubCode into parser mode, where discovery follows
+# each parser's own `include` globs. BOTH must be declared: an `md` table alone
+# would drop `*.rst` discovery. The Markdown include is scoped to `specs/`, so a
+# stray Markdown note elsewhere under docs/ is never parsed as a document.
+# (`*` crosses `/` in these globs, so `specs/*.md` is recursive.) The one
+# Markdown-authored stream is `specs/isolation-monitoring/`.
+[parse.parsers.rst]
+
+[parse.parsers.md]
+flavour = "myst"
+include = ["specs/*.md"]
+
+# --- SCRIPTS (`ubc script <name>`) ---
+# The demo beats as one-liners. A value is split like a shell command line, so
+# the quoted `-c` override travels as one argument. Scripts run in the project
+# root (docs/), so build output lands in docs/_build/ (gitignored). `uv run`
+# finds ../pyproject.toml by walking up, and `sphinx-build .` here IS the docs
+# tree — the repository root never enters the picture.
+[scripts]
+check = "ubc check"
+schema = "ubc schema validate"
+needs = "ubc build needs -o needs.json"
+"needs:lfp" = "ubc build needs -c \"needs.variant_data_file = 'variants/lfp.json'\" -o needs.lfp.json"
+variant-diff = "ubc diff -c \"needs.variant_data_file = 'variants/lfp.json'\""
+html = "ubc build html --deny none -o _build/ubc-html"
+report = "ubc report traceability_coverage.html.j2"
+sphinx = "uv run --extra ubtrace sphinx-build -W --keep-going -b html . _build/html"
+
+# Report templates and the committed evidence snapshots (JUnit, gaps) live in
+# `reports/` beside this file — the `[reports] directory` default — so the whole
+# documentation project, evidence included, is one tree.
+
+[needs]
+id_required = true
+id_regex = "^[A-Z]+_[A-Z][A-Z0-9_]*$"
+
+# Render the `needflow` diagrams on `traceability.rst` with the local graphviz
+# `dot` instead of PlantUML: no Java, no jar to vendor, and the graphviz engine
+# emits a PNG plus an HTML image map — a plain <img> with clickable nodes, which
+# is what survives the ubTrace export (scripts do not run there, and the viewer
+# resolves <img> assets only). conf.py fails the build early when `dot` is
+# missing rather than letting the diagrams degrade silently.
+flow_engine = "graphviz"
+
+# --- ONTOLOGY SCHEMA ---
+# The structural rules the graph must hold to, checked by `ubc schema validate` and
+# by the sphinx-needs build. JSON carries no comments, so each rule in `schemas.json`
+# states its own rationale in its `message`, and the file's `$defs._readme` carries
+# the derivation.
+#
+# Two sources, two severities, and the split is deliberate:
+#
+# - `violation` for what THIS FILE ALREADY DECLARES — every `[[workflow.stages.trace]]`
+#   edge (link / direction / min / up) and every `[[needs.types]]` prefix. These are
+#   obligations the project has committed to, so breaking one is an error, and the
+#   schema is only restating them where a build can enforce them per-need.
+# - `warning` for what the graph merely SHOWS — conventions that hold unanimously
+#   across all 194 needs but that no config declares (single-parent cardinality, the
+#   presence of `status` on authored spec needs). Hard-failing a build on a rule the
+#   project never wrote down would turn an observation into a law by accident.
+#
+# THE FIVE `coverage-*-back` RULES ARE WARNINGS, AND A WARNING IS NOT FREE. Each
+# asserts an INCOMING link and is therefore owed by a stage that runs LATER than the
+# one producing the need (`arch <- refines` is owed by `swreqs`, which
+# `depends_on = ["archs"]`), so each is unmet by construction while that stage is
+# pending. They are warnings for that reason — but `ubc check` EXITS 1 ON A WARNING,
+# so a firing one still turns CI red.
+#
+# Hence the two exemptions, and note they are NOT the same width:
+#   - `[[lint.message-ignores]]` at the top of this file, pinned to the one standing
+#     demo gap by need id. Narrow on purpose.
+#   - `suppress_warnings` in conf.py, which covers the whole subtype because Sphinx
+#     offers no message-level matching. Blunt by necessity.
+# A TRANSIENT gap — an arch authored before its swreqs — is covered by neither and
+# will fail `ubc check` until the downstream stage runs. That is the intended
+# reading: finish the stage, `ubc agent next` says which.
+#
+# A SYNTAX ERROR ANYWHERE IN schemas.json DISABLES EVERY RULE IN IT. ubc reports it
+# against the pseudo-need `__config__` with "no rule from this file is applied" and
+# still exits successfully-looking, so re-run `ubc schema validate` after every edit
+# rather than trusting a clean build.
+schema_definitions_from_json = "schemas.json"
+
+# --- VARIANTS (the 150 % model) ---
+# One specification, several product variants. The pack chemistry is the axis:
+# `variants/nmc.json` is the default profile, `variants/lfp.json` the alternative.
+# Both hold `pack.chemistry`, `pack.cell_v_min` and `pack.cell_v_max`, exposed as
+# `var.*` in field values (`<{ var.pack.chemistry }>`), in filters and in the
+# `:variant:` role that REQ_CELL_VOLTAGE_LIMITS renders its limits with. The
+# voltage values are STRINGS on purpose: they are rendered into prose ("2.50 V"),
+# where a JSON number would print as 2.5.
+#
+# Switch the profile per build without editing a single need:
+#   ubc build needs -c "needs.variant_data_file = 'variants/lfp.json'"
+#   ubc diff       -c "needs.variant_data_file = 'variants/lfp.json'"   # = `ubc script variant-diff`
+# RUN THOSE FROM THIS DIRECTORY (or through `ubc script`, which does). A path given
+# with `-c` is resolved against the WORKING DIRECTORY, not against this file, and a
+# variant data file that is not found resolves SILENTLY: no warning, every `var.*`
+# value empty, `chemistry` "" (observed with ubc 0.33). From the repository root the
+# path has to be `docs/variants/lfp.json`.
+# Sphinx reads the same key through `needs_from_toml`, overridable with
+# `-D needs_variant_data_file=...` (see the README for the path to use there).
+#
+# `[[source.variant_sources]]` (per-variant FILE selection) is deliberately not
+# used: sphinx-build honours it only with sphinx-mounts installed, and without
+# that the `-W` publish would build a different document set than ubc does.
+# Quick switch for a live demo: comment the NMC line, uncomment the LFP one, save —
+# the IDE re-indexes on save and the cell-protection page reads 3.65 V, and every
+# command and the Sphinx build follow. The `-c` override above and the
+# `variant-diff` / `needs:lfp` scripts switch one command at a time instead.
+# variant_data_file = "variants/nmc.json"
+variant_data_file = "variants/lfp.json"
+
+# --- FIELDS ---
+# Fields the built-in need schema does not carry, in two groups, one per IMPORTED
+# type, plus a vocabulary for the built-in `status`.
+#
+# The first four exist for the `test_result` type: they hold what a JUnit
+# `<testcase>` element reports, so the imported evidence is queryable as need FIELDS
+# rather than buried in prose. `outcome` is the one worth filtering on
+# (`type == "test_result" and outcome != "passed"`); `runtime_s` and
+# `test_run_label` give the reader the run it came from.
+#
+# The `gap_*` group does the same job for the `gap` type: it holds what one record
+# of `ubc agent gaps` reports.
+#
+# SPELLING: `[needs.fields.<name>]`, not the older `[[needs.extra_options]]`.
+# sphinx-needs maps the deprecated spelling onto `needs_extra_options` and emits a
+# deprecation warning for it, which conf.py used to have to suppress to keep `-W`
+# usable; that suppression is gone with this migration. The table form also reaches
+# the BUILT-IN fields — which is what lets `status` get a vocabulary below — and
+# carries a `schema` slot the list form has no room for.
+#
+# WHERE A CONSTRAINT BELONGS. A field is global in ubCode: declared once, present on
+# every type, and left at its `default` on the types that do not use it. So a
+# `schema` here states what is true of the field EVERYWHERE — which for these
+# imported fields means the empty string has to be admissible, because that is what
+# the ~190 needs outside the owning type carry. Narrowing a field on the one type
+# that owns it is schemas.json's job, keyed by `select`. Neither file repeats the
+# other: `outcome` is `"" | passed | failed | error | skipped` here and exactly the
+# four words there.
+
+# The GLOBAL enum carries the empty string because the field is global: it is
+# written as "" on the 144 needs that are not test_results (see the note above),
+# and a global schema sees all of them. Dropping "" is the per-type job, and
+# `field-test_result-run-evidence` in schemas.json does it with `minLength: 1` —
+# NOT by listing the four words a second time. Admitting "" here and excluding it
+# there yields exactly `passed | failed | error | skipped` on a test_result, so the
+# vocabulary exists in ONE place and there is no second copy to drift.
+#
+# The four words are not a guess: they are exactly OUTCOME_BY_TAG plus the `passed`
+# default in tools/import_test_results.py.
+[needs.fields.outcome]
+description = "Recorded outcome of one test case in one run: passed, failed, error or skipped."
+default = ""
+nullable = false
+schema = { type = "string", enum = ["", "passed", "failed", "error", "skipped"] }
+
+# DELIBERATELY UNCONSTRAINED. `runtime_s` is `case.get("time", "0.000")` — the
+# JUnit `time` attribute passed through verbatim from a report this repository
+# does not generate. Pinning a numeric format here would fail on a legitimate
+# report (a runner emitting `1e-05`, say) rather than catch a project error, so
+# the only thing asserted about it is that the importer populated it, which
+# `field-test_result-run-evidence` in schemas.json does per-type.
+[needs.fields.runtime_s]
+description = "Wall-clock runtime of that test case, in seconds, as the report recorded it."
+default = ""
+nullable = false
+
+# NAMED `test_run_label`, not `test_run`, and holding a NON-ISO timestamp. Both
+# details are load-bearing for the ubTrace export:
+#
+# Extra options are global, so this field is also written as "" on every need
+# that is not a `test_result`. ubTrace indexes needs into Elasticsearch with
+# dynamic mapping and date detection on, so an ISO-8601 value types the field
+# as `date` for the whole index and every need carrying "" is then rejected
+# ("cannot parse empty datetime"). Elasticsearch mappings are IMMUTABLE, so
+# once an index has learned `test_run: date` it keeps rejecting, and re-ingesting
+# corrected data cannot repair it — only deleting the index can. The rename to
+# a field the live index has never seen is what escapes that stuck mapping;
+# the space-instead-of-`T` format is what stops the new field being typed as a
+# date in turn. See `_run_label` in tools/import_test_results.py.
+# The pattern is the ES guard, and it belongs HERE rather than in schemas.json
+# because it is uniform: no need of any type may ever carry an ISO-8601 value in
+# this field. `^$|` admits the "" every non-test_result need carries; the
+# alternative branch pins date-SPACE-time, so the `T` form cannot be written at
+# all. Stated positively because sphinx-needs rejects `not` inside a field
+# constraint. With this global rule in place, `field-test_result-run-evidence`
+# (minLength 1) is all schemas.json needs to add: non-empty AND matching this
+# pattern means a real timestamp.
+[needs.fields.test_run_label]
+description = "Identifier of the test run the outcome came from: the report's timestamp, as a label."
+default = ""
+nullable = false
+schema = { type = "string", pattern = "^$|^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}" }
+
+# The chain roll-up, stamped on every generated `test_result`: the ids of the
+# system requirements this result is evidence for, resolved through
+# `test -> swreq -> arch -> req`.
+#
+# It exists because a REPORT TEMPLATE CANNOT WALK LINKS. `ubc report` builds each
+# need in its Jinja context from that need's scalar FIELDS only, so `id`, `type`,
+# `title`, `status`, `tags`, `doctype` and these extra options are reachable while
+# every LINK field (`satisfies`, `refines`, `verifies`, `results_for`, …) is
+# absent. A template that reads `n.verifies` gets undefined, and the usual
+# `(n.verifies or [])` guard silently turns that into an empty list — so a
+# link-based coverage report renders clean and reports 0 % everywhere.
+#
+# Stamping the resolved chain onto the generated artefact is what moves the answer
+# from a link (invisible to a template) into a field (visible), so
+# `reports/traceability_coverage.html.j2` is plain Jinja that `ubc report` and the
+# VS Code Reports view render with no extra tooling. It is DERIVED data on a
+# DERIVED need — `tools/import_test_results.py` resolves it from the spec sources
+# on every run, and nothing hand-maintains it.
+# No pattern: this is a SPACE-SEPARATED LIST of ids whose length varies with the
+# chain, so the only uniform statement about it is that it is a string. That it
+# is populated on every generated result is asserted per-type by
+# `field-test_result-run-evidence` in schemas.json.
+[needs.fields.chain_reqs]
+description = "System requirement ids this test result is evidence for, via test -> swreq -> arch -> req."
+default = ""
+nullable = false
+
+# The five `gap` fields, stamped on every generated `gap` need by
+# `tools/import_gaps.py`. They hold what ONE record of `ubc agent gaps` reports, so
+# the workflow gate's output is queryable as need FIELDS rather than living only in
+# a JSON file next to the graph.
+#
+# They are FIELDS and not just links for the same reason `chain_reqs` is: a report
+# template cannot walk links. `ubc report` builds each need in its Jinja context
+# from that need's scalar fields only, so `gap_for` is invisible to
+# `reports/traceability_coverage.html.j2` while `gap_need_id` is not. The link and
+# the field carry the same fact on purpose — the link is what the graph, the
+# needflow diagrams and ubTrace traverse, the field is what a template can read.
+#
+# NOTE the shapes, for the same Elasticsearch reason `test_run_label` documents
+# above: every one of these is written as "" on the ~190 needs that are not gaps,
+# so none of them may ever hold a value ES date-detection would type as a `date`.
+# `gap_shortfall` is deliberately the string "0 of 1" rather than two numeric
+# `have` / `need` fields, which keeps it unmistakably text.
+
+# NO ENUM HERE, and that is the one deliberate omission in this file. The seven
+# categories the 0.34 engine emits are known (CATEGORIES in tools/import_gaps.py),
+# but that importer renders an UNKNOWN category generically rather than rejecting
+# it, on the explicit grounds that `ubc agent` is alpha and "a gate finding must
+# never be dropped because this table has not caught up with the engine". A global
+# enum would be a hard error and would invert exactly that decision: a newer engine
+# emitting an eighth category would fail the build instead of reporting the gap.
+# The vocabulary is therefore checked at `warning` severity by `field-gap-category`
+# in schemas.json, which surfaces the drift without dropping the finding.
+[needs.fields.gap_category]
+description = "Which gate reported this gap: trace_backward, trace_forward, orphan, status_disallowed, ..."
+default = ""
+nullable = false
+
+# Enumerable where gap_category is not: the gate names a link out of THIS file's
+# `[needs.links]`, so the vocabulary is bounded by config rather than by the
+# engine's version. "" covers both the 193 non-gap needs and an `orphan` record,
+# which carries no link at all.
+[needs.fields.gap_link]
+description = "The link name the reporting gate counted, when the gap is a trace gap; empty otherwise."
+default = ""
+nullable = false
+schema = { type = "string", enum = [
+  "",
+  "traces_to",
+  "satisfies",
+  "refines",
+  "implements",
+  "verifies",
+  "results_for",
+  "affects",
+  "motivates",
+  "mitigates",
+  "gap_for",
+  "links",
+] }
+
+# The "<have> of <need>" shape the description promises, asserted rather than
+# merely documented. Deliberately text and never two numeric fields, for the same
+# Elasticsearch reason `test_run_label` carries a space instead of a `T`.
+[needs.fields.gap_shortfall]
+description = "How far short the need fell, as a label: \"<have> of <need>\" links present."
+default = ""
+nullable = false
+schema = { type = "string", pattern = "^$|^[0-9]+ of [0-9]+$" }
+
+# Reuses the project's own `id_regex` as an alternative branch, so a malformed id
+# cannot reach a report template through this field even though it arrives as a
+# plain string rather than a link.
+[needs.fields.gap_need_id]
+description = "Id of the need the gap is attributed to — the same fact as the `gap_for` link, as a field a report template can read."
+default = ""
+nullable = false
+schema = { type = "string", pattern = "^$|^[A-Z]+_[A-Z][A-Z0-9_]*$" }
+
+# The ten directives declared under `[[needs.types]]` below. Adding a type there
+# means adding it here — the duplication is the price of letting a report group
+# gaps by V-model level from a plain field.
+[needs.fields.gap_need_type]
+description = "Type of the need the gap is attributed to (req, swreq, arch, ...), so a report can group gaps by V-model level."
+default = ""
+nullable = false
+schema = { type = "string", enum = [
+  "",
+  "user_story",
+  "req",
+  "arch",
+  "swreq",
+  "impl",
+  "test",
+  "test_result",
+  "risk",
+  "decision",
+  "gap",
+] }
+
+# --- STATUS (a CORE field, given a vocabulary) ---
+# `[needs.fields]` reaches the built-in fields too, not just the project's own, so
+# the spec lifecycle is declared here rather than left implicit. Before this, every
+# authored need carried `draft` by convention and nothing checked it: a typo such
+# as `draft2` was accepted silently by every gate in the project.
+#
+# `status` is nullable and genuinely unset on the four DERIVED types (impl, test,
+# test_result, gap) — their state is the source file or the import, not a lifecycle —
+# so the enum must not force a value onto them. It constrains the value when one is
+# present; `status-present-on-spec-needs` in schemas.json is what additionally
+# REQUIRES one on the six authored spec types.
+#
+# This is the ONLY place the vocabulary is enforced. `[workflow.lifecycle] states`
+# looks like it should carry it too, and does not: see the comment at `[workflow]`
+# below for the measurement that ruled it out.
+[needs.fields.status]
+description = "Lifecycle state of an authored spec need: draft -> review -> approved."
+schema = { type = "string", enum = ["draft", "review", "approved"] }
+
+# Named variant expressions, usable as `<<lfp: <value>, <fallback>>>` in any
+# field that sets `parse_variants = true`.
+[needs.variants]
+lfp = "var.pack.chemistry == 'LFP'"
+
+# The field the variant data is INJECTED into: REQ_CELL_VOLTAGE_LIMITS carries
+# `:chemistry: <{ var.pack.chemistry }>`. Global like every field, so "" is
+# admissible for the needs that are not chemistry-specific; the enum is the
+# vocabulary, written once here. `parse_variants` is what lets the value be a
+# `<{ }>` reference or a `<<...>>` function instead of a literal.
+[needs.fields.chemistry]
+description = "Pack cell chemistry a chemistry-specific need is resolved for: NMC or LFP, from the variant data."
+default = ""
+nullable = false
+parse_variants = true
+schema = { type = "string", enum = ["", "NMC", "LFP"] }
+
+# BATTERY MANAGEMENT SYSTEM (BMS) — everything-as-code, MINIMIZED V-MODEL.
+#
+# The mandatory spine is exactly six stages:
+#
+#     user stories -> requirements -> architecture -> software requirements
+#                                                          |
+#                                                       code / tests
+#
+# authored SYMMETRICALLY across both arms of the lower V as NEEDS-IN-SOURCE:
+#
+# - the decomposition arm runs `user_story -> req -> arch -> swreq`. `swreq` is the
+#   BOTTOM of the decomposition arm: it `refines` the `arch` element whose behaviour
+#   it pins down, and it is the level BOTH lower arms attach to;
+# - the implementation arm runs one `code` stage that PRODUCES an `impl` need: a
+#   one-line codelinks marker in the production source materialises a real `impl`
+#   need carrying its `implements` link UP to the `swreq` it realises, and the stage's
+#   bidirectional `implements` trace edge counts the swreq's incoming
+#   `implements_back` for coverage;
+# - the verification arm runs one `tests` stage that PRODUCES a `test` need the same
+#   way: a one-line marker in the test source materialises a real `test` need carrying
+#   its `verifies` link UP to the `swreq` it covers, and the stage's bidirectional
+#   `verifies` trace edge counts the swreq's incoming `verifies_back`.
+#
+# Both lower arms hang off `swreq`, NOT off `arch`: the software requirement is the
+# last level that states testable behaviour, so it is the level code realises and the
+# level a test can assert against. That is what closes the V at its point.
+#
+# Both lower arms are IMPL-/TESTS-AS-NEEDS: a one-line codelinks marker in source
+# materialises a real need carrying its trace link, gated by the stage's trace edge.
+# This replaces the earlier `@need-ids:` `code_url` back-attach (implementation arm)
+# and the broken `unit_test_url` / `integ_test_url` / `e2e_test_url` URL-field split
+# (verification arm), both of which back-attached a URL onto the arch instead of
+# materialising a need and assumed a clean code-vs-test DIRECTORY layout.
+
+# --- NEED TYPES (the V-model ontology) ---
+# Rename, add, or remove types to match your project's V-model. Every type the
+# [workflow] stages produce or trace against is declared here.
+
+[[needs.types]]
+directive = "user_story"
+title = "User Story"
+prefix = "US_"
+color="#FDE68A"
+style="usecase"
+
+[[needs.types]]
+directive = "req"
+title = "Requirement"
+prefix = "REQ_"
+color="#FDBA74"
+style="file"
+
+[[needs.types]]
+directive = "arch"
+title = "Architecture"
+prefix = "ARCH_"
+color="#818CF8"
+style="node"
+
+# The BOTTOM of the decomposition arm. A software requirement states the testable
+# behaviour of ONE architecture element: what the component shall do, across which
+# interface, with which data, under which timing / resource / accuracy bound. It
+# `refines` the `arch` it details, and it is the level BOTH lower arms attach to —
+# `impl` implements a swreq, `test` verifies a swreq.
+[[needs.types]]
+directive = "swreq"
+title = "Software Requirement"
+prefix = "SWREQ_"
+color="#7DD3FC"
+style="card"
+
+# The implementation-arm need: an implementation element authored as a real need via
+# a one-line codelinks marker in production source. It `implements` the `swreq` it
+# realises, and the `code` stage's trace edge counts that incoming `implements_back`
+# for coverage.
+[[needs.types]]
+directive = "impl"
+title = "Implementation"
+prefix = "IMPL_"
+color="#C084FC"
+style="component"
+
+# The verification-arm need: a test case authored as a real need via a one-line
+# codelinks marker in test source. It `verifies` the `arch` it covers, and the
+# `tests` stage's trace edge counts that incoming `verifies_back` for coverage.
+[[needs.types]]
+directive = "test"
+title = "Test"
+prefix = "TEST_"
+color="#BBF7D0"
+style="hexagon"
+
+# The EXECUTION-EVIDENCE need: the recorded outcome of ONE test case in ONE test
+# run, imported from a JUnit XML report rather than authored by hand. It is
+# deliberately a separate type from `test`: a `test` need is the test case that
+# EXISTS (the marker in the test source, part of the spec), whereas a
+# `test_result` is what HAPPENED when that case last ran. Keeping them apart is
+# what lets the report be replaced by a newer run without touching the spec, and
+# what lets a `test` need legitimately exist with no result yet.
+#
+# Generated into `specs/_global/test_results.rst` by
+# `../tools/import_test_results.py` from `reports/junit/testresults.xml`. The XML is
+# a COMMITTED SNAPSHOT: the suite is not re-run on every build.
+[[needs.types]]
+directive = "test_result"
+title = "Test Result"
+prefix = "TRES_"
+color="#4ADE80"
+style="database"
+
+[[needs.types]]
+directive = "risk"
+title = "Risk"
+prefix = "RISK_"
+color="#F87171"
+style="folder"
+
+[[needs.types]]
+directive = "decision"
+title = "Decision"
+prefix = "DEC_"
+color="#D1D5DB"
+style="frame"
+
+# The WORKFLOW-GATE need: one structural gap that `ubc agent gaps` reports, imported
+# from a committed JSON snapshot rather than authored by hand. It is the same idea as
+# `test_result` on the other side of the V — a `test_result` records what HAPPENED
+# when a test ran, a `gap` records what the STRUCTURAL GATE found when it last ran —
+# and it is imported for the same reason: a gap an agent could rewrite would not be
+# a gate.
+#
+# Generated into `specs/_global/gaps.rst` by `../tools/import_gaps.py` from a
+# capture of `ubc agent gaps`. The PAGE is committed; the capture is gitignored,
+# being re-derivable from the sources at any moment.
+#
+# RED, and the only red-filled type in the ontology apart from `risk` — a gap is the
+# one thing on a traceability page a reader must not have to hunt for. `risk` is the
+# lighter #F87171; `gap` is the saturated #EF4444, which is also the red slot of the
+# report palette in `reports/*.j2`, so the page and the reports agree on what red
+# means. Every generated directive additionally carries `:style: red_bar`, which is
+# the sphinx-needs CSS class that paints the need's own page red — `style` HERE is
+# the graphviz node SHAPE (`type_style`) and is a different field entirely.
+#
+# The shape is `rectangle` rather than something more alarming because sphinx-needs
+# only maps the PlantUML shape vocabulary onto graphviz shapes, and an unmapped name
+# ("octagon", say) logs an "Unknown node style" warning — which `-W --keep-going` in
+# .github/workflows/ubtrace.yml turns into a failed publish. The fill colour carries
+# the signal instead.
+[[needs.types]]
+directive = "gap"
+title = "Workflow Gap"
+prefix = "GAP_"
+color="#EF4444"
+style="rectangle"
+
+# --- LINKS ---
+# Declare every link the [workflow] trace edges reference here.
+
+[needs.links.traces_to]
+incoming = "traces_from"
+outgoing = "traces_to"
+
+[needs.links.satisfies]
+incoming = "satisfied_by"
+outgoing = "satisfies"
+
+# The software-requirement link: a `swreq` need's outgoing `refines` points at the
+# `arch` element whose behaviour it pins down. Deliberately NOT a second use of
+# `satisfies`: one link name per level keeps a trace query unambiguous about which
+# rung of the V it is walking.
+[needs.links.refines]
+incoming = "refined_by"
+outgoing = "refines"
+
+# The implementation link: an `impl` need's outgoing `implements` points at the `swreq`
+# it realises; the swreq's incoming `implements_back` is what the `code` stage's trace
+# edge counts. Declared here so `ubc build` emits the field and the one-line marker's
+# `implements` list-field resolves to a real link (an undeclared link is silently
+# ignored at runtime).
+[needs.links.implements]
+incoming = "implements_back"
+outgoing = "implements"
+
+# The verification link: a `test` need's outgoing `verifies` points at the `swreq`
+# it covers; the swreq's incoming `verifies_back` is what the `tests` stage's trace
+# edge counts. Declared here so `ubc build` emits the field and the one-line marker's
+# `verifies` list-field resolves to a real link (an undeclared link is silently
+# ignored at runtime).
+[needs.links.verifies]
+incoming = "verifies_back"
+outgoing = "verifies"
+
+# The execution-evidence link: a `test_result` need's outgoing `results_for`
+# points at the `test` need whose run it records; the test's incoming `results`
+# is how a query gets from a test case to its last recorded outcome. The
+# `test_results` stage's trace edge names it, so this is the field the import
+# writes on every generated need.
+[needs.links.results_for]
+incoming = "results"
+outgoing = "results_for"
+
+# The decision link: a `decision` need's outgoing `affects` points at the `arch` it
+# constrains. The `decisions` stage's trace edge names it, so this is the field the
+# authoring prompt orders on that stage.
+[needs.links.affects]
+incoming = "affected_by"
+outgoing = "affects"
+
+[needs.links.motivates]
+incoming = "motivated_by"
+outgoing = "motivates"
+
+# The risk link: a `risk` need's outgoing `mitigates` points at the `req` it bears on.
+# The `risks` stage's trace edge names it, so this is the field the authoring prompt
+# orders on that stage.
+[needs.links.mitigates]
+incoming = "mitigated_by"
+outgoing = "mitigates"
+
+# The gap link: a `gap` need's outgoing `gap_for` points at the need the gate
+# attributed the gap to, and that need's incoming `gaps` is what puts a red node
+# next to it in every `needflow` on `traceability.rst` and a non-empty `gaps` cell
+# in every level table.
+#
+# It is deliberately NOT named in any `[[workflow.stages.trace]]` edge. A trace edge
+# is an OBLIGATION the gate counts, and an obligation to carry a gap is nonsense: it
+# would make a graph with no gaps fail the gap gate. `gap` is in
+# `orphan_exempt_types` below for the same reason — the gate must not report gaps
+# about its own findings.
+[needs.links.gap_for]
+incoming = "gaps"
+outgoing = "gap_for"
+
+# --- CODELINKS (consumed by `ubc build`) ---
+# Two projects, one per arm of the lower V — SYMMETRIC: each scans a source tree for
+# ONE-LINE need markers (`get_oneline_needs = true`) and MATERIALISES a real need
+# from each. Neither back-attaches a ref URL; both author needs.
+#
+# - `code` (the implementation arm) scans the production source (../src) for
+#   `# @<title>, <IMPL_ID>, [<SWREQ_ID>]` markers. The marker's link field is
+#   named `implements` (not the default `links`) so the `implements`-keyed trace gate
+#   sees it.
+#
+# - `tests` (the verification arm) scans the test source (../tests) for
+#   `# @<title>, <TEST_ID>, [<SWREQ_ID>]` markers. The marker's link field is
+#   named `verifies` so the `verifies`-keyed trace gate sees it.
+#
+# One-line needs ONLY materialise where a `.. src-trace:: :project: <name>` directive
+# appears in a built RST file (a config-only `[codelinks]` block creates none), so
+# each stage authors that directive in its route's RST alongside the markers.
+
+[codelinks]
+set_local_url = true
+
+# The implementation-arm project. `get_oneline_needs = true` materialises an `impl`
+# need from each one-line marker in the production source; `get_need_id_refs` and
+# `get_rst` stay off because this project's job is authoring `impl` needs, not
+# back-attaching ref URLs or extracting RST blocks.
+[codelinks.projects.code.source_discover]
+src_dir = "../src"
+comment_type = "python"
+
+[codelinks.projects.code.analyse]
+get_oneline_needs = true
+get_need_id_refs = false
+get_rst = false
+
+# The one-line marker grammar: `# @<title>, <IMPL_ID>, [<SWREQ_ID>]`. The third
+# field is NAMED `implements` (a `list[str]` link) so the materialised `impl` need
+# carries an outgoing `implements` link — the link the `code` stage's trace edge
+# counts. `implements` is declared in `[needs.links]` above, so it resolves to a real
+# link instead of being silently dropped.
+#
+# `type` is the LAST field and carries the default, so no marker has to spell it:
+# everything under ../src is an implementation by construction, and a marker that
+# does name a type (`..., [<SWREQ_ID>], impl`) is still accepted. Trailing fields with
+# a default are the only ones a marker may leave out, which is why the order matters.
+[codelinks.projects.code.analyse.oneline_comment_style]
+field_split_char = ","
+needs_fields = [
+  { name = "title", type = "str" },
+  { name = "id", type = "str" },
+  { name = "implements", type = "list[str]", default = [
+  ] },
+  { name = "type", type = "str", default = "impl" },
+]
+
+# The verification-arm project. `get_oneline_needs = true` materialises a `test`
+# need from each one-line marker in the test source; `get_need_id_refs` and
+# `get_rst` stay off because this project's job is authoring `test` needs, not
+# back-attaching ref URLs or extracting RST blocks.
+[codelinks.projects.tests.source_discover]
+src_dir = "../tests"
+comment_type = "python"
+
+[codelinks.projects.tests.analyse]
+get_oneline_needs = true
+get_need_id_refs = false
+get_rst = false
+
+# The one-line marker grammar: `# @<title>, <TEST_ID>, [<SWREQ_ID>]`. The third
+# field is NAMED `verifies` (a `list[str]` link) so the materialised `test` need
+# carries an outgoing `verifies` link — the link the `tests` stage's trace edge
+# counts. `verifies` is declared in `[needs.links]` above, so it resolves to a real
+# link instead of being silently dropped.
+#
+# `type` is the LAST field and carries the default, exactly as in the `code`
+# project: everything under ../tests is a test case by construction.
+[codelinks.projects.tests.analyse.oneline_comment_style]
+field_split_char = ","
+needs_fields = [
+  { name = "title", type = "str" },
+  { name = "id", type = "str" },
+  { name = "verifies", type = "list[str]", default = [
+  ] },
+  { name = "type", type = "str", default = "test" },
+]
+
+# --- AGENT RUNNER (consumed by `ubc agent run`) ---
+# `ubc agent run` spawns an AI runner to author the next-stage artefact. The
+# prompt (recommended skill + the anchor need's context briefing + the resolved
+# authoring route) is passed on the runner's stdin.
+#
+# There is NO default runner: this preset ships none, so `ubc agent run` reports
+# "no runner configured" until you set one, rather than committing every project
+# to a specific tool. Configure a runner by uncommenting the [agent.runner] table
+# below, or set the UBC_AGENT_RUNNER / UBC_AGENT_RUNNER_MODEL / UBC_AGENT_RUNNER_TIMEOUT
+# env vars, which take precedence over the table.
+#
+# `command` is the shell-less argv lead of a headless coding agent that can write
+# files. `model` pins a model (e.g. "sonnet" for routine authoring). `timeout_secs`
+# bounds one headless pass: a wedged runner that does not exit within the budget is
+# killed (default 600s = 10min, 0 disables the bound). Example:
+#
+# [agent.runner]
+# command = "claude -p --permission-mode acceptEdits --output-format stream-json --verbose"
+# model = "sonnet"
+# timeout_secs = 600
+
+# --- WORKFLOW (consumed by `ubc agent next` / `status` / `gaps`) ---
+# The MINIMIZED V-model process for the BMS:
+#   - the decomposition arm runs the need-producing stages
+#     `user_stories -> reqs -> archs -> swreqs` (each produces one type and traces up
+#     to its parent);
+#   - the implementation arm runs one `code` stage that produces an `impl` need (a
+#     one-line marker in the production source materialises it) which
+#     `implements`-links the swreq it realises. The stage's bidirectional `implements`
+#     trace edge counts the swreq's incoming `implements_back`;
+#   - the verification arm runs one `tests` stage that produces a `test` need (a
+#     one-line marker in the test source materialises it) which `verifies`-links the
+#     swreq it covers. The stage's bidirectional `verifies` trace edge counts the
+#     swreq's incoming `verifies_back`,
+# so every software requirement is both implemented AND verified.
+
+# The spec needs (user_story, req, arch, swreq) are exempt from the orphan gate: they
+# are decomposition artefacts, gated by their own trace edges, not by code coverage.
+# `impl` and `test` are NOT exempt — they must trace UP to the swreq they cover.
+# `risk` and `decision` are not exempt either, which is why the two optional stages
+# below each declare a trace edge: a stage that owes a link to the orphan gate has to
+# name the link it owes.
+#
+# `gap` is exempt on different grounds. It is not a workflow artefact at all: it is
+# this gate's own output, imported back into the graph so a gap is visible on the
+# traceability page instead of only in a JSON file. It carries a real `gap_for` link
+# to the need it is about, but that link is named by NO stage's trace edge on
+# purpose — an obligation to carry a gap would make a clean graph fail the gap gate,
+# and the gate must not grade its own findings. No stage `produces` it either, for
+# the same reason `test_results` has no `author_skill`, taken one step further: there
+# is nothing for an agent to author here at all.
+[workflow]
+orphan_exempt_types = ["user_story", "req", "arch", "swreq", "gap"]
+
+# `[workflow.lifecycle] states` IS DELIBERATELY NOT SET, and the reason is worth
+# recording so it is not "fixed" later.
+#
+# A non-empty `states` list turns on the deterministic `status_undeclared` gate. That
+# gate fires on a need whose status is UNSET — not on one whose status is outside the
+# vocabulary. This project has 124 needs that legitimately carry no status at all:
+# `impl` and `test` are materialised from one-line source markers, `test_result` and
+# `gap` are imported, and none of the four is in a lifecycle — their state is the
+# source file or the import. Measured: enabling it produced 124 `status_undeclared`
+# gaps (every impl, test, test_result and the gap itself) and did NOT flag a req
+# carrying the bogus status `draft2`, which is the case the vocabulary exists to
+# catch. The sub-table accepts only `states` and `transitions`, so the gate cannot be
+# scoped to the six authored types, and `[workflow] exempt_status` filters by status
+# VALUE and so cannot exempt needs that have none.
+#
+# The vocabulary is therefore enforced where it actually works: `[needs.fields.status]`
+# rejects `draft2` as a schema violation in both `ubc schema validate` and the build,
+# and `status-present-on-spec-needs` in schemas.json requires a status on exactly the
+# six types that owe one. Revisit if ubc grows a type-scoped lifecycle.
+
+# The diagram SYNTAX the runner authors any diagram in. `format` is the authoring
+# directive injected into the runner prompt ("author it as a `mermaid` directive");
+# it is project policy, NOT baked into the (generic) skills. `enabled = false`
+# keeps the diagram GATE off — only the authoring format is configured here.
+[workflow.diagram]
+enabled = false
+format = "mermaid"
+
+# The route names `.rst`; the `isolation-monitoring` stream is authored in
+# Markdown and is complete, so no stage ever resolves an authoring route into it.
+[[workflow.stages]]
+id = "user_stories"
+produces = "user_story"
+review_skill = "review-feat"
+
+[workflow.stages.route]
+granularity = "per-root"
+path = "specs/{stream}/user_stories.rst"
+scope = "stream"
+
+[[workflow.stages]]
+author_skill = "draft-requirement"
+authoring = "Decompose the use case into the complete set of requirements it implies — the happy path, the error and edge cases, and the relevant non-functional constraints."
+depends_on = ["user_stories"]
+id = "reqs"
+produces = "req"
+review_skill = "review-requirement"
+
+[workflow.stages.route]
+granularity = "per-root"
+path = "specs/{stream}/requirements.rst"
+scope = "stream"
+
+[[workflow.stages.trace]]
+direction = "both"
+link = "traces_to"
+min = 1
+up = "user_story"
+
+[[workflow.stages]]
+author_skill = "draft-arch"
+authoring = "Produce the architecture elements the requirements need (one per distinct responsibility, enough that every requirement is satisfied by at least one element), plus a component diagram showing how they relate."
+depends_on = ["reqs"]
+id = "archs"
+produces = "arch"
+review_skill = "review-arch"
+
+[workflow.stages.route]
+granularity = "per-root"
+path = "specs/{stream}/architecture.rst"
+scope = "stream"
+
+[[workflow.stages.trace]]
+direction = "both"
+link = "satisfies"
+min = 1
+up = "req"
+
+# --- SOFTWARE REQUIREMENTS STAGE (bottom of the decomposition arm) ---
+# This stage turns each architecture element into the testable behaviour it owes. It
+# is the LAST spec level, and the level both lower arms attach to: `code` implements a
+# swreq and `tests` verifies a swreq. The bidirectional `refines` trace edge UP to
+# `arch` gates both directions — every swreq must refine an arch, and every arch must
+# be refined by at least one swreq, so no component is left without stated behaviour.
+[[workflow.stages]]
+author_skill = "draft-requirement"
+authoring = "Decompose each architecture element into the software requirements it owes: the behaviour the component shall implement, the interfaces and signals it exchanges, its error and degraded-mode handling, and the timing, accuracy and resource bounds that constrain it. One shall-clause per requirement."
+depends_on = ["archs"]
+id = "swreqs"
+produces = "swreq"
+review_skill = "review-requirement"
+
+[workflow.stages.route]
+granularity = "per-root"
+path = "specs/{stream}/software_requirements.rst"
+scope = "stream"
+
+[[workflow.stages.trace]]
+direction = "both"
+link = "refines"
+min = 1
+up = "arch"
+
+# --- CODE STAGE (the implementation arm) ---
+# This stage PRODUCES an `impl` need authored as a one-line codelinks marker in the
+# production source (`# @<title>, <IMPL_ID>, [<SWREQ_ID>]`), which
+# `implements`-links the swreq it realises. The bidirectional `implements` trace edge
+# UP to `swreq` drives coverage: it counts every swreq's incoming `implements_back`, so
+# a swreq with no implementing element fails the gate and the stage stays `ready`
+# until an impl covers it. Coverage is the TRACE EDGE, not `require_incoming` — the
+# trace edge attributes the gap to THIS impl-producing stage (so `next` returns
+# `code`), whereas `require_incoming` would mis-attribute it to the swreq's own stage
+# and no-op `next`. SYMMETRIC to the `tests` stage below.
+[[workflow.stages]]
+author_skill = "draft-impl"
+authoring = "Author one implementation need per software requirement as a one-line marker in the production source, each implementing the swreq it realises, so every swreq carries an incoming implements link. Put real production code beneath each marker."
+depends_on = ["swreqs"]
+id = "code"
+produces = "impl"
+
+[workflow.stages.route]
+granularity = "global"
+path = "../src"
+scope = "global"
+
+[[workflow.stages.trace]]
+direction = "both"
+link = "implements"
+min = 1
+up = "swreq"
+
+# --- TESTS STAGE (the verification arm) ---
+# This stage PRODUCES a `test` need authored as a one-line codelinks marker in the
+# test source (`# @<title>, <TEST_ID>, [<SWREQ_ID>]`), which `verifies`-links
+# the swreq it covers. The bidirectional `verifies` trace edge UP to `swreq` drives
+# coverage: it counts every swreq's incoming `verifies_back`, so a swreq with no
+# verifying test fails the gate and the stage stays `ready` until a test covers it.
+# Coverage is the TRACE EDGE, not `require_incoming` — the trace edge attributes the
+# gap to THIS test-producing stage (so `next` returns `tests`), whereas
+# `require_incoming` would mis-attribute it to the swreq's own stage and no-op `next`.
+[[workflow.stages]]
+author_skill = "draft-test"
+authoring = "Author one test need per software requirement as a one-line marker in the test source, each verifying the swreq it covers, so every swreq carries an incoming verifies link."
+depends_on = ["code"]
+id = "tests"
+produces = "test"
+
+[workflow.stages.route]
+granularity = "global"
+path = "../tests"
+scope = "global"
+
+[[workflow.stages.trace]]
+direction = "both"
+link = "verifies"
+min = 1
+up = "swreq"
+
+# --- TEST RESULTS STAGE (optional, IMPORTED not authored) ---
+# A `test_result` need `results_for` the `test` need whose run it records. This
+# stage is unusual in two ways and both are deliberate.
+#
+# It is IMPORTED, not authored: there is no `author_skill`, because the artefact
+# is generated by `tools/import_test_results.py` from the committed JUnit XML
+# under `reports/junit/`. An agent has nothing to decide here — an imported
+# outcome that a model could rewrite would not be evidence.
+#
+# It carries no `review_skill` either, for the same reason: a recorded outcome is
+# a measurement, and scoring a measurement against a prose rubric would be
+# meaningless.
+#
+# `direction = "outgoing"`, NOT `both`, exactly as for `risks` and `decisions`
+# below: the forward leg is what names `results_for` and makes the generated link
+# real coverage that closes the orphan gate. A BACKWARD leg would additionally
+# require every `test` need to carry an incoming `results`, so a project whose
+# report predates a newly added test case could never reach a clean
+# `ubc agent gaps` — and "this test has no recorded result yet" is a legitimate
+# state, not a gap.
+[[workflow.stages]]
+id = "test_results"
+optional = true
+produces = "test_result"
+
+[workflow.stages.route]
+granularity = "single"
+path = "specs/_global/test_results.rst"
+scope = "global"
+
+[[workflow.stages.trace]]
+direction = "outgoing"
+link = "results_for"
+min = 1
+up = "test"
+
+# --- RISKS STAGE (optional) ---
+# A `risk` need `mitigates` the `req` it bears on. The trace edge is what NAMES
+# that field in the authoring prompt: without it the prompt orders a trace link it
+# cannot name, and a model fills the slot by guessing.
+#
+# `direction = "outgoing"`, NOT `both`, and that is the whole difference between a
+# stage being optional and a stage only calling itself optional. The forward leg is
+# what names `mitigates` and the parent req ids in the prompt, and it is what makes
+# the authored link real coverage that closes the orphan gate. The BACKWARD leg
+# would additionally require every `req` to carry an incoming `mitigated_by`, so a
+# project that authors no risk at all could never reach a clean `ubc agent gaps`.
+# `min` is read only by a bidirectional gate, so here it is what the prompt dictates
+# to the author, not a number any gate counts.
+[[workflow.stages]]
+id = "risks"
+optional = true
+produces = "risk"
+
+[workflow.stages.route]
+granularity = "single"
+path = "specs/_global/risks.rst"
+scope = "global"
+
+[[workflow.stages.trace]]
+direction = "outgoing"
+link = "mitigates"
+min = 1
+up = "req"
+
+# --- DECISIONS STAGE (optional) ---
+# A `decision` need `affects` the `arch` it constrains. Same reason as `risks`
+# above, and the same `outgoing` direction for the same reason: the forward leg
+# lets the prompt name the field and the parent ids, and it is what makes the
+# authored link close the orphan gate instead of sitting outside `trace.outgoing`
+# as traceability that is not there, while a backward leg would make every `arch`
+# owe a decision before `ubc agent gaps` could go green.
+[[workflow.stages]]
+author_skill = "record-decision"
+id = "decisions"
+optional = true
+produces = "decision"
+review_skill = "review-decision"
+
+[workflow.stages.route]
+granularity = "single"
+path = "specs/_global/decisions.rst"
+scope = "global"
+
+[[workflow.stages.trace]]
+direction = "outgoing"
+link = "affects"
+min = 1
+up = "arch"
+
+# --- QUALITY ANALYSIS (consumed by `ubc agent review-brief` / `verdict-check`) ---
+# The substance gate's rubric lives as DATA, not review-skill prose: each
+# reviewed type below is wired to a per-type CRITERIA PACK — installed
+# alongside this config at `quality/<name>.toml` — that supplies the axes
+# (description + scoring_guide) a review brief surfaces. This keeps the
+# review skills interface-agnostic ("score every axis your briefing's
+# `criteria` names") and lets the rubric be tuned without touching a skill.
+#
+# One entry per type a review-carrying stage `produces` above: `req` (reqs,
+# review-requirement), `arch` (archs, review-arch), `swreq` (swreqs,
+# review-requirement), `user_story` (user_stories, review-feat), and `decision`
+# (decisions, review-decision).
+# `impl` / `test` / `risk` carry no `review_skill` and so need no pack.
+[quality]
+enabled = true
+
+[quality.type_configs.req]
+criteria_file = "quality/requirement.toml"
+
+# `swreq` is requirement-shaped (one shall-clause, testable, traced to a parent), so
+# it reuses the requirement pack rather than duplicating a near-identical rubric.
+[quality.type_configs.swreq]
+criteria_file = "quality/requirement.toml"
+
+[quality.type_configs.arch]
+criteria_file = "quality/arch.toml"
+
+[quality.type_configs.user_story]
+criteria_file = "quality/feat.toml"
+
+[quality.type_configs.decision]
+criteria_file = "quality/decision.toml"
+
+# A couple of gentle per-axis floors — deliberately light. `parent_fit` is
+# shared by the requirement/arch/feat packs (absent
+# from the decision pack, where it is silently a no-op); `context_present`
+# floors the decision pack's most fundamental axis directly.
+[quality.required]
+parent_fit = 1
+
+[quality.type_configs.decision.required]
+context_present = 1

@@ -1,0 +1,37 @@
+{
+  "agent": "claude-code",
+  "axes": {
+    "atomicity": {
+      "reason": "Computing the ratio and declaring it invalid below 50 V are two closely related facets of one obligation - the ratio's value and its validity - rather than fully independent requirements.",
+      "score": 1,
+      "suggestion": "If the validity rule grows (hysteresis, sensor fault), split it into its own software requirement."
+    },
+    "comprehensibility": {
+      "reason": "Self-contained, no forward reference.",
+      "score": 2
+    },
+    "feasibility": {
+      "reason": "A division and a comparison.",
+      "score": 2
+    },
+    "parent_fit": {
+      "reason": "Pins down the ratio computation the element says it owns.",
+      "score": 2
+    },
+    "unambiguity": {
+      "reason": "'Below 50 V' is a strict bound and an invalid ratio is defined as carrying no comparable value; one reading.",
+      "score": 2
+    },
+    "verifiability": {
+      "reason": "Formula, units and the 50 V threshold are explicit; both the value and the validity flag are directly testable.",
+      "score": 2
+    }
+  },
+  "criteria": "requirement",
+  "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
+  "model": "claude-fable-5-1",
+  "need": "SWREQ_ISOLATION_RATIO",
+  "reviewed_fingerprint": "c4d9654f0e4a6ba91c05b12717b45dac4a12278a34cf4e9ebb15273c0ad9a8f5",
+  "schema": 2,
+  "summary": "Crisp and testable; bundles value and validity, which is acceptable at this size."
+}

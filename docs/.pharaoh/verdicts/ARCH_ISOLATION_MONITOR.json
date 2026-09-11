@@ -1,0 +1,33 @@
+{
+  "agent": "claude-code",
+  "axes": {
+    "completeness": {
+      "reason": "Covers detection and publication of the fault; the contactor reaction is explicitly not this requirement's obligation.",
+      "score": 2
+    },
+    "consistency": {
+      "reason": "No sibling element shares the parent requirement, and the explicit 'never commands the contactors' keeps it clear of the safety supervisor.",
+      "score": 2
+    },
+    "design_clarity": {
+      "reason": "Names the concrete choice (one element, ratio normalisation, sole reader of the measurement circuit) but leaves the measurement cycle period unspecified.",
+      "score": 1,
+      "suggestion": "State the cycle period the element runs at, as the other streams' elements do (e.g. 100 ms)."
+    },
+    "implementability": {
+      "reason": "A single bounded element with two inputs and one output.",
+      "score": 2
+    },
+    "parent_fit": {
+      "reason": "Owns exactly the requirement's obligation: derive the isolation fault from resistance over pack voltage.",
+      "score": 2
+    }
+  },
+  "criteria": "arch",
+  "criteria_fingerprint": "48337dfa0b294b1882460a938500fa11eb3e8fd873d5cd9afa31ff1f7923f377",
+  "model": "claude-fable-5-1",
+  "need": "ARCH_ISOLATION_MONITOR",
+  "reviewed_fingerprint": "a14ccdebf5dc2b117471f57179a08eb872fd2b05a8ced553f226a57e7a366878",
+  "schema": 2,
+  "summary": "Well-bounded single element; only the cycle period is missing."
+}

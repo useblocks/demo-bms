@@ -1,0 +1,37 @@
+{
+  "agent": "claude-code",
+  "axes": {
+    "atomicity": {
+      "reason": "One obligation: set the isolation fault below 500 ohm/V. The second sentence explains the ratio, it adds no obligation.",
+      "score": 2
+    },
+    "comprehensibility": {
+      "reason": "Self-contained: names both measured quantities, the ratio, the limit and its source.",
+      "score": 2
+    },
+    "feasibility": {
+      "reason": "Standard insulation-monitoring-device function; contradicts nothing else stated.",
+      "score": 2
+    },
+    "parent_fit": {
+      "reason": "Directly realises the story's promise that a degrading barrier is reported, with the criterion the story leaves open (how degraded) pinned to the ISO 6469-1 figure.",
+      "score": 2
+    },
+    "unambiguity": {
+      "reason": "It does not say what happens when the pack voltage is near zero (the ratio is undefined) nor when the fault clears, so a reader can take 'whenever' as latching or as cyclic.",
+      "score": 1,
+      "suggestion": "State the pack-voltage validity precondition and whether the fault clears when the ratio recovers; the software requirements already decide both."
+    },
+    "verifiability": {
+      "reason": "Threshold, unit and the two measured inputs are all named; a bench can inject a resistance and a pack voltage and observe the fault.",
+      "score": 2
+    }
+  },
+  "criteria": "requirement",
+  "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
+  "model": "claude-fable-5-1",
+  "need": "REQ_ISOLATION_FAULT",
+  "reviewed_fingerprint": "c2d43ebc111dc5f45b906b8d37a0d37bd377419118bf3814a97504c519c46216",
+  "schema": 2,
+  "summary": "Concrete and traceable; the de-energised case and the clearing behaviour are decided one level down and should be stated here too."
+}

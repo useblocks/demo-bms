@@ -3,7 +3,7 @@
 from src.thermal_management.actuator_if import CoolantActuatorInterface
 
 
-# @A request goes unconfirmed after 2 s without a matching acknowledgement, TEST_ACTUATOR_ACK_TIMER, test, [SWREQ_ACTUATOR_ACK_TIMER]
+# @A request goes unconfirmed after 2 s without a matching acknowledgement, TEST_ACTUATOR_ACK_TIMER, [SWREQ_ACTUATOR_ACK_TIMER]
 def test_missing_acknowledgement_becomes_unconfirmed_at_two_seconds() -> None:
     """Silence is turned into an explicit verdict the power limit can act on."""
     interface = CoolantActuatorInterface()
@@ -14,7 +14,7 @@ def test_missing_acknowledgement_becomes_unconfirmed_at_two_seconds() -> None:
     assert interface.unconfirmed is True
 
 
-# @An acknowledgement carrying a different id does not stop the timer, TEST_ACTUATOR_ACK_ID_MATCH, test, [SWREQ_ACTUATOR_ACK_TIMER]
+# @An acknowledgement carrying a different id does not stop the timer, TEST_ACTUATOR_ACK_ID_MATCH, [SWREQ_ACTUATOR_ACK_TIMER]
 def test_only_a_matching_request_id_confirms() -> None:
     """A stale acknowledgement from a previous request must not confirm this one."""
     interface = CoolantActuatorInterface()
@@ -28,7 +28,7 @@ def test_only_a_matching_request_id_confirms() -> None:
     assert interface.pending_id is None
 
 
-# @A new request restarts the acknowledgement timer cleanly, TEST_ACTUATOR_ACK_RESTART, test, [SWREQ_ACTUATOR_ACK_TIMER]
+# @A new request restarts the acknowledgement timer cleanly, TEST_ACTUATOR_ACK_RESTART, [SWREQ_ACTUATOR_ACK_TIMER]
 def test_a_new_request_clears_the_previous_verdict() -> None:
     """Each raised request is judged on its own acknowledgement window."""
     interface = CoolantActuatorInterface()

@@ -38,7 +38,7 @@ class SocStore:
     def due(self, now_s: float) -> bool:
         return now_s - self._last_write_s >= PERIODIC_WRITE_INTERVAL_S
 
-    # @Write the alternating two-slot SOC record on shutdown and every 60 s, IMPL_SOC_PERSIST_WRITE, impl, [SWREQ_SOC_PERSIST_WRITE]
+    # @Write the alternating two-slot SOC record on shutdown and every 60 s, IMPL_SOC_PERSIST_WRITE, [SWREQ_SOC_PERSIST_WRITE]
     def write(self, soc: float, now_s: float, shutdown: bool = False) -> Slot | None:
         """Persist the SOC into the slot holding the lower write counter.
 
@@ -55,7 +55,7 @@ class SocStore:
         self._last_write_s = now_s
         return slot
 
-    # @Restore the SOC from the checksum-valid slot with the higher counter, IMPL_SOC_RESTORE_SLOT, impl, [SWREQ_SOC_RESTORE_SLOT]
+    # @Restore the SOC from the checksum-valid slot with the higher counter, IMPL_SOC_RESTORE_SLOT, [SWREQ_SOC_RESTORE_SLOT]
     def restore(self) -> float | None:
         """Return the newest checksum-valid stored SOC, or ``None`` if neither is.
 

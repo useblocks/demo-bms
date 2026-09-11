@@ -42,7 +42,7 @@ class FaultMemory:
     def records(self) -> tuple[FaultRecord, ...]:
         return tuple(self._ring)
 
-    # @Append a 16-byte fault record within 20 ms of the violation event, IMPL_FAULT_RECORD_WRITE, impl, [SWREQ_FAULT_RECORD_WRITE]
+    # @Append a 16-byte fault record within 20 ms of the violation event, IMPL_FAULT_RECORD_WRITE, [SWREQ_FAULT_RECORD_WRITE]
     def write(self, violation: LimitViolation, now_ms: int) -> FaultRecord:
         """Append one record, overwriting the oldest once the ring is full.
 

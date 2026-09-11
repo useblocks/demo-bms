@@ -3,7 +3,7 @@
 from src.state_estimation.validity_monitor import ValidityMonitor
 
 
-# @The unreliable verdict is raised after 5 s without a valid current sample, TEST_CURRENT_STALENESS_TIMER, test, [SWREQ_CURRENT_STALENESS_TIMER]
+# @The unreliable verdict is raised after 5 s without a valid current sample, TEST_CURRENT_STALENESS_TIMER, [SWREQ_CURRENT_STALENESS_TIMER]
 def test_verdict_is_raised_only_past_five_seconds() -> None:
     """Exactly 5 s is still inside the budget; anything beyond it is not."""
     monitor = ValidityMonitor()
@@ -16,7 +16,7 @@ def test_verdict_is_raised_only_past_five_seconds() -> None:
     assert monitor.unreliable is True
 
 
-# @A valid sample resets the staleness timer before the limit, TEST_CURRENT_STALENESS_RESET, test, [SWREQ_CURRENT_STALENESS_TIMER]
+# @A valid sample resets the staleness timer before the limit, TEST_CURRENT_STALENESS_RESET, [SWREQ_CURRENT_STALENESS_TIMER]
 def test_a_valid_sample_resets_the_timer() -> None:
     """Intermittent gaps below the limit must not raise the verdict."""
     monitor = ValidityMonitor()
@@ -28,7 +28,7 @@ def test_a_valid_sample_resets_the_timer() -> None:
     assert monitor.tick(4.0, current_sample_valid=False) is False
 
 
-# @Only a completed OCV correction clears the unreliable verdict, TEST_CURRENT_STALENESS_LATCH, test, [SWREQ_CURRENT_STALENESS_TIMER]
+# @Only a completed OCV correction clears the unreliable verdict, TEST_CURRENT_STALENESS_LATCH, [SWREQ_CURRENT_STALENESS_TIMER]
 def test_returning_samples_do_not_clear_the_verdict() -> None:
     """Once counting has drifted, only an absolute anchor restores trust."""
     monitor = ValidityMonitor()

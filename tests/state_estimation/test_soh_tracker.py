@@ -3,7 +3,7 @@
 from src.state_estimation.soh_tracker import SohTracker
 
 
-# @A capacity candidate above the reported value is discarded, TEST_CAPACITY_MONOTONIC_CLAMP, test, [SWREQ_CAPACITY_MONOTONIC_CLAMP]
+# @A capacity candidate above the reported value is discarded, TEST_CAPACITY_MONOTONIC_CLAMP, [SWREQ_CAPACITY_MONOTONIC_CLAMP]
 def test_reported_capacity_never_increases() -> None:
     """An optimistic measurement must not make a worn pack look healthier."""
     tracker = SohTracker()
@@ -16,7 +16,7 @@ def test_reported_capacity_never_increases() -> None:
     assert tracker.rejected == 2
 
 
-# @A long run of candidates forms a non increasing sequence, TEST_CAPACITY_MONOTONIC_SEQUENCE, test, [SWREQ_CAPACITY_MONOTONIC_CLAMP]
+# @A long run of candidates forms a non increasing sequence, TEST_CAPACITY_MONOTONIC_SEQUENCE, [SWREQ_CAPACITY_MONOTONIC_CLAMP]
 def test_reported_sequence_is_monotonic_under_noise() -> None:
     """Noisy candidates in both directions still yield a non-increasing series."""
     tracker = SohTracker()
@@ -28,7 +28,7 @@ def test_reported_sequence_is_monotonic_under_noise() -> None:
     assert reported[-1] == 94.2
 
 
-# @Anchors closer than 40 percent SOC yield no capacity candidate, TEST_CAPACITY_ANCHOR_SPREAD, test, [SWREQ_CAPACITY_MONOTONIC_CLAMP]
+# @Anchors closer than 40 percent SOC yield no capacity candidate, TEST_CAPACITY_ANCHOR_SPREAD, [SWREQ_CAPACITY_MONOTONIC_CLAMP]
 def test_narrow_anchor_spread_is_refused() -> None:
     """Over a short span the anchor noise dominates the counted charge."""
     tracker = SohTracker()

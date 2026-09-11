@@ -1,0 +1,33 @@
+{
+  "agent": "claude-code",
+  "axes": {
+    "completeness": {
+      "reason": "For REQ_CELL_VOLTAGE_LIMITS and REQ_CELL_OVERTEMPERATURE the element covers acquisition only; the contactor reaction is delegated to the safety supervisor, so each of those two parents is covered partially by this element alone.",
+      "score": 1,
+      "suggestion": "State explicitly that the limit evaluation and reaction are owned by the safety supervisor, so the split is visible from this element's text."
+    },
+    "consistency": {
+      "reason": "Acquisition owns plausibility and the supervisor consumes the invalid tag; responsibilities are disjoint and reconciled.",
+      "score": 2
+    },
+    "design_clarity": {
+      "reason": "Concrete choices named: 10 ms cycle, millivolt and tenth-of-a-degree units, module-median plausibility at 250 mV, cycle timestamping.",
+      "score": 2
+    },
+    "implementability": {
+      "reason": "A single bounded acquisition element.",
+      "score": 2
+    },
+    "parent_fit": {
+      "reason": "Addresses the measurement half of the voltage, temperature and plausibility requirements, a distinct part of each parent's obligation.",
+      "score": 2
+    }
+  },
+  "criteria": "arch",
+  "criteria_fingerprint": "48337dfa0b294b1882460a938500fa11eb3e8fd873d5cd9afa31ff1f7923f377",
+  "model": "claude-fable-5-1",
+  "need": "ARCH_CELL_MEASUREMENT_ACQ",
+  "reviewed_fingerprint": "b53737ce71c91bd28c612f738de39a1322f16fda369607807250e3eca8540615",
+  "schema": 2,
+  "summary": "Re-reviewed after REQ_CELL_VOLTAGE_LIMITS became variant-resolved; the element is unaffected by that change and still covers the measurement half cleanly."
+}

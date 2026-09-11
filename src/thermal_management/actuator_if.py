@@ -55,7 +55,7 @@ class CoolantActuatorInterface:
             return True
         return False
 
-    # @Report a request unconfirmed after 2 s without a matching acknowledgement, IMPL_ACTUATOR_ACK_TIMER, impl, [SWREQ_ACTUATOR_ACK_TIMER]
+    # @Report a request unconfirmed after 2 s without a matching acknowledgement, IMPL_ACTUATOR_ACK_TIMER, [SWREQ_ACTUATOR_ACK_TIMER]
     def tick(self, dt_s: float) -> bool:
         """Advance the acknowledgement timer of the pending request.
 

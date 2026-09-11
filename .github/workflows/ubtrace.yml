@@ -122,12 +122,15 @@ jobs:
 
       - name: Parse the sources
         id: parse
-        run: ubc check
+        # The project is `docs/` and there is NO configuration at the repository
+        # root by design (see the README's layout section). A bare `ubc check`
+        # finds no project and passes silently, so the path is not optional.
+        run: ubc check docs
 
       - name: Refresh the imported artefacts and commit them
         id: refresh
         # Staleness is not a failure here; an unusable report, an importer
-        # rejecting a freshly captured snapshot, or generated RST that does not
+        # rejecting a freshly captured capture, or generated RST that does not
         # parse, are.
         #
         # NO credential is present in this step. Everything it runs is
@@ -141,7 +144,7 @@ jobs:
         run: |
           set -uo pipefail
 
-          generated=(specs/_global/gaps.rst specs/_global/test_results.rst)
+          generated=(docs/specs/_global/gaps.rst docs/specs/_global/test_results.rst)
 
           # Every exit path that publishes names a commit that exists on the
           # remote, never this working tree.
@@ -155,13 +158,14 @@ jobs:
           # writes, so without a second check an importer could commit RST that
           # does not parse. `ubc agent gaps` exits non-zero on any found gap (one
           # is deliberate here) so its code is no test; import_gaps.py validates
-          # the report it reads. reports/gaps/ is gitignored, so truncating it here
-          # costs nothing.
-          mkdir -p reports/gaps
-          ubc agent gaps > reports/gaps/gaps.json || true
+          # the report it reads. docs/reports/gaps/ is gitignored, so truncating it
+          # here costs nothing. Every `ubc` call names the project: without it the
+          # command finds none at the repository root and passes silently.
+          mkdir -p docs/reports/gaps
+          ubc agent gaps -p docs > docs/reports/gaps/gaps.json || true
           python3 tools/import_gaps.py || exit 1
           python3 tools/import_test_results.py || exit 1
-          ubc check || exit 1
+          ubc check docs || exit 1
 
           original="$(git rev-parse HEAD)"
           # `git status --porcelain`, not `git diff`: a generated file DELETED by
@@ -233,8 +237,8 @@ jobs:
         continue-on-error: true
         run: |
           set -uo pipefail
-          ubc agent trace | tee "$RUNNER_TEMP/trace.json" || true
-          ubc agent verdict-check | tee "$RUNNER_TEMP/verdicts.json" || true
+          ubc agent trace -p docs | tee "$RUNNER_TEMP/trace.json" || true
+          ubc agent verdict-check -p docs | tee "$RUNNER_TEMP/verdicts.json" || true
 
       - name: Job summary
         # `always()`, because a summary is worth most when a gate failed;
@@ -247,7 +251,7 @@ jobs:
             --result "Sources parse=${{ steps.parse.outcome }}" \
             --result "Imported artefacts refreshed=${{ steps.refresh.outcome }}" \
             --result "Refresh pushed=${{ steps.push.outcome }}" \
-            --gaps reports/gaps/gaps.json \
+            --gaps docs/reports/gaps/gaps.json \
             --trace "$RUNNER_TEMP/trace.json" \
             --verdicts "$RUNNER_TEMP/verdicts.json" \
             >> "$GITHUB_STEP_SUMMARY"
@@ -364,7 +368,7 @@ jobs:
         run: |
           uv run --extra ubtrace sphinx-build -b ubtrace -W --keep-going \
             -D "ubtrace_version=${UBTRACE_VERSION}" \
-            . _build/ubtrace
+            docs _build/ubtrace
 
       - name: Upload to team.useblocks.com
         # To publish demo versions later, flip `publish` above — but note

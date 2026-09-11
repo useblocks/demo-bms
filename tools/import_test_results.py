@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Import a JUnit XML test report into `test_result` needs.
 
-The test suite is NOT re-run on every build. ``reports/junit/testresults.xml`` is
+The test suite is NOT re-run on every build. ``docs/reports/junit/testresults.xml`` is
 a committed snapshot of one real pytest run, and this script turns it into needs
 so the recorded outcomes are part of the graph rather than an untraceable file
 next to it.
@@ -9,7 +9,7 @@ next to it.
 The mapping is deterministic, not heuristic. Every test case in this project
 carries a one-line codelinks marker directly above its function::
 
-    # @<title>, <TEST_ID>, test, [<SWREQ_ID>]
+    # @<title>, <TEST_ID>, [<SWREQ_ID>]
     def test_something() -> None:
 
 so the pair (test module, function name) identifies exactly one ``test`` need.
@@ -20,7 +20,7 @@ evidence pointing at nothing.
 
 Usage::
 
-    python3 tools/import_test_results.py            # default paths
+    python3 tools/import_test_results.py            # default paths -> docs/specs/_global/test_results.rst
     python3 tools/import_test_results.py --check     # fail if the output is stale
 """
 
@@ -34,21 +34,27 @@ from dataclasses import dataclass
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_REPORT = REPO_ROOT / "reports" / "junit" / "testresults.xml"
+DEFAULT_REPORT = REPO_ROOT / "docs" / "reports" / "junit" / "testresults.xml"
 DEFAULT_TESTS_DIR = REPO_ROOT / "tests"
-DEFAULT_SPECS_DIR = REPO_ROOT / "specs"
-DEFAULT_OUTPUT = REPO_ROOT / "specs" / "_global" / "test_results.rst"
+DEFAULT_SPECS_DIR = REPO_ROOT / "docs" / "specs"
+DEFAULT_OUTPUT = REPO_ROOT / "docs" / "specs" / "_global" / "test_results.rst"
 
 #: Directive id line and the two upward link fields the roll-up walks, as they
-#: appear in the spec RST. Parsed from source rather than from `needs.json` so the
-#: import never depends on a build having already run.
+#: appear in the spec sources. Parsed from source rather than from `needs.json` so
+#: the import never depends on a build having already run. Two directive
+#: spellings: the RST `.. swreq::` and the MyST fence ```{swreq} used by the
+#: Markdown-authored `specs/isolation-monitoring/` stream; the field lines are
+#: the same in both, indented in RST and at column 0 in Markdown.
 RST_DIRECTIVE = re.compile(r"^\.\.\s+(?P<type>[a-z_]+)::")
-RST_FIELD = re.compile(r"^\s+:(?P<name>id|refines|satisfies):\s*(?P<value>.+?)\s*$")
+MD_DIRECTIVE = re.compile(r"^\s*(?:`{3,}|:{3,})\{(?P<type>[a-z_]+)\}")
+RST_FIELD = re.compile(r"^\s*:(?P<name>id|refines|satisfies):\s*(?P<value>.+?)\s*$")
 
-#: The one-line codelinks marker grammar declared in `[codelinks.projects.tests]`.
+#: The one-line codelinks marker grammar declared in `[codelinks.projects.tests]`:
+#: title, id, the `verifies` list — and the type LAST, defaulted to `test`, so the
+#: markers leave it out (an explicit trailing `, test` is still accepted).
 MARKER = re.compile(
-    r"^\s*#\s*@(?P<title>[^,]+),\s*(?P<id>TEST_[A-Z][A-Z0-9_]*),\s*test\s*,\s*"
-    r"\[(?P<verifies>[^\]]*)\]\s*$"
+    r"^\s*#\s*@(?P<title>[^,]+),\s*(?P<id>TEST_[A-Z][A-Z0-9_]*),\s*"
+    r"\[(?P<verifies>[^\]]*)\](?:\s*,\s*test)?\s*$"
 )
 DEF_LINE = re.compile(r"^\s*def\s+(?P<name>test_[A-Za-z0-9_]+)\s*\(")
 
@@ -89,11 +95,11 @@ def collect_spec_links(specs_dir: Path) -> dict[str, list[str]]:
     ``swreq -> arch -> req`` without tracking which rung a hop is on.
     """
     parents: dict[str, list[str]] = {}
-    for source in sorted(specs_dir.rglob("*.rst")):
+    for source in sorted([*specs_dir.rglob("*.rst"), *specs_dir.rglob("*.md")]):
         current_id: str | None = None
         pending: list[str] = []
         for line in source.read_text().splitlines():
-            if RST_DIRECTIVE.match(line):
+            if RST_DIRECTIVE.match(line) or MD_DIRECTIVE.match(line):
                 current_id, pending = None, []
                 continue
             field = RST_FIELD.match(line)

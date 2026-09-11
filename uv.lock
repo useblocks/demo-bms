@@ -467,6 +467,18 @@ wheels = [
 ]
 
 [[package]]
+name = "mdit-py-plugins"
+version = "0.6.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "markdown-it-py" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/59/fc/f8d0863f8862f25602c0404d75568e89fb6b4109804645e5cdfb1be5cf56/mdit_py_plugins-0.6.1.tar.gz", hash = "sha256:a2bca0f039f39dbd35fb74ae1b5f998608c437463371f0ff7f49a19a17a114d0", size = 56114, upload-time = "2026-05-13T09:03:38.91Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/a5/69/6da5581c6a7fede7dc261bf4e67d6adca4196f176b43288b55b3db395b6e/mdit_py_plugins-0.6.1-py3-none-any.whl", hash = "sha256:214c82fb2ac524472ab6a5bcab1de80f73b50443e187f401bfd77efbc7c6481d", size = 66663, upload-time = "2026-05-13T09:03:37.76Z" },
+]
+
+[[package]]
 name = "mdurl"
 version = "0.1.2"
 source = { registry = "https://pypi.org/simple" }
@@ -492,6 +504,23 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/92/98/75d6a76499fd40f839a0a1a8fc46aa43cf6c47ea9680d4174289fd6fec3a/minijinja-2.24.0-cp38-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:5e0cdc27520d2163ec8a2078e4ff20c3afff4fb89eb05d21679c3facd30369ab", size = 1388664, upload-time = "2026-08-31T19:28:41.421Z" },
     { url = "https://files.pythonhosted.org/packages/7d/f1/e8d82609d7aad5791d52fdec4c642fab46974094cef9102110efa6fc2713/minijinja-2.24.0-cp38-abi3-win32.whl", hash = "sha256:b68aa1bd72da3a6175afa721090592f19e637b7a02408f796298d342b709d06b", size = 1058094, upload-time = "2026-08-31T19:28:43.157Z" },
     { url = "https://files.pythonhosted.org/packages/5b/e5/d86c8c706b3820fc6f58baa0f7d322e78885843ddba7e9cba77985a3fbc7/minijinja-2.24.0-cp38-abi3-win_amd64.whl", hash = "sha256:541959f4529017e437b8822cdaabaaab9d4090c140138dec40dbd739b3b0f778", size = 1118117, upload-time = "2026-08-31T19:28:44.843Z" },
+]
+
+[[package]]
+name = "myst-parser"
+version = "5.1.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "docutils" },
+    { name = "jinja2" },
+    { name = "markdown-it-py" },
+    { name = "mdit-py-plugins" },
+    { name = "pyyaml" },
+    { name = "sphinx" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/21/dc/603751677fff302f34396e206b610f556a59d7fe58b9a2145f54e96b48e8/myst_parser-5.1.0.tar.gz", hash = "sha256:ab69322dc6719dcc7f296479dbb70181b66df6ed315064f92dbc85c0e1bf2f02", size = 101182, upload-time = "2026-05-13T09:38:19.361Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/09/dc/f3dfb7488b770f3f67e6545085bf2abea5172e88f57b8ad25ef860ca704c/myst_parser-5.1.0-py3-none-any.whl", hash = "sha256:9c91c52b3cdb4d94a6506e4fab4e2f296c7623a0da0dcbe6de1565c3dad67a8a", size = 85817, upload-time = "2026-05-13T09:38:17.904Z" },
 ]
 
 [[package]]
@@ -736,6 +765,7 @@ source = { virtual = "." }
 ubtrace = [
     { name = "beautifulsoup4" },
     { name = "furo" },
+    { name = "myst-parser" },
     { name = "sphinx" },
     { name = "sphinx-codelinks" },
     { name = "sphinx-needs" },
@@ -752,6 +782,7 @@ dev = [
 requires-dist = [
     { name = "beautifulsoup4", marker = "extra == 'ubtrace'" },
     { name = "furo", marker = "extra == 'ubtrace'", specifier = ">=2024.8" },
+    { name = "myst-parser", marker = "extra == 'ubtrace'", specifier = ">=4.0" },
     { name = "sphinx", marker = "extra == 'ubtrace'", specifier = ">=8.0,<9" },
     { name = "sphinx-codelinks", marker = "extra == 'ubtrace'", specifier = ">=1.2" },
     { name = "sphinx-needs", marker = "extra == 'ubtrace'", specifier = ">=8.3,<9" },

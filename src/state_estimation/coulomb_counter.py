@@ -27,7 +27,7 @@ class CoulombCounter:
     def reset_throughput(self) -> None:
         self._throughput_as = 0.0
 
-    # @Integrate the pack current trapezoidally on every 10 ms tick, IMPL_CHARGE_INTEGRATION, impl, [SWREQ_CHARGE_INTEGRATION]
+    # @Integrate the pack current trapezoidally on every 10 ms tick, IMPL_CHARGE_INTEGRATION, [SWREQ_CHARGE_INTEGRATION]
     def tick(self, current_a: float, tick_s: float = TICK_S) -> float:
         """Add one tick's charge to the accumulator.
 
