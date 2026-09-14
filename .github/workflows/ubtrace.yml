@@ -19,6 +19,11 @@
 #                       Dispatching a demo branch builds without uploading too:
 #                       the upload is gated on WHAT WAS BUILT, not on the event.
 #
+# EVERY run, including a pull request and a demo branch, also builds the project as
+# a single PDF and attaches it to the run — the one output of this workflow that
+# needs no team.useblocks.com account to read. Retention is 7 days, except for a
+# release tag, which keeps its PDF for 90.
+#
 # Required repository secret:
 #   UBTRACE_INGEST_TOKEN — a token with "Ingest" permission on the
 #   useblocks/rollout-demo-bms project at team.useblocks.com.
@@ -325,21 +330,98 @@ jobs:
           # tag / a demo branch before it becomes a version segment in a URL and
           # a path. Demo names are held to the same character set even though
           # they are never uploaded, because the value still becomes a path.
+          #
+          # The chain below is written as one arm per KIND of ref, rather than as
+          # the earlier "reject anything that is not X" test, because a third
+          # question now hangs off it: a release tag is the only ref whose PDF is
+          # kept longer than a week, so "is this a release" has to be an answer
+          # the chain produces rather than something re-derived later from
+          # `github.ref_type` — which a workflow_dispatch of a tag gets wrong,
+          # since dispatch always reports `branch` however it was invoked.
           publish=true
+          release=false
           if [[ "$ref" == demo* ]]; then
             publish=false
             if [[ ! "$ref" =~ ^demo[A-Za-z0-9._/-]*$ ]]; then
               echo "::error::Refusing to build: demo ref '$ref' contains characters that may not appear in a version path" >&2
               exit 1
             fi
-          elif [[ "$ref" != "main" && ! "$ref" =~ ^v[0-9]+\.[0-9]+\.[0-9]+[A-Za-z0-9.+-]*$ ]]; then
+          elif [[ "$ref" == "main" ]]; then
+            :
+          elif [[ "$ref" =~ ^v[0-9]+\.[0-9]+\.[0-9]+[A-Za-z0-9.+-]*$ ]]; then
+            release=true
+          else
             echo "::error::Refusing to publish: ref '$ref' is neither 'main', a demo branch, nor v<MAJOR>.<MINOR>.<PATCH>[suffix]" >&2
             exit 1
           fi
+          # 7 days for everything that is not a tag. main and the demo branches are
+          # rebuilt constantly and their PDF is only ever read within days of the run
+          # that produced it; a release PDF is the one people come back to, so it gets
+          # the 90-day repository maximum. Note GitHub CAPS this at the retention
+          # limit configured for the repository and silently lowers anything above it.
+          retention=7
+          [[ "$release" == true ]] && retention=90
+          # Artifact names may not contain a slash, and `demo/foo` is an accepted
+          # branch shape here (the `**` in the trigger matches it on purpose), so the
+          # name — and only the name — flattens it.
           echo "version=$ref" >> "$GITHUB_OUTPUT"
           echo "publish=$publish" >> "$GITHUB_OUTPUT"
+          echo "retention=$retention" >> "$GITHUB_OUTPUT"
+          echo "pdf_name=bms-specs-${ref//\//-}" >> "$GITHUB_OUTPUT"
         env:
           INPUT_REF: ${{ github.event.inputs.ref }}
+
+      - name: Install ubc
+        # A SECOND install of the same pinned action. Jobs do not share a filesystem,
+        # so the ubc the graph gates installed is on another runner and this one
+        # starts bare. No license preflight here: `needs: graph-gates` means that job
+        # has already proved both secrets are present and failed loudly naming them if
+        # not. The cost is one extra online activation per run — the runner is
+        # ephemeral, so ubc's 3-day licence cache is always cold.
+        uses: useblocks/ubc-action@393f60bb24e9988cd62f2044e4e200ad253395a7 # main, 2026-03-25
+        with:
+          version: ${{ env.UBC_VERSION }}
+          license-key: ${{ secrets.UBCODE_LICENSE_KEY }}
+          license-user: ${{ secrets.UBCODE_LICENSE_USER }}
+
+      - name: Build the specification PDF
+        id: pdf
+        # `ubc build pdf` runs NO Sphinx and no LaTeX — it typesets the same index
+        # `ubc check` and the editor use — so it needs none of the uv / graphviz /
+        # mermaid apparatus installed above, and it cannot be folded into the
+        # sphinx-build below. It is ALPHA: the layout and the options may still move
+        # between releases, which is another reason it is a run attachment and not
+        # something published to team.useblocks.com.
+        #
+        # Placed BEFORE the ubTrace build on purpose. The two are independent, and in
+        # this order a sphinx failure still leaves a PDF for the upload to attach.
+        #
+        # THERE IS NO `--deny` OVERRIDE HERE, deliberately. The builder does not
+        # typeset `needflow` or `mermaid` yet and draws each as a labelled placeholder
+        # box plus a `build.pdf_diagram_unrendered` warning — 8 of them in this
+        # project — which under the default `--deny warning` bar exits 1 on a
+        # perfectly healthy graph. `--deny error` would fix that by retiring the
+        # warning bar altogether; instead docs/ubproject.toml ignores THAT ONE CODE,
+        # so the bar here stays at `warning` and any other build warning still fails
+        # this step. `-w` prints the detail of whatever is left.
+        env:
+          PDF_NAME: ${{ steps.vars.outputs.pdf_name }}
+        run: ubc build pdf docs -w -o "_build/pdf/${PDF_NAME}.pdf"
+
+      - name: Attach the PDF to the run
+        # `always()`, because a run that failed later is exactly when someone wants to
+        # read the specs it built — but guarded on the build step actually having
+        # produced a file, so a failed PDF build reports itself once rather than twice.
+        #
+        # Retention is 7 days for main, demo branches and pull requests, and 90 for a
+        # release tag; see the version step for why that decision is made there.
+        if: always() && steps.pdf.outcome == 'success'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ${{ steps.vars.outputs.pdf_name }}
+          path: _build/pdf/${{ steps.vars.outputs.pdf_name }}.pdf
+          retention-days: ${{ steps.vars.outputs.retention }}
+          if-no-files-found: error
 
       - name: Build ubTrace artefact
         env:

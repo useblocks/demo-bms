@@ -30,6 +30,29 @@ version = "0.1.0"
 # pinned to a need id precisely so that it stops being reachable and shows up as
 # dead config rather than quietly widening.
 [lint]
+# The PDF builder is ALPHA and does not typeset every construct yet. The ones it
+# cannot draw become a labelled placeholder box in the page and a
+# `build.pdf_diagram_unrendered` warning, and `[build.pdf] deny` defaults to
+# "warning", so `ubc build pdf` exits 1 on a project that is perfectly healthy.
+# This project trips it 8 times: the 5 `needflow` diagrams on traceability.rst
+# and the 3 `mermaid` component diagrams under specs/*/architecture.rst.
+#
+# Silencing the CODE rather than lowering the bar. `[build.pdf] deny = "error"`
+# would also work and is what the CLI suggests first, but it is far too broad —
+# it retires the warning bar for the PDF build entirely, so a genuine future
+# build warning would land in the artefact unreported. This entry gives up
+# exactly one diagnostic and leaves the bar at "warning" for everything else.
+#
+# The warning against this form in the note above does not apply here: it is
+# about `needs.*` SCHEMA codes, which `ubc schema validate` shares with the
+# build, so blanking one there disarms the validator too. `build.pdf_*` is
+# emitted only by `ubc build pdf` — `ubc check`, `ubc schema validate` and
+# `ubc agent gaps` were verified byte-identical with and without this line.
+#
+# DELETE THIS ENTRY once the builder typesets needflow and mermaid; the
+# placeholders disappear on their own and the line becomes dead config.
+ignore = ["build.pdf_diagram_unrendered"]
+
 [[lint.message-ignores]]
 codes = ["needs.schema_network_warning"]
 contains = "REQ_CELL_BALANCING_WINDOW:satisfies (incoming)"
@@ -74,6 +97,9 @@ needs = "ubc build needs -o needs.json"
 "needs:lfp" = "ubc build needs -c \"needs.variant_data_file = 'variants/lfp.json'\" -o needs.lfp.json"
 variant-diff = "ubc diff -c \"needs.variant_data_file = 'variants/lfp.json'\""
 html = "ubc build html --deny none -o _build/ubc-html"
+# No `--deny` override, unlike `html` above: the one code the PDF builder trips
+# on this project is ignored by name under [lint], so the bar stays at "warning".
+pdf = "ubc build pdf -o _build/pdf/bms-specs.pdf"
 report = "ubc report traceability_coverage.html.j2"
 sphinx = "uv run --extra ubtrace sphinx-build -W --keep-going -b html . _build/html"
 
