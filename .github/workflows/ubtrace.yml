@@ -58,7 +58,7 @@ permissions:
 # relying on the default would silently gate this project with a different engine
 # than the one that produced its committed snapshots.
 env:
-  UBC_VERSION: "0.34.0"
+  UBC_VERSION: "0.35.0"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
