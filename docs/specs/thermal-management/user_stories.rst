@@ -4,6 +4,7 @@ Thermal Management — User Stories
 .. user_story:: Keep the pack in its usable temperature band while driving and charging
    :id: US_THERMAL_MANAGEMENT
    :status: draft
+   :covers: SYS_1031, SYS_1032, SYS_1033
 
    As a driver, I want the battery pack to warm itself when it is cold and cool
    itself when it is hot, so that I get the charging speed I was promised and

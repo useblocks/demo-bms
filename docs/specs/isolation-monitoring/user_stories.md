@@ -9,6 +9,7 @@ without either side noticing the format.
 ```{user_story} Detect a loss of high-voltage isolation before it becomes a touch hazard
 :id: US_ISOLATION_MONITORING
 :status: draft
+:covers: SYS_1051, SYS_1052
 
 As a fleet operator, I want the battery management system to watch the
 insulation between the high-voltage pack and the vehicle chassis, so that a

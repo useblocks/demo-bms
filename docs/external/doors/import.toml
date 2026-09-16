@@ -1,0 +1,40 @@
+# ubConnect import of the OEM system-requirement export from IBM DOORS.
+#
+# Regenerate `needs.json` with:
+#
+#     ubconnect csv from-csv -c import.toml
+#
+# `needs.json` is COMMITTED, so the rest of the pipeline replays without a
+# ubConnect licence — the same arrangement as the JUnit and gaps snapshots
+# under `docs/reports/`.
+
+[ubconnect.from_csv]
+csv_path = "bms_sysreqs_v1.csv"
+outdir = "."
+id_prefix = "SYS_"                  # "Absolute Number" 1011 -> SYS_1011
+delimiter = ","
+encoding = "utf-8"
+
+# No link configuration on purpose. A `sys_req` is the TOP of the graph and
+# points at nothing; the `covers` link that maps this layer onto the project is
+# authored on the `user_story` side, pointing UP.
+
+[ubconnect.from_csv.static_fields]
+# The export carries no column naming the need type, so every row takes this
+# one. `[mapping] type` still defaults to the column name "type"; because the
+# export has no such column the converter falls back here without warning.
+# ("Object Type" sanitises to `object_type` and does NOT collide.)
+type = "sys_req"
+
+[ubconnect.from_csv.mapping]
+id = "Absolute Number"
+title = "Object Heading"
+content = "Object Text"
+# Explicit because column matching is CASE-SENSITIVE: the default `status`
+# would not match the export's "Status" and every need would lose its state.
+status = "Status"
+
+# Every remaining column is carried through as an extra field, lowercased with
+# spaces turned into underscores: Module -> module, Object Identifier ->
+# object_identifier, Object Type -> object_type, ASIL -> asil, Verification
+# Method -> verification_method, Rationale -> rationale.

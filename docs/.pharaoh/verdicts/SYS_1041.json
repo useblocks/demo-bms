@@ -1,0 +1,45 @@
+{
+  "agent": "vscode-lm",
+  "axes": {
+    "atomicity": {
+      "reason": "The requirement states a single obligation — 'shall equalise the cell voltages' — with one triggering condition ('when the difference ... exceeds 50 mV'), not an additional separable requirement.",
+      "score": 2
+    },
+    "clarity": {
+      "reason": "The wording is precise and unambiguous, specifying the actor ('battery management system'), the action ('equalise the cell voltages') and a measurable trigger condition ('difference between the highest and lowest cell exceeds 50 mV').",
+      "score": 2
+    },
+    "context": {
+      "reason": "The trigger condition is explicitly quantified: 'when the difference between the highest and lowest cell exceeds 50 mV'.",
+      "score": 2
+    },
+    "interfaces": {
+      "reason": "The input trigger is clearly specified as the \"difference between the highest and lowest cell exceeds 50 mV\", but the output is only vaguely stated as \"equalise the cell voltages\" without defining the balancing action, target tolerance, or termination condition.",
+      "score": 1,
+      "suggestion": "Specify the produced output concretely, e.g. state that the BMS shall activate cell balancing (discharge/charge of the affected cells) until the max-min cell voltage difference falls below a defined hysteresis threshold (e.g. 20 mV), and note any status/diagnostic signal reported."
+    },
+    "measurability": {
+      "reason": "The requirement states a concrete, testable threshold — equalise cell voltages when the difference between highest and lowest cell 'exceeds 50 mV' — giving a clear pass/fail trigger verifiable by test.",
+      "score": 2
+    },
+    "neutrality": {
+      "reason": "The requirement states the needed outcome — 'equalise the cell voltages when the difference between the highest and lowest cell exceeds 50 mV' — without prescribing a balancing method (passive/active), circuitry, or algorithm.",
+      "score": 2
+    },
+    "safety": {
+      "reason": "The requirement defines a functional balancing trigger ('exceeds 50 mV') in a safety-relevant battery domain but states no safety limits, abort conditions, or degradation behaviour (e.g. balancing under over-temperature or fault conditions).",
+      "score": 1
+    },
+    "testability": {
+      "reason": "The trigger condition \"difference between the highest and lowest cell exceeds 50 mV\" is a concrete, measurable input, but the output \"equalise the cell voltages\" has no defined success threshold, timing, or end condition to observe in a test.",
+      "score": 1,
+      "suggestion": "Specify the observable outcome and timing, e.g. \"...shall activate cell balancing within 5 s and reduce the cell voltage spread to below 20 mV within 60 minutes.\""
+    }
+  },
+  "criteria": "default",
+  "criteria_fingerprint": "1878becc1c28497c1c26da0250812a475ba93a87c0cf8c2d7b7f8406eab6898b",
+  "model": "claude-opus-5",
+  "need": "SYS_1041",
+  "reviewed_fingerprint": "08fcea0e30b7e612f5b81aecad058a9db5e26aac342f508197ecaf6165f2969b",
+  "schema": 2
+}

@@ -57,6 +57,32 @@ ignore = ["build.pdf_diagram_unrendered"]
 codes = ["needs.schema_network_warning"]
 contains = "REQ_CELL_BALANCING_WINDOW:satisfies (incoming)"
 
+# THE MAPPING BACKLOG, and the same reasoning as the entry above — see the long
+# note at the top of this section for why a pinned `message-ignores` is used
+# rather than `[lint] ignore`, which would blank the whole `needs.schema_*`
+# family out of `ubc schema validate` as well.
+#
+# Every imported `sys_req` that no user story has claimed fails
+# `coverage-sys_req-covers-back`. That is not a defect to fix before CI can pass
+# — it is the BACKLOG the DOORS import exists to expose, and it is expected to be
+# non-empty for as long as the customer specifies more than this project builds.
+# Seven are open today: SYS_1041/SYS_1042 (the deliberately unmapped
+# cell-balancing stream) and SYS_1061..SYS_1065 (vehicle-integration capabilities
+# this project has not taken on at all).
+#
+# Scoped by LINK, not by need id, unlike the entry above: the set of unmapped
+# requirements changes with every DOORS baseline, so pinning seven ids would mean
+# editing this file on every import — and a forgotten id would turn a routine
+# import into red CI. The backlog stays fully visible where it belongs: as
+# `trace_backward` gaps in `ubc agent gaps`, on `traceability.rst`, and as
+# accepted debt in the `release-check` baseline that ratchets down as it is
+# worked off. This entry silences the lint RE-REPORT of that same fact, nothing
+# more — a `covers` link that is empty or points at the wrong type is still a
+# violation, from the `trace-user_story-covers` rule.
+[[lint.message-ignores]]
+codes = ["needs.schema_network_warning"]
+contains = ":covers (incoming)"
+
 # This file is the PROJECT ROOT, and it lives in docs/ on purpose: the source
 # root ubc discovers documents from is the directory holding this file, so with
 # the file here, discovery never leaves docs/. src/, tests/, tools/, reports/ and
@@ -109,7 +135,15 @@ sphinx = "uv run --extra ubtrace sphinx-build -W --keep-going -b html . _build/h
 
 [needs]
 id_required = true
-id_regex = "^[A-Z]+_[A-Z][A-Z0-9_]*$"
+# The character after the prefix may be a DIGIT, not only a letter, and that is
+# what admits the imported `sys_req` layer: its ids are `SYS_<DOORS Absolute
+# Number>` (SYS_1011), because the customer's DOORS module owns the numbering and
+# this project does not get to restyle it. Deriving a readable id from the
+# requirement's heading instead would tie every id to the customer's wording, so a
+# rename upstream would churn the id and break every `covers` link pointing at it.
+# Strictly more permissive than the old `^[A-Z]+_[A-Z][A-Z0-9_]*$`, so every
+# authored id still passes unchanged.
+id_regex = "^[A-Z]+_[A-Z0-9][A-Z0-9_]*$"
 
 # Render the `needflow` diagrams on `traceability.rst` with the local graphviz
 # `dot` instead of PlantUML: no Java, no jar to vendor, and the graphviz engine
@@ -369,7 +403,7 @@ schema = { type = "string", pattern = "^$|^[0-9]+ of [0-9]+$" }
 description = "Id of the need the gap is attributed to — the same fact as the `gap_for` link, as a field a report template can read."
 default = ""
 nullable = false
-schema = { type = "string", pattern = "^$|^[A-Z]+_[A-Z][A-Z0-9_]*$" }
+schema = { type = "string", pattern = "^$|^[A-Z]+_[A-Z0-9][A-Z0-9_]*$" }
 
 # The ten directives declared under `[[needs.types]]` below. Adding a type there
 # means adding it here — the duplication is the price of letting a report group
@@ -407,6 +441,42 @@ schema = { type = "string", enum = [
 # This is the ONLY place the vocabulary is enforced. `[workflow.lifecycle] states`
 # looks like it should carry it too, and does not: see the comment at `[workflow]`
 # below for the measurement that ruled it out.
+# --- IMPORTED SYSTEM-REQUIREMENT FIELDS ---
+# Carried onto `sys_req` needs by `../tools/import_sysreqs.py` from the DOORS
+# export. Fields are GLOBAL in ubc, so each admits "" for the ~200 needs that
+# are not system requirements — the same arrangement as `chemistry` above.
+#
+# `doors_id` is the export's "Object Identifier" and is the PROVENANCE anchor:
+# the project's own ids are `SYS_<Absolute Number>`, which is stable only within
+# one DOORS baseline, whereas the object identifier is what a customer engineer
+# searches for in their own tool.
+[needs.fields.doors_id]
+description = "DOORS Object Identifier the sys_req was imported from, e.g. BMS-SYS-1011."
+default = ""
+nullable = false
+schema = { type = "string" }
+
+[needs.fields.doors_module]
+description = "DOORS module path the sys_req was exported from."
+default = ""
+nullable = false
+schema = { type = "string" }
+
+# The customer's safety-integrity allocation, carried through UNCHANGED. It is
+# imported rather than authored on purpose: an ASIL is assigned by the vehicle
+# hazard analysis, and this project is not entitled to restate it.
+[needs.fields.asil]
+description = "ISO 26262 safety integrity level the customer allocated to the system requirement."
+default = ""
+nullable = false
+schema = { type = "string", enum = ["", "QM", "ASIL A", "ASIL B", "ASIL C", "ASIL D"] }
+
+[needs.fields.verification_method]
+description = "Verification method the customer requires for the system requirement."
+default = ""
+nullable = false
+schema = { type = "string", enum = ["", "Test", "Analysis", "Inspection", "Review"] }
+
 [needs.fields.status]
 description = "Lifecycle state of an authored spec need: draft -> review -> approved."
 schema = { type = "string", enum = ["draft", "review", "approved"] }
@@ -465,6 +535,29 @@ schema = { type = "string", enum = ["", "NMC", "LFP"] }
 # --- NEED TYPES (the V-model ontology) ---
 # Rename, add, or remove types to match your project's V-model. Every type the
 # [workflow] stages produce or trace against is declared here.
+
+# The EXTERNAL need, and the only type in this ontology this project does not
+# author. One OEM system requirement IMPORTED from the customer's IBM DOORS
+# module, sitting ABOVE the project's own V: a `user_story` `covers` the
+# sys_reqs it answers, so the top of the decomposition arm is anchored in
+# something the project does not control.
+#
+# Generated into `specs/_external/system_requirements.rst` by
+# `../tools/import_sysreqs.py` from `external/doors/needs.json`, which
+# `ubconnect csv from-csv` produces from the committed DOORS CSV export. Same
+# arrangement, and for the same reason, as `test_result` and `gap`: a need an
+# agent could rewrite would not be an external requirement. NEVER hand-edit the
+# generated file — edit the export and re-import.
+#
+# `style = "artifact"` maps to the graphviz `note` shape (see `_plantuml_shapes`
+# in sphinx-needs' needflow/_graphviz.py) — a document, which is what this is.
+# An UNMAPPED name would log "Unknown node style" and fail the `-W` build.
+[[needs.types]]
+directive = "sys_req"
+title = "System Requirement"
+prefix = "SYS_"
+color="#F9A8D4"
+style="artifact"
 
 [[needs.types]]
 directive = "user_story"
@@ -585,6 +678,15 @@ style="rectangle"
 
 # --- LINKS ---
 # Declare every link the [workflow] trace edges reference here.
+
+# The EXTERNAL-TRACEABILITY link: a `user_story`'s outgoing `covers` names the
+# imported `sys_req`(s) that story answers. Deliberately authored on the
+# user_story side pointing UP, like every other link here — the `sys_req` layer
+# is regenerated from the DOORS export and must stay free of anything this
+# project authors, or a re-import would silently drop the mapping.
+[needs.links.covers]
+incoming = "covered_by"
+outgoing = "covers"
 
 [needs.links.traces_to]
 incoming = "traces_from"
@@ -798,7 +900,7 @@ needs_fields = [
 # the same reason `test_results` has no `author_skill`, taken one step further: there
 # is nothing for an agent to author here at all.
 [workflow]
-orphan_exempt_types = ["user_story", "req", "arch", "swreq", "gap"]
+orphan_exempt_types = ["sys_req", "user_story", "req", "arch", "swreq", "gap"]
 
 # `[workflow.lifecycle] states` IS DELIBERATELY NOT SET, and the reason is worth
 # recording so it is not "fixed" later.
@@ -830,7 +932,44 @@ format = "mermaid"
 
 # The route names `.rst`; the `isolation-monitoring` stream is authored in
 # Markdown and is complete, so no stage ever resolves an authoring route into it.
+# --- SYSTEM REQUIREMENTS STAGE (the external anchor, ABOVE the V) ---
+# The ONLY stage carrying neither an `author_skill` nor a `review_skill`, and
+# deliberately so: its artefact is IMPORTED from the customer's DOORS export,
+# so there is nothing here to author and no verdict this project may record
+# against someone else's requirement.
+#
+# It declares NO trace edge. A `sys_req` is the top of the graph and points at
+# nothing; the mapping obligation belongs to the `user_stories` stage below,
+# which is the side that authors the `covers` link. Putting it there is what
+# attributes an unmapped requirement to the stage that can actually fix it, so
+# `ubc agent next` returns `user_stories` rather than a stage with no skill.
 [[workflow.stages]]
+id = "sys_reqs"
+produces = "sys_req"
+
+[workflow.stages.route]
+granularity = "single"
+path = "specs/_external/system_requirements.rst"
+scope = "global"
+
+# --- USER STORIES STAGE (now the first AUTHORED stage, not the first stage) ---
+# `depends_on = ["sys_reqs"]` is what makes the imported layer the anchor of the
+# whole V: no story may be authored before the customer requirements it answers
+# are on disk.
+#
+# The `covers` trace edge is `direction = "both"`, and both legs earn their keep:
+#   FORWARD  — every user_story must cover at least one sys_req, so no stream
+#              exists without a customer requirement justifying it;
+#   BACKWARD — every sys_req must be covered by at least one user_story, which
+#              is the MAPPING BACKLOG: an imported requirement with no home is a
+#              gap against this stage until a story claims it.
+# Dropping the backward leg would make the import decorative — requirements
+# could land in the graph and be silently ignored, which is the exact failure
+# an external-requirements link is meant to prevent.
+[[workflow.stages]]
+author_skill = "map-external-requirements"
+authoring = "Map the imported system requirements onto this project's user stories: add a `covers` link to the story that already answers a requirement, and author a new user story only where no existing story does. One story per coherent capability, never one per requirement."
+depends_on = ["sys_reqs"]
 id = "user_stories"
 produces = "user_story"
 review_skill = "review-feat"
@@ -839,6 +978,12 @@ review_skill = "review-feat"
 granularity = "per-root"
 path = "specs/{stream}/user_stories.rst"
 scope = "stream"
+
+[[workflow.stages.trace]]
+direction = "both"
+link = "covers"
+min = 1
+up = "sys_req"
 
 [[workflow.stages]]
 author_skill = "draft-requirement"

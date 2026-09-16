@@ -1,0 +1,457 @@
+{
+  "created": "2026-09-16T19:20:38.121776+00:00",
+  "current_version": "latest",
+  "project": "CSV Project for bms_sysreqs_v1.csv",
+  "versions": {
+    "latest": {
+      "created": "2026-09-16T19:20:38.121776+00:00",
+      "creator": {
+        "name": "ubconnect",
+        "version": "0.19.0"
+      },
+      "needs": {
+        "SYS_1010": {
+          "id": "SYS_1010",
+          "type": "sys_req",
+          "title": "Safety and Protection",
+          "content": "",
+          "status": "Approved",
+          "module": "/BMS/System Requirements",
+          "object_identifier": "BMS-SYS-1010",
+          "object_type": "Heading",
+          "asil": "",
+          "verification_method": "",
+          "rationale": ""
+        },
+        "SYS_1011": {
+          "id": "SYS_1011",
+          "type": "sys_req",
+          "title": "Cell overvoltage protection",
+          "content": "The battery management system shall disconnect the traction battery from the high-voltage circuit when the voltage of any cell exceeds 4.25 V for longer than 100 ms.",
+          "status": "Approved",
+          "module": "/BMS/System Requirements",
+          "object_identifier": "BMS-SYS-1011",
+          "object_type": "Requirement",
+          "asil": "ASIL C",
+          "verification_method": "Test",
+          "rationale": "Sustained overvoltage plates lithium on the anode and is a primary thermal-runaway initiator."
+        },
+        "SYS_1012": {
+          "id": "SYS_1012",
+          "type": "sys_req",
+          "title": "Cell undervoltage protection",
+          "content": "The battery management system shall disconnect the traction battery from the high-voltage circuit when the voltage of any cell falls below 2.50 V for longer than 100 ms.",
+          "status": "Approved",
+          "module": "/BMS/System Requirements",
+          "object_identifier": "BMS-SYS-1012",
+          "object_type": "Requirement",
+          "asil": "ASIL C",
+          "verification_method": "Test",
+          "rationale": "Deep discharge dissolves the copper current collector and causes internal short circuits on the next charge."
+        },
+        "SYS_1013": {
+          "id": "SYS_1013",
+          "type": "sys_req",
+          "title": "Pack overcurrent protection",
+          "content": "The battery management system shall disconnect the traction battery from the high-voltage circuit when the pack discharge current exceeds 400 A for longer than 50 ms.",
+          "status": "Approved",
+          "module": "/BMS/System Requirements",
+          "object_identifier": "BMS-SYS-1013",
+          "object_type": "Requirement",
+          "asil": "ASIL C",
+          "verification_method": "Test",
+          "rationale": "Sustained overcurrent exceeds the thermal rating of the cell tabs and the contactor weld limit."
+        },
+        "SYS_1014": {
+          "id": "SYS_1014",
+          "type": "sys_req",
+          "title": "Cell overtemperature protection",
+          "content": "The battery management system shall disconnect the traction battery from the high-voltage circuit when the temperature of any cell exceeds 60 degC.",
+          "status": "Approved",
+          "module": "/BMS/System Requirements",
+          "object_identifier": "BMS-SYS-1014",
+          "object_type": "Requirement",
+          "asil": "ASIL C",
+          "verification_method": "Test",
+          "rationale": "Above 60 degC the separator begins to lose mechanical integrity."
+        },
+        "SYS_1015": {
+          "id": "SYS_1015",
+          "type": "sys_req",
+          "title": "Contactor opening time",
+          "content": "The battery management system shall de-energise both high-voltage contactor channels within 10 ms of issuing a protective disconnect command.",
+          "status": "Approved",
+          "module": "/BMS/System Requirements",
+          "object_identifier": "BMS-SYS-1015",
+          "object_type": "Requirement",
+          "asil": "ASIL D",
+          "verification_method": "Test",
+          "rationale": "The reaction time budget for the vehicle-level safety goal allocates 10 ms to the contactor stage."
+        },
+        "SYS_1016": {
+          "id": "SYS_1016",
+          "type": "sys_req",
+          "title": "Protective disconnect latching",
+          "content": "The battery management system shall keep the traction battery disconnected after a protective disconnect until the fault has been cleared by a qualified service procedure.",
+          "status": "Approved",
+          "module": "/BMS/System Requirements",
+          "object_identifier": "BMS-SYS-1016",
+          "object_type": "Requirement",
+          "asil": "ASIL D",
+          "verification_method": "Test",
+          "rationale": "An intermittent fault condition must never silently re-close the high-voltage circuit."
+        },
+        "SYS_1020": {
+          "id": "SYS_1020",
+          "type": "sys_req",
+          "title": "Charge and Health Reporting",
+          "content": "",
+          "status": "Approved",
+          "module": "/BMS/System Requirements",
+          "object_identifier": "BMS-SYS-1020",
+          "object_type": "Heading",
+          "asil": "",
+          "verification_method": "",
+          "rationale": ""
+        },
+        "SYS_1021": {
+          "id": "SYS_1021",
+          "type": "sys_req",
+          "title": "State of charge accuracy",
+          "content": "The battery management system shall report the pack state of charge with an absolute error of no more than 3 percent across the full operating range.",
+          "status": "Approved",
+          "module": "/BMS/System Requirements",
+          "object_identifier": "BMS-SYS-1021",
+          "object_type": "Requirement",
+          "asil": "ASIL A",
+          "verification_method": "Test",
+          "rationale": "Range estimation and charge planning at vehicle level depend on this accuracy."
+        },
+        "SYS_1022": {
+          "id": "SYS_1022",
+          "type": "sys_req",
+          "title": "State of health reporting",
+          "content": "The battery management system shall report the pack state of health with an absolute error of no more than 5 percent over the service life of the pack.",
+          "status": "Approved",
+          "module": "/BMS/System Requirements",
+          "object_identifier": "BMS-SYS-1022",
+          "object_type": "Requirement",
+          "asil": "QM",
+          "verification_method": "Analysis",
+          "rationale": "Warranty assessment and residual value estimation rely on a trustworthy capacity-fade figure."
+        },
+        "SYS_1023": {
+          "id": "SYS_1023",
+          "type": "sys_req",
+          "title": "Power limit prediction",
+          "content": "The battery management system shall report the maximum charge and discharge power available for the next 10 seconds.",
+          "status": "Approved",
+          "module": "/BMS/System Requirements",
+          "object_identifier": "BMS-SYS-1023",
+          "object_type": "Requirement",
+          "asil": "ASIL A",
+          "verification_method": "Test",
+          "rationale": "The drive inverter and the charger both need a forward-looking limit to avoid tripping protection."
+        },
+        "SYS_1024": {
+          "id": "SYS_1024",
+          "type": "sys_req",
+          "title": "Low temperature charge accuracy",
+          "content": "The battery management system shall maintain the stated state of charge accuracy down to a pack temperature of -20 degC.",
+          "status": "Proposed",
+          "module": "/BMS/System Requirements",
+          "object_identifier": "BMS-SYS-1024",
+          "object_type": "Requirement",
+          "asil": "ASIL A",
+          "verification_method": "Test",
+          "rationale": "Cold-climate markets report the largest range-estimation complaints."
+        },
+        "SYS_1030": {
+          "id": "SYS_1030",
+          "type": "sys_req",
+          "title": "Thermal Management",
+          "content": "",
+          "status": "Approved",
+          "module": "/BMS/System Requirements",
+          "object_identifier": "BMS-SYS-1030",
+          "object_type": "Heading",
+          "asil": "",
+          "verification_method": "",
+          "rationale": ""
+        },
+        "SYS_1031": {
+          "id": "SYS_1031",
+          "type": "sys_req",
+          "title": "Active cooling activation",
+          "content": "The battery management system shall request active cooling when the highest cell temperature exceeds 40 degC.",
+          "status": "Approved",
+          "module": "/BMS/System Requirements",
+          "object_identifier": "BMS-SYS-1031",
+          "object_type": "Requirement",
+          "asil": "QM",
+          "verification_method": "Test",
+          "rationale": "Sustained operation above 40 degC accelerates calendar ageing disproportionately."
+        },
+        "SYS_1032": {
+          "id": "SYS_1032",
+          "type": "sys_req",
+          "title": "Preconditioning before fast charge",
+          "content": "The battery management system shall request pack heating when the lowest cell temperature is below 0 degC and a fast charge session has been requested.",
+          "status": "Approved",
+          "module": "/BMS/System Requirements",
+          "object_identifier": "BMS-SYS-1032",
+          "object_type": "Requirement",
+          "asil": "QM",
+          "verification_method": "Test",
+          "rationale": "Fast charging below freezing causes lithium plating and permanent capacity loss."
+        },
+        "SYS_1033": {
+          "id": "SYS_1033",
+          "type": "sys_req",
+          "title": "Cell temperature uniformity",
+          "content": "The battery management system shall keep the temperature difference between the hottest and coldest cell below 5 K during normal operation.",
+          "status": "Rework",
+          "module": "/BMS/System Requirements",
+          "object_identifier": "BMS-SYS-1033",
+          "object_type": "Requirement",
+          "asil": "QM",
+          "verification_method": "Analysis",
+          "rationale": "Temperature spread drives divergent ageing and therefore pack-level capacity loss."
+        },
+        "SYS_1040": {
+          "id": "SYS_1040",
+          "type": "sys_req",
+          "title": "Cell Balancing",
+          "content": "",
+          "status": "Approved",
+          "module": "/BMS/System Requirements",
+          "object_identifier": "BMS-SYS-1040",
+          "object_type": "Heading",
+          "asil": "",
+          "verification_method": "",
+          "rationale": ""
+        },
+        "SYS_1041": {
+          "id": "SYS_1041",
+          "type": "sys_req",
+          "title": "Cell balancing window",
+          "content": "The battery management system shall equalise the cell voltages when the difference between the highest and lowest cell exceeds 50 mV.",
+          "status": "Approved",
+          "module": "/BMS/System Requirements",
+          "object_identifier": "BMS-SYS-1041",
+          "object_type": "Requirement",
+          "asil": "QM",
+          "verification_method": "Test",
+          "rationale": "Cell divergence reduces the usable capacity of the whole pack to that of its weakest cell."
+        },
+        "SYS_1042": {
+          "id": "SYS_1042",
+          "type": "sys_req",
+          "title": "Balancing during charging",
+          "content": "The battery management system shall continue cell balancing while the pack is being charged.",
+          "status": "Proposed",
+          "module": "/BMS/System Requirements",
+          "object_identifier": "BMS-SYS-1042",
+          "object_type": "Requirement",
+          "asil": "QM",
+          "verification_method": "Test",
+          "rationale": "The charge phase offers the longest uninterrupted window in which balancing is effective."
+        },
+        "SYS_1050": {
+          "id": "SYS_1050",
+          "type": "sys_req",
+          "title": "Isolation Monitoring",
+          "content": "",
+          "status": "Approved",
+          "module": "/BMS/System Requirements",
+          "object_identifier": "BMS-SYS-1050",
+          "object_type": "Heading",
+          "asil": "",
+          "verification_method": "",
+          "rationale": ""
+        },
+        "SYS_1051": {
+          "id": "SYS_1051",
+          "type": "sys_req",
+          "title": "Insulation resistance monitoring",
+          "content": "The battery management system shall continuously measure the insulation resistance between the high-voltage circuit and the vehicle chassis.",
+          "status": "Approved",
+          "module": "/BMS/System Requirements",
+          "object_identifier": "BMS-SYS-1051",
+          "object_type": "Requirement",
+          "asil": "ASIL C",
+          "verification_method": "Test",
+          "rationale": "Loss of isolation exposes the vehicle body to high voltage and is a direct electrocution hazard."
+        },
+        "SYS_1052": {
+          "id": "SYS_1052",
+          "type": "sys_req",
+          "title": "Isolation fault indication",
+          "content": "The battery management system shall indicate an isolation fault to the driver and record it when the insulation resistance falls below 500 ohm per volt.",
+          "status": "Approved",
+          "module": "/BMS/System Requirements",
+          "object_identifier": "BMS-SYS-1052",
+          "object_type": "Requirement",
+          "asil": "ASIL C",
+          "verification_method": "Test",
+          "rationale": "The threshold is mandated for high-voltage vehicle circuits."
+        },
+        "SYS_1060": {
+          "id": "SYS_1060",
+          "type": "sys_req",
+          "title": "Vehicle Integration and Service",
+          "content": "",
+          "status": "Approved",
+          "module": "/BMS/System Requirements",
+          "object_identifier": "BMS-SYS-1060",
+          "object_type": "Heading",
+          "asil": "",
+          "verification_method": "",
+          "rationale": ""
+        },
+        "SYS_1061": {
+          "id": "SYS_1061",
+          "type": "sys_req",
+          "title": "Over-the-air firmware update",
+          "content": "The battery management system shall support over-the-air update of its firmware with the ability to roll back to the previously installed version.",
+          "status": "Proposed",
+          "module": "/BMS/System Requirements",
+          "object_identifier": "BMS-SYS-1061",
+          "object_type": "Requirement",
+          "asil": "QM",
+          "verification_method": "Test",
+          "rationale": "Field campaigns must not require a workshop visit for every software defect."
+        },
+        "SYS_1062": {
+          "id": "SYS_1062",
+          "type": "sys_req",
+          "title": "Secure boot",
+          "content": "The battery management system shall verify the authenticity of its firmware before executing it.",
+          "status": "Proposed",
+          "module": "/BMS/System Requirements",
+          "object_identifier": "BMS-SYS-1062",
+          "object_type": "Requirement",
+          "asil": "ASIL B",
+          "verification_method": "Review",
+          "rationale": "A forged firmware image would defeat every protection function in this specification."
+        },
+        "SYS_1063": {
+          "id": "SYS_1063",
+          "type": "sys_req",
+          "title": "Diagnostic service interface",
+          "content": "The battery management system shall provide diagnostic services in accordance with ISO 14229 over the vehicle diagnostic bus.",
+          "status": "Approved",
+          "module": "/BMS/System Requirements",
+          "object_identifier": "BMS-SYS-1063",
+          "object_type": "Requirement",
+          "asil": "QM",
+          "verification_method": "Test",
+          "rationale": "Workshop tooling across the vehicle programme is standardised on UDS."
+        },
+        "SYS_1064": {
+          "id": "SYS_1064",
+          "type": "sys_req",
+          "title": "End-of-line current sensor calibration",
+          "content": "The battery management system shall support calibration of its current sensor offset during end-of-line production testing.",
+          "status": "Proposed",
+          "module": "/BMS/System Requirements",
+          "object_identifier": "BMS-SYS-1064",
+          "object_type": "Requirement",
+          "asil": "QM",
+          "verification_method": "Inspection",
+          "rationale": "Uncalibrated sensor offset is the dominant error term in coulomb counting."
+        },
+        "SYS_1065": {
+          "id": "SYS_1065",
+          "type": "sys_req",
+          "title": "Safety event data recording",
+          "content": "The battery management system shall record the 30 seconds of pack measurements preceding any protective disconnect and retain them for later retrieval.",
+          "status": "Proposed",
+          "module": "/BMS/System Requirements",
+          "object_identifier": "BMS-SYS-1065",
+          "object_type": "Requirement",
+          "asil": "QM",
+          "verification_method": "Test",
+          "rationale": "Field failure analysis currently depends on reproducing the fault on a bench."
+        }
+      },
+      "needs_amount": 28,
+      "needs_schema": {
+        "schema": "http://json-schema.org/draft-07/schema#",
+        "properties": {
+          "id": {
+            "type": "string",
+            "required": true,
+            "field_type": "core"
+          },
+          "type": {
+            "type": "string",
+            "required": true,
+            "field_type": "core"
+          },
+          "title": {
+            "type": "string",
+            "required": false,
+            "field_type": "core"
+          },
+          "content": {
+            "type": "string",
+            "required": false,
+            "field_type": "core"
+          },
+          "content_format": {
+            "type": "string",
+            "required": false,
+            "field_type": "core"
+          },
+          "status": {
+            "type": "string",
+            "required": false,
+            "field_type": "core"
+          },
+          "links": {
+            "type": "array",
+            "required": false,
+            "field_type": "links"
+          },
+          "parts": {
+            "type": "object",
+            "required": false,
+            "field_type": "core"
+          },
+          "module": {
+            "type": "string",
+            "required": false,
+            "field_type": "extra"
+          },
+          "object_identifier": {
+            "type": "string",
+            "required": false,
+            "field_type": "extra"
+          },
+          "object_type": {
+            "type": "string",
+            "required": false,
+            "field_type": "extra"
+          },
+          "asil": {
+            "type": "string",
+            "required": false,
+            "field_type": "extra"
+          },
+          "verification_method": {
+            "type": "string",
+            "required": false,
+            "field_type": "extra"
+          },
+          "rationale": {
+            "type": "string",
+            "required": false,
+            "field_type": "extra"
+          }
+        },
+        "type": "object"
+      }
+    }
+  }
+}
