@@ -23,11 +23,17 @@ you install yourself. With no path given, use the `ubc` on your PATH.
 
 ## NEVER edit the imported requirements
 
-The `sys_req` needs are **generated** into `specs/_external/` from the customer's
-DOORS export by `tools/import_sysreqs.py`. They are not yours to change:
+The `sys_req` needs are **external**: loaded straight out of the customer's
+DOORS export (`external/doors/needs.json`) by `[[needs.external_needs]]` in
+`ubproject.toml`. There is no file of them in the sources at all — they are
+projected from the export unchanged, so there is nothing to edit even if you
+wanted to. `specs/_external/system_requirements.rst` is only a page that *renders*
+them; editing it changes no need.
 
-- An edit there is silently overwritten by the next import, and the customer
-  never sees it.
+They are not yours to change:
+
+- A requirement is altered by re-exporting from DOORS, never here. Anything else
+  is invisible to the customer.
 - The `covers` link is authored on the **user story** side, pointing up. Never
   add a link field to a `sys_req`.
 - A requirement that is wrong, ambiguous or unimplementable is **not** fixed by

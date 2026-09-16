@@ -127,6 +127,12 @@ html = "ubc build html --deny none -o _build/ubc-html"
 # on this project is ignored by name under [lint], so the bar stays at "warning".
 pdf = "ubc build pdf -o _build/pdf/bms-specs.pdf"
 report = "ubc report traceability_coverage.html.j2"
+# Re-import the customer's DOORS baseline. The ONLY step: `[[needs.external_needs]]`
+# loads the result straight into the graph, so there is nothing to generate
+# afterwards. Needs a ubConnect licence (a different Cryptolens product from
+# ubCode); the resulting needs.json is committed so an unlicensed checkout still
+# builds the full graph.
+"doors:import" = "ubconnect csv from-csv -c external/doors/import.toml"
 sphinx = "uv run --extra ubtrace sphinx-build -W --keep-going -b html . _build/html"
 
 # Report templates and the committed evidence snapshots (JUnit, gaps) live in
@@ -250,6 +256,38 @@ variant_data_file = "variants/lfp.json"
 # that owns it is schemas.json's job, keyed by `select`. Neither file repeats the
 # other: `outcome` is `"" | passed | failed | error | skipped` here and exactly the
 # four words there.
+# --- THE IMPORTED DOORS LAYER ---
+# The customer's system requirements are loaded DIRECTLY from the ubConnect
+# export as EXTERNAL needs. There is no generation step and no glue code: the
+# export IS the need source.
+#
+# That is what makes the layer read-only BY CONSTRUCTION rather than by a comment
+# asking nicely. An external need is projected from its source unchanged — it
+# cannot be edited here, and an attempt to "fix" a customer requirement in this
+# repository has nowhere to land. Local needs still link TO them, which is the
+# whole point: `user_story` carries `covers` up into this layer.
+#
+# MUST STAY BELOW every bare `[needs]` key above. A `[[...]]` table header ends
+# the parent table, so placing this any earlier silently captures `id_regex`,
+# `flow_engine` and `schema_definitions_from_json` into the array entry — which
+# disables the ontology schema entirely while still looking like a clean build.
+#
+# There is deliberately NO `filter` key: ubc accepts one without complaint and
+# then ignores it (measured — all 28 rows of an unfiltered export still loaded,
+# headings included). The export is therefore filtered where filtering actually
+# happens, in the DOORS view it is taken from, so the CSV holds requirements only.
+#
+# `base_url` / `target_url` make every rendered reference to an imported need a
+# LINK BACK INTO DOORS. Without them ubc warns that the needs have no
+# `external_url` and render unlinked, which would leave a reader of the published
+# docs with an id and no way to reach the requirement it names. `{{ id }}` is the
+# ubc-side id, so the template strips the `SYS_` prefix back to the DOORS
+# Absolute Number the customer's tool addresses modules by.
+[[needs.external_needs]]
+json_path = "external/doors/needs.json"
+base_url = "https://doors.example-oem.com"
+target_url = "rm/resources/{{ id | replace('SYS_', '') }}"
+
 
 # The GLOBAL enum carries the empty string because the field is global: it is
 # written as "" on the 144 needs that are not test_results (see the note above),
@@ -446,18 +484,53 @@ schema = { type = "string", enum = [
 # export. Fields are GLOBAL in ubc, so each admits "" for the ~200 needs that
 # are not system requirements — the same arrangement as `chemistry` above.
 #
-# `doors_id` is the export's "Object Identifier" and is the PROVENANCE anchor:
-# the project's own ids are `SYS_<Absolute Number>`, which is stable only within
-# one DOORS baseline, whereas the object identifier is what a customer engineer
-# searches for in their own tool.
-[needs.fields.doors_id]
+# NAMED AS THE EXPORT NAMES THEM, not translated into a house style. An unknown
+# key in an external source is DROPPED from every need that states it (ubc says
+# so as a `needs.external` warning), so these names are load-bearing: they are
+# the export's column headers, lowercased with spaces turned into underscores.
+# Keeping the customer's naming also keeps the provenance legible — a reader who
+# opens the DOORS module sees the same words.
+#
+# `object_identifier` is the PROVENANCE anchor: the project's own ids are
+# `SYS_<Absolute Number>`, stable only within one DOORS baseline, whereas the
+# object identifier is what a customer engineer searches for in their own tool.
+[needs.fields.object_identifier]
 description = "DOORS Object Identifier the sys_req was imported from, e.g. BMS-SYS-1011."
 default = ""
 nullable = false
 schema = { type = "string" }
 
-[needs.fields.doors_module]
+[needs.fields.module]
 description = "DOORS module path the sys_req was exported from."
+default = ""
+nullable = false
+schema = { type = "string" }
+
+# The customer's stated reason for the requirement. Carried as a field rather
+# than folded into the body because the body is the requirement text, projected
+# from the export unchanged — there is no authoring step here in which prose
+# could be assembled.
+[needs.fields.rationale]
+description = "The customer's rationale for the system requirement, verbatim from the DOORS export."
+default = ""
+nullable = false
+schema = { type = "string" }
+
+# The CUSTOMER's lifecycle state, kept deliberately apart from `status`.
+#
+# `status` is THIS project's lifecycle (draft / review / approved) and an
+# imported need is not in it — the same reasoning that leaves `impl`, `test`,
+# `test_result` and `gap` without one. The customer's vocabulary is their own and
+# is carried verbatim rather than mapped onto ours, because "Approved" in their
+# DOORS module and "approved" here are claims made by different organisations
+# about different things, and collapsing them would let a customer's sign-off
+# masquerade as this project's.
+#
+# Free string, not an enum: the vocabulary belongs to the customer's tool and can
+# change without notice. Constraining it here would turn a routine re-import into
+# a schema failure over a value we do not govern.
+[needs.fields.doors_status]
+description = "Lifecycle state the requirement carries in the customer's DOORS module, verbatim."
 default = ""
 nullable = false
 schema = { type = "string" }

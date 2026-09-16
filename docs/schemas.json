@@ -155,7 +155,7 @@
 
     "select-spec-need": {
       "properties": {
-        "type": { "enum": ["sys_req", "user_story", "req", "arch", "swreq", "risk", "decision"] }
+        "type": { "enum": ["user_story", "req", "arch", "swreq", "risk", "decision"] }
       }
     }
   },
