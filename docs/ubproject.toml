@@ -404,14 +404,21 @@ nullable = false
 
 # Enumerable where gap_category is not: the gate names a link out of THIS file's
 # `[needs.links]`, so the vocabulary is bounded by config rather than by the
-# engine's version. "" covers both the 193 non-gap needs and an `orphan` record,
+# engine's version. "" covers both the non-gap needs and an `orphan` record,
 # which carries no link at all.
+#
+# `review` is the one entry that is NOT a link option. The substance gate has no
+# link to count — it compares a verdict's fingerprint against the need's current
+# wording — and names itself in the record's `link` field, so the importer writes
+# it through like any other. Excluding it would warn on every stale verdict.
 [needs.fields.gap_link]
 description = "The link name the reporting gate counted, when the gap is a trace gap; empty otherwise."
 default = ""
 nullable = false
 schema = { type = "string", enum = [
   "",
+  "covers",
+  "review",
   "traces_to",
   "satisfies",
   "refines",
@@ -443,15 +450,18 @@ default = ""
 nullable = false
 schema = { type = "string", pattern = "^$|^[A-Z]+_[A-Z0-9][A-Z0-9_]*$" }
 
-# The ten directives declared under `[[needs.types]]` below. Adding a type there
-# means adding it here — the duplication is the price of letting a report group
-# gaps by V-model level from a plain field.
+# The eleven directives declared under `[[needs.types]]` below, `sys_req` among
+# them: the imported layer is the TOP of the graph, so an uncovered system
+# requirement is exactly the kind of gap a report groups by level. Adding a type
+# there means adding it here — the duplication is the price of letting a report
+# group gaps by V-model level from a plain field.
 [needs.fields.gap_need_type]
 description = "Type of the need the gap is attributed to (req, swreq, arch, ...), so a report can group gaps by V-model level."
 default = ""
 nullable = false
 schema = { type = "string", enum = [
   "",
+  "sys_req",
   "user_story",
   "req",
   "arch",

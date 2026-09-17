@@ -520,7 +520,7 @@
     {
       "id": "field-gap-category",
       "severity": "warning",
-      "message": "WARNING, NOT VIOLATION, ON PURPOSE. These are the seven categories the 0.34 engine emits, per CATEGORIES in tools/import_gaps.py -- but that importer renders an UNKNOWN category generically rather than rejecting it, because `ubc agent` is alpha and \"a gate finding must never be dropped because this table has not caught up with the engine\". A violation here would invert that: a newer engine emitting an eighth category would fail the build instead of reporting the gap. At `warning` the drift is surfaced -- go add the new category to CATEGORIES and to this list -- while the finding still lands. This is also why `[needs.fields.gap_category]` in ubproject.toml carries no global enum.",
+      "message": "WARNING, NOT VIOLATION, ON PURPOSE. These are the eight categories the 0.35 engine emits, per CATEGORIES in tools/import_gaps.py -- but that importer renders an UNKNOWN category generically rather than rejecting it, because `ubc agent` is alpha and \"a gate finding must never be dropped because this table has not caught up with the engine\". A violation here would invert that: a newer engine emitting a ninth category would fail the build instead of reporting the gap. At `warning` the drift is surfaced -- go add the new category to CATEGORIES and to this list -- while the finding still lands. This is also why `[needs.fields.gap_category]` in ubproject.toml carries no global enum.",
       "select": { "properties": { "type": { "const": "gap" } } },
       "validate": {
         "local": {
@@ -533,7 +533,8 @@
                 "status_disallowed",
                 "status_undeclared",
                 "needs_clarification",
-                "code_trace"
+                "code_trace",
+                "review"
               ]
             }
           }
