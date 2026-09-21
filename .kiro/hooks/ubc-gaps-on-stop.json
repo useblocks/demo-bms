@@ -1,0 +1,14 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Check workflow gates after agent stop",
+      "trigger": "Stop",
+      "description": "After each agent turn, runs ubc agent gaps to check whether any workflow trace gates are still open and reports the result into context.",
+      "action": {
+        "type": "command",
+        "command": "cd \"$(git -C \"$(dirname \"$0\")\" rev-parse --show-toplevel 2>/dev/null || pwd)\" && if command -v ubc &>/dev/null && [ -f docs/ubproject.toml -o -f ubproject.toml ]; then PROJECT=$([ -f docs/ubproject.toml ] && echo \"docs\" || echo \".\"); ubc agent gaps -p \"$PROJECT\" 2>&1 && echo \"✓ Workflow gates green\" || echo \"⚠ Workflow gaps remain — run /ubc-agent-next to advance\"; fi"
+      }
+    }
+  ]
+}
