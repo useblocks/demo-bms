@@ -116,6 +116,15 @@ sync-jama = "python3 ../tools/sync_alm.py"
 "sync-jama:external" = "python3 ../tools/sync_alm.py --mode external"
 "sync-jama:offline" = "python3 ../tools/sync_alm.py --offline"
 
+# Put the tree back to the showcase starting position: roll every tracked file
+# back to the last commit, delete the Jama-acquired artefacts so the sync has
+# something to do, and clear the caches so the first `ubc check` is a real one.
+#
+# DISCARDS UNCOMMITTED WORK — it asks first, and `ALM_RESET_YES=1` skips the
+# prompt for a rehearsed run. `reset:dry` prints the plan and changes nothing.
+reset = "python3 ../tools/reset_demo.py"
+"reset:dry" = "python3 ../tools/reset_demo.py --dry-run"
+
 # Report templates and the committed evidence snapshots (JUnit, gaps) live in
 # `reports/` beside this file — the `[reports] directory` default — so the whole
 # documentation project, evidence included, is one tree.

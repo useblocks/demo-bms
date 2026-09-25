@@ -161,6 +161,28 @@ def pull(config: dict) -> None:
     )
 
 
+def normalise_snapshot() -> None:
+    """Rewrite the pulled snapshot so an unchanged Jama gives an EMPTY git diff.
+
+    `from-jama` stamps a fresh `created` timestamp on every run and does not
+    order its schema keys, so a sync that changed nothing still produced a
+    14-line diff. That noise is not cosmetic: the whole point of committing the
+    snapshot is that `git diff docs/alm/` IS the change notification Jama never
+    sent, and a notification that fires every time says nothing.
+
+    Dropping `created` is safe — nothing reads it, and the commit already carries
+    a better timestamp than the one the exporter invents.
+    """
+    snapshot = json.loads(SNAPSHOT.read_text(encoding="utf-8"))
+    snapshot.pop("created", None)
+    for version in (snapshot.get("versions") or {}).values():
+        version.pop("created", None)
+    SNAPSHOT.write_text(
+        json.dumps(snapshot, indent=1, ensure_ascii=False, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+
+
 def needs_of(snapshot: dict) -> dict:
     versions = snapshot.get("versions") or {}
     key = snapshot.get("current_version") or next(iter(versions), None)
@@ -347,6 +369,7 @@ def main() -> int:
 
     if not offline:
         pull(config)
+        normalise_snapshot()
     if not SNAPSHOT.exists():
         die(f"{SNAPSHOT} does not exist — run once without --offline")
     if not CROSSWALK.exists():

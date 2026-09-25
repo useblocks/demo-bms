@@ -146,16 +146,45 @@ laptop with no Jama reachable.
 ### The demo: delete the system level, get it back
 
 ```bash
-rm docs/specs/_global/alm_requirements.rst docs/alm/needs.json docs/alm/external.json
-ubc check docs            # 83 errors — every arch and risk now dangles
-ubc script sync-jama      # re-acquire from Jama
-ubc check docs            # No errors found — and the files are byte-identical
+ubc script reset --path docs   # arm it: roll back, delete, clear caches
+ubc check docs                 # 83 errors — every arch and risk now dangles
+ubc script sync-jama --path docs   # re-acquire from Jama
+ubc check docs                 # No errors found — files byte-identical
 ```
 
 That is the whole claim of Connectivity-as-Code in one command: **the local copy
-is disposable, the ALM is not.** Keep `docs/alm/crosswalk.json` — it is the only
-file the sync cannot rebuild, because it holds what Jama does not model (see the
-table below).
+is disposable, the ALM is not.**
+
+Because the snapshot is normalised — `tools/sync_alm.py` strips the timestamp
+`from-jama` stamps on every run and sorts the keys — a sync that changed nothing
+produces an **empty** `git diff`. So when the diff is not empty, something really
+did move in Jama. That is the change notification the ALM never sent.
+
+### Resetting between runs
+
+[tools/reset_demo.py](tools/reset_demo.py), wired as a script, puts the tree back
+to the starting position:
+
+```bash
+ubc script reset:dry --path docs   # print the plan, change nothing
+ubc script reset --path docs       # do it (asks first)
+ALM_RESET_YES=1 ubc script reset --path docs   # ...without the prompt
+```
+
+1. `git reset --hard HEAD` — a requirement someone edited live, a link someone
+   broke, a staged experiment: all rolled back.
+2. deletes the three acquired artefacts, so `sync-jama` has something to do.
+3. clears `.ub_cache`, `_build`, `__pycache__` and the gitignored `needs.json`
+   outputs, so the first `ubc check` of the demo is a real one.
+
+**It discards uncommitted work.** It prints what it is about to destroy and asks
+before doing it. Three things it deliberately leaves alone:
+
+| Left alone | Why |
+|---|---|
+| `docs/alm/crosswalk.json` | the only file the sync cannot rebuild — it holds what Jama does not model |
+| `.venv/`, `.env`, untracked files | the cache list is an explicit allowlist, never `git clean -fdx` |
+| Jama itself | a local reset cannot undo an edit made in the ALM — change it back in the Jama UI |
 
 ### The two modes
 
@@ -296,6 +325,8 @@ The system level is acquired from Jama rather than authored — see
 [The system requirements live in Jama](#the-system-requirements-live-in-jama):
 
 ```bash
+ubc script reset --path docs              # arm the showcase (asks first)
+ubc script reset:dry --path docs          # ...print the plan, change nothing
 ubc script sync-jama --path docs          # acquire, in whichever mode is active
 ubc script sync-jama:rst --path docs      # ...as RST, the complete round trip
 ubc script sync-jama:external --path docs # ...as read-only JSON

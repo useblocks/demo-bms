@@ -1,303 +1,301 @@
 {
-  "created": "2026-09-25T13:32:05.773485+00:00",
-  "current_version": "latest",
-  "project": "Jama Project 59",
-  "versions": {
-    "latest": {
-      "created": "2026-09-25T13:32:05.773485+00:00",
-      "creator": {
-        "name": "ubconnect",
-        "version": "0.19.0"
-      },
-      "needs": {
-        "JAMA_Rollout_Demo-SYSRQ-2": {
-          "id": "JAMA_Rollout_Demo-SYSRQ-2",
-          "title": "The battery management system shall reduce the cell voltage spread to 20 mV or less within 8 hours of a charge session ending",
-          "content": "The battery management system shall bring the difference between the highest\nand the lowest cell voltage of the pack to 20 mV or less within 8 hours of\nthe end of a charge session, measured while the pack is at rest and every\ncell temperature is between 15 °C and 45 °C. The spread is evaluated on\nsettled cell voltages, so the 8 hour window includes the time the cells need\nto relax after charging.",
-          "status": 292,
-          "type": "req",
-          "jama_id": 12730,
-          "jama_document_key": "Rollout_Demo-SYSRQ-2",
-          "jama_global_id": "GID-57924",
-          "jama_url": "https://useblocks-partner.jamacloud.com/perspective.req#/containers/12730/details?projectId=59",
-          "global_id": "GID-57924"
-        },
-        "JAMA_Rollout_Demo-SYSRQ-3": {
-          "id": "JAMA_Rollout_Demo-SYSRQ-3",
-          "title": "The battery management system shall open the high-voltage contactors when any cell voltage leaves the safe window of the pack chemistry",
-          "content": "The battery management system shall command the high-voltage contactors open\nwhenever a valid cell voltage measurement is below :variant:`pack.cell_v_min` V\nor above :variant:`pack.cell_v_max` V. The limits apply to every cell of the\npack individually, so a single cell outside the range is sufficient to trigger\nthe reaction, regardless of the pack voltage.",
-          "status": 292,
-          "type": "req",
-          "jama_id": 12731,
-          "jama_document_key": "Rollout_Demo-SYSRQ-3",
-          "jama_global_id": "GID-57925",
-          "jama_url": "https://useblocks-partner.jamacloud.com/perspective.req#/containers/12731/details?projectId=59",
-          "global_id": "GID-57925"
-        },
-        "JAMA_Rollout_Demo-SYSRQ-4": {
-          "id": "JAMA_Rollout_Demo-SYSRQ-4",
-          "title": "The battery management system shall open the high-voltage contactors when the pack discharge current exceeds 350 A for more than 100 ms",
-          "content": "The battery management system shall command the high-voltage contactors open\nwhenever the measured pack current in the discharge direction stays above\n350 A continuously for more than 100 ms. Currents above the limit that fall\nback below it within 100 ms do not trigger the reaction, so a normal\nacceleration inrush is not treated as a fault.",
-          "status": 292,
-          "type": "req",
-          "jama_id": 12732,
-          "jama_document_key": "Rollout_Demo-SYSRQ-4",
-          "jama_global_id": "GID-57926",
-          "jama_url": "https://useblocks-partner.jamacloud.com/perspective.req#/containers/12732/details?projectId=59",
-          "global_id": "GID-57926"
-        },
-        "JAMA_Rollout_Demo-SYSRQ-5": {
-          "id": "JAMA_Rollout_Demo-SYSRQ-5",
-          "title": "The battery management system shall open the high-voltage contactors when any cell temperature exceeds 60 °C",
-          "content": "The battery management system shall command the high-voltage contactors open\nwhenever a valid cell temperature measurement is above 60 °C. The limit\napplies to every temperature sensor of the pack individually, so one sensor\nabove the limit is sufficient to trigger the reaction.",
-          "status": 292,
-          "type": "req",
-          "jama_id": 12733,
-          "jama_document_key": "Rollout_Demo-SYSRQ-5",
-          "jama_global_id": "GID-57927",
-          "jama_url": "https://useblocks-partner.jamacloud.com/perspective.req#/containers/12733/details?projectId=59",
-          "global_id": "GID-57927"
-        },
-        "JAMA_Rollout_Demo-SYSRQ-6": {
-          "id": "JAMA_Rollout_Demo-SYSRQ-6",
-          "title": "The battery management system shall issue the contactor-open command within 50 ms of detecting a cell-protection limit violation",
-          "content": "The battery management system shall issue the contactor-open command no later\nthan 50 ms after the measurement sample that first violated a cell-protection\nlimit. The interval is measured from the timestamp of that sample to the\ntimestamp of the command on the contactor interface.",
-          "status": 292,
-          "type": "req",
-          "jama_id": 12734,
-          "jama_document_key": "Rollout_Demo-SYSRQ-6",
-          "jama_global_id": "GID-57928",
-          "jama_url": "https://useblocks-partner.jamacloud.com/perspective.req#/containers/12734/details?projectId=59",
-          "global_id": "GID-57928"
-        },
-        "JAMA_Rollout_Demo-SYSRQ-7": {
-          "id": "JAMA_Rollout_Demo-SYSRQ-7",
-          "title": "The battery management system shall classify a cell voltage measurement as invalid when it deviates from its module median by more than 250 mV",
-          "content": "The battery management system shall mark a cell voltage measurement invalid\nwhenever its absolute difference from the median of the cell voltages of the\nsame module exceeds 250 mV. An invalid measurement is not used to evaluate a\ncell-protection limit, so a single failed sensor cannot by itself command the\ncontactors open.",
-          "status": 292,
-          "type": "req",
-          "jama_id": 12735,
-          "jama_document_key": "Rollout_Demo-SYSRQ-7",
-          "jama_global_id": "GID-57929",
-          "jama_url": "https://useblocks-partner.jamacloud.com/perspective.req#/containers/12735/details?projectId=59",
-          "global_id": "GID-57929"
-        },
-        "JAMA_Rollout_Demo-SYSRQ-8": {
-          "id": "JAMA_Rollout_Demo-SYSRQ-8",
-          "title": "The battery management system shall keep the high-voltage contactors open after a cell-protection fault until a diagnostic service reset is received",
-          "content": "The battery management system shall hold the contactor-open command after a\ncell-protection fault, and shall release it only after receiving a diagnostic\nservice reset request. Measurements returning inside their limits do not\nrelease the hold, so an intermittent condition cannot re-close the\nhigh-voltage circuit without a service action.",
-          "status": 292,
-          "type": "req",
-          "jama_id": 12736,
-          "jama_document_key": "Rollout_Demo-SYSRQ-8",
-          "jama_global_id": "GID-57930",
-          "jama_url": "https://useblocks-partner.jamacloud.com/perspective.req#/containers/12736/details?projectId=59",
-          "global_id": "GID-57930"
-        },
-        "JAMA_Rollout_Demo-SYSRQ-9": {
-          "id": "JAMA_Rollout_Demo-SYSRQ-9",
-          "title": "The battery management system shall store a fault record naming the cell identifier, the violated limit and the measured value for every cell-protection fault",
-          "content": "The battery management system shall write one fault record per cell-protection\nfault into non-volatile memory, and each record shall carry the identifier of\nthe cell or sensor concerned, the identifier of the limit that was violated,\nand the measured value at the violating sample. The record remains readable\nover the diagnostic interface after a power cycle.",
-          "status": 292,
-          "type": "req",
-          "jama_id": 12737,
-          "jama_document_key": "Rollout_Demo-SYSRQ-9",
-          "jama_global_id": "GID-57931",
-          "jama_url": "https://useblocks-partner.jamacloud.com/perspective.req#/containers/12737/details?projectId=59",
-          "global_id": "GID-57931"
-        },
-        "JAMA_Rollout_Demo-SYSRQ-10": {
-          "id": "JAMA_Rollout_Demo-SYSRQ-10",
-          "title": "The battery management system shall report an isolation fault when the isolation resistance falls below 500 Ω per volt of pack voltage",
-          "content": "The battery management system shall set the isolation fault whenever the\nmeasured isolation resistance between the high-voltage bus and the vehicle\nchassis, divided by the measured pack voltage, is below 500 Ω/V — the minimum\nISO 6469-1 requires of a DC high-voltage system. The ratio, not the absolute\nresistance, is what is compared, so the same barrier is judged more strictly\non a higher-voltage pack.",
-          "status": 292,
-          "type": "req",
-          "jama_id": 12738,
-          "jama_document_key": "Rollout_Demo-SYSRQ-10",
-          "jama_global_id": "GID-57932",
-          "jama_url": "https://useblocks-partner.jamacloud.com/perspective.req#/containers/12738/details?projectId=59",
-          "global_id": "GID-57932"
-        },
-        "JAMA_Rollout_Demo-SYSRQ-11": {
-          "id": "JAMA_Rollout_Demo-SYSRQ-11",
-          "title": "The battery management system shall report a state of charge whose absolute error stays within 3 % of rated capacity between 10 % and 90 % state of charge",
-          "content": "The battery management system shall report a state of charge (the share of\nrated capacity still available) whose absolute deviation from the\nreference value measured on a pack conditioned to 25 °C stays within 3 % of\nrated capacity, for every reported value in the 10 % to 90 % band. The\nreference value is the charge counted out of a fully charged pack by a\ncalibrated bench.",
-          "status": 292,
-          "type": "req",
-          "jama_id": 12739,
-          "jama_document_key": "Rollout_Demo-SYSRQ-11",
-          "jama_global_id": "GID-57933",
-          "jama_url": "https://useblocks-partner.jamacloud.com/perspective.req#/containers/12739/details?projectId=59",
-          "global_id": "GID-57933"
-        },
-        "JAMA_Rollout_Demo-SYSRQ-12": {
-          "id": "JAMA_Rollout_Demo-SYSRQ-12",
-          "title": "The battery management system shall publish an updated state of charge value every 100 ms",
-          "content": "The battery management system shall publish a state of charge value on the\nvehicle interface with a period of 100 ms and a tolerance of 10 ms, for as\nlong as the system is awake. A missing publication within 110 ms of the\nprevious one is a violation of this requirement.",
-          "status": 292,
-          "type": "req",
-          "jama_id": 12740,
-          "jama_document_key": "Rollout_Demo-SYSRQ-12",
-          "jama_global_id": "GID-57934",
-          "jama_url": "https://useblocks-partner.jamacloud.com/perspective.req#/containers/12740/details?projectId=59",
-          "global_id": "GID-57934"
-        },
-        "JAMA_Rollout_Demo-SYSRQ-13": {
-          "id": "JAMA_Rollout_Demo-SYSRQ-13",
-          "title": "The battery management system shall correct the state of charge from the open-circuit voltage after the pack has rested for at least 30 minutes",
-          "content": "The battery management system shall replace the counted state of charge with\nthe value derived from the measured open-circuit voltage once the absolute\npack current has stayed below 1 A continuously for at least 30 minutes. This\nbounds the accumulated counting drift each time the vehicle stands still long\nenough for the cell voltages to settle.",
-          "status": 292,
-          "type": "req",
-          "jama_id": 12741,
-          "jama_document_key": "Rollout_Demo-SYSRQ-13",
-          "jama_global_id": "GID-57935",
-          "jama_url": "https://useblocks-partner.jamacloud.com/perspective.req#/containers/12741/details?projectId=59",
-          "global_id": "GID-57935"
-        },
-        "JAMA_Rollout_Demo-SYSRQ-14": {
-          "id": "JAMA_Rollout_Demo-SYSRQ-14",
-          "title": "The battery management system shall restore the state of charge after a power cycle within 2 % of the value reported before shutdown",
-          "content": "The battery management system shall report, on the first publication after a\npower cycle in which no charge left or entered the pack, a state of charge\nwithin 2 % of rated capacity of the last value it published before shutdown.\nThis is what keeps the displayed charge level from jumping when the vehicle is\nswitched off and on again.",
-          "status": 292,
-          "type": "req",
-          "jama_id": 12742,
-          "jama_document_key": "Rollout_Demo-SYSRQ-14",
-          "jama_global_id": "GID-57936",
-          "jama_url": "https://useblocks-partner.jamacloud.com/perspective.req#/containers/12742/details?projectId=59",
-          "global_id": "GID-57936"
-        },
-        "JAMA_Rollout_Demo-SYSRQ-15": {
-          "id": "JAMA_Rollout_Demo-SYSRQ-15",
-          "title": "The battery management system shall report a remaining capacity that never increases over the life of the pack",
-          "content": "The battery management system shall report a remaining capacity, expressed as\na percentage of rated capacity, whose successive reported values never\nincrease. A newly measured capacity above the currently reported one is\ndiscarded, so an optimistic single measurement cannot make a worn pack look\nhealthier than it was.",
-          "status": 292,
-          "type": "req",
-          "jama_id": 12743,
-          "jama_document_key": "Rollout_Demo-SYSRQ-15",
-          "jama_global_id": "GID-57937",
-          "jama_url": "https://useblocks-partner.jamacloud.com/perspective.req#/containers/12743/details?projectId=59",
-          "global_id": "GID-57937"
-        },
-        "JAMA_Rollout_Demo-SYSRQ-16": {
-          "id": "JAMA_Rollout_Demo-SYSRQ-16",
-          "title": "The battery management system shall flag the state of charge as unreliable when pack current measurements have been unavailable for more than 5 seconds",
-          "content": "The battery management system shall set an unreliable flag alongside the\npublished state of charge whenever no valid pack current measurement has been\nreceived for more than 5 seconds, and shall clear the flag only after the\nnext open-circuit-voltage correction. The flag is what lets the vehicle stop\npresenting a range prediction it cannot support.",
-          "status": 292,
-          "type": "req",
-          "jama_id": 12744,
-          "jama_document_key": "Rollout_Demo-SYSRQ-16",
-          "jama_global_id": "GID-57938",
-          "jama_url": "https://useblocks-partner.jamacloud.com/perspective.req#/containers/12744/details?projectId=59",
-          "global_id": "GID-57938"
-        },
-        "JAMA_Rollout_Demo-SYSRQ-17": {
-          "id": "JAMA_Rollout_Demo-SYSRQ-17",
-          "title": "The battery management system shall request coolant flow when the highest cell temperature exceeds 35 °C",
-          "content": "The battery management system shall raise a cooling request on the thermal\ninterface whenever the highest valid cell temperature is above 35 °C, and\nshall withdraw it once that temperature has fallen to 30 °C or below. The 5 K\ndifference between the two thresholds keeps the request from oscillating while\nthe pack sits at the limit.",
-          "status": 292,
-          "type": "req",
-          "jama_id": 12745,
-          "jama_document_key": "Rollout_Demo-SYSRQ-17",
-          "jama_global_id": "GID-57939",
-          "jama_url": "https://useblocks-partner.jamacloud.com/perspective.req#/containers/12745/details?projectId=59",
-          "global_id": "GID-57939"
-        },
-        "JAMA_Rollout_Demo-SYSRQ-18": {
-          "id": "JAMA_Rollout_Demo-SYSRQ-18",
-          "title": "The battery management system shall request pack heating when the lowest cell temperature is below 5 °C",
-          "content": "The battery management system shall raise a heating request on the thermal\ninterface whenever the lowest valid cell temperature is below 5 °C, and shall\nwithdraw it once that temperature has risen to 10 °C or above. This is what\nrestores the promised charging power on a cold morning instead of leaving it\nlow for the whole session.",
-          "status": 292,
-          "type": "req",
-          "jama_id": 12746,
-          "jama_document_key": "Rollout_Demo-SYSRQ-18",
-          "jama_global_id": "GID-57940",
-          "jama_url": "https://useblocks-partner.jamacloud.com/perspective.req#/containers/12746/details?projectId=59",
-          "global_id": "GID-57940"
-        },
-        "JAMA_Rollout_Demo-SYSRQ-19": {
-          "id": "JAMA_Rollout_Demo-SYSRQ-19",
-          "title": "The battery management system shall reduce the permitted discharge power linearly to zero between 55 °C and 60 °C highest cell temperature",
-          "content": "The battery management system shall publish a permitted discharge power that\nfalls linearly from the full permitted value at 55 °C to zero at 60 °C\nhighest valid cell temperature. The vehicle therefore loses power\npredictably as the pack heats up, instead of being cut off at a single\nthreshold.",
-          "status": 292,
-          "type": "req",
-          "jama_id": 12747,
-          "jama_document_key": "Rollout_Demo-SYSRQ-19",
-          "jama_global_id": "GID-57941",
-          "jama_url": "https://useblocks-partner.jamacloud.com/perspective.req#/containers/12747/details?projectId=59",
-          "global_id": "GID-57941"
-        },
-        "JAMA_Rollout_Demo-SYSRQ-20": {
-          "id": "JAMA_Rollout_Demo-SYSRQ-20",
-          "title": "The battery management system shall report a thermal imbalance warning when the spread between highest and lowest cell temperature exceeds 8 K",
-          "content": "The battery management system shall set a thermal imbalance warning on the\ndiagnostic interface whenever the difference between the highest and the\nlowest valid cell temperature exceeds 8 K. The warning is what makes uneven\nageing visible in the workshop before it shows up as lost capacity.",
-          "status": 292,
-          "type": "req",
-          "jama_id": 12748,
-          "jama_document_key": "Rollout_Demo-SYSRQ-20",
-          "jama_global_id": "GID-57942",
-          "jama_url": "https://useblocks-partner.jamacloud.com/perspective.req#/containers/12748/details?projectId=59",
-          "global_id": "GID-57942"
-        },
-        "JAMA_Rollout_Demo-SYSRQ-21": {
-          "id": "JAMA_Rollout_Demo-SYSRQ-21",
-          "title": "The battery management system shall apply the thermal fallback power limit when the coolant actuator does not confirm a request within 2 seconds",
-          "content": "The battery management system shall publish the thermal fallback power limit,\ndefined as 30 % of the full permitted discharge power, whenever a raised\ncooling or heating request has not been confirmed by the coolant actuator\nwithin 2 seconds. An unconfirmed request means the pack temperature can no\nlonger be influenced, so the power the pack is allowed to deliver is capped\ninstead.",
-          "status": 292,
-          "type": "req",
-          "jama_id": 12749,
-          "jama_document_key": "Rollout_Demo-SYSRQ-21",
-          "jama_global_id": "GID-57943",
-          "jama_url": "https://useblocks-partner.jamacloud.com/perspective.req#/containers/12749/details?projectId=59",
-          "global_id": "GID-57943"
-        }
-      },
-      "needs_amount": 20,
-      "needs_schema": {
-        "schema": "http://json-schema.org/draft-07/schema#",
-        "properties": {
-          "id": {
-            "type": "string",
-            "required": true
-          },
-          "title": {
-            "type": "string",
-            "required": true
-          },
-          "type": {
-            "type": "string",
-            "required": false
-          },
-          "jama_document_key": {
-            "type": "string",
-            "required": false
-          },
-          "jama_id": {
-            "type": "integer",
-            "required": false
-          },
-          "content": {
-            "type": "string",
-            "required": false
-          },
-          "status": {
-            "type": "integer",
-            "required": false
-          },
-          "jama_url": {
-            "type": "string",
-            "required": false
-          },
-          "global_id": {
-            "type": "string",
-            "required": false
-          },
-          "jama_global_id": {
-            "type": "string",
-            "required": false
-          }
-        },
-        "type": "object"
-      }
+ "current_version": "latest",
+ "project": "Jama Project 59",
+ "versions": {
+  "latest": {
+   "creator": {
+    "name": "ubconnect",
+    "version": "0.19.0"
+   },
+   "needs": {
+    "JAMA_Rollout_Demo-SYSRQ-10": {
+     "content": "The battery management system shall set the isolation fault whenever the\nmeasured isolation resistance between the high-voltage bus and the vehicle\nchassis, divided by the measured pack voltage, is below 500 Ω/V — the minimum\nISO 6469-1 requires of a DC high-voltage system. The ratio, not the absolute\nresistance, is what is compared, so the same barrier is judged more strictly\non a higher-voltage pack.",
+     "global_id": "GID-57932",
+     "id": "JAMA_Rollout_Demo-SYSRQ-10",
+     "jama_document_key": "Rollout_Demo-SYSRQ-10",
+     "jama_global_id": "GID-57932",
+     "jama_id": 12738,
+     "jama_url": "https://useblocks-partner.jamacloud.com/perspective.req#/containers/12738/details?projectId=59",
+     "status": 292,
+     "title": "The battery management system shall report an isolation fault when the isolation resistance falls below 500 Ω per volt of pack voltage",
+     "type": "req"
+    },
+    "JAMA_Rollout_Demo-SYSRQ-11": {
+     "content": "The battery management system shall report a state of charge (the share of\nrated capacity still available) whose absolute deviation from the\nreference value measured on a pack conditioned to 25 °C stays within 3 % of\nrated capacity, for every reported value in the 10 % to 90 % band. The\nreference value is the charge counted out of a fully charged pack by a\ncalibrated bench.",
+     "global_id": "GID-57933",
+     "id": "JAMA_Rollout_Demo-SYSRQ-11",
+     "jama_document_key": "Rollout_Demo-SYSRQ-11",
+     "jama_global_id": "GID-57933",
+     "jama_id": 12739,
+     "jama_url": "https://useblocks-partner.jamacloud.com/perspective.req#/containers/12739/details?projectId=59",
+     "status": 292,
+     "title": "The battery management system shall report a state of charge whose absolute error stays within 3 % of rated capacity between 10 % and 90 % state of charge",
+     "type": "req"
+    },
+    "JAMA_Rollout_Demo-SYSRQ-12": {
+     "content": "The battery management system shall publish a state of charge value on the\nvehicle interface with a period of 100 ms and a tolerance of 10 ms, for as\nlong as the system is awake. A missing publication within 110 ms of the\nprevious one is a violation of this requirement.",
+     "global_id": "GID-57934",
+     "id": "JAMA_Rollout_Demo-SYSRQ-12",
+     "jama_document_key": "Rollout_Demo-SYSRQ-12",
+     "jama_global_id": "GID-57934",
+     "jama_id": 12740,
+     "jama_url": "https://useblocks-partner.jamacloud.com/perspective.req#/containers/12740/details?projectId=59",
+     "status": 292,
+     "title": "The battery management system shall publish an updated state of charge value every 100 ms",
+     "type": "req"
+    },
+    "JAMA_Rollout_Demo-SYSRQ-13": {
+     "content": "The battery management system shall replace the counted state of charge with\nthe value derived from the measured open-circuit voltage once the absolute\npack current has stayed below 1 A continuously for at least 30 minutes. This\nbounds the accumulated counting drift each time the vehicle stands still long\nenough for the cell voltages to settle.",
+     "global_id": "GID-57935",
+     "id": "JAMA_Rollout_Demo-SYSRQ-13",
+     "jama_document_key": "Rollout_Demo-SYSRQ-13",
+     "jama_global_id": "GID-57935",
+     "jama_id": 12741,
+     "jama_url": "https://useblocks-partner.jamacloud.com/perspective.req#/containers/12741/details?projectId=59",
+     "status": 292,
+     "title": "The battery management system shall correct the state of charge from the open-circuit voltage after the pack has rested for at least 30 minutes",
+     "type": "req"
+    },
+    "JAMA_Rollout_Demo-SYSRQ-14": {
+     "content": "The battery management system shall report, on the first publication after a\npower cycle in which no charge left or entered the pack, a state of charge\nwithin 2 % of rated capacity of the last value it published before shutdown.\nThis is what keeps the displayed charge level from jumping when the vehicle is\nswitched off and on again.",
+     "global_id": "GID-57936",
+     "id": "JAMA_Rollout_Demo-SYSRQ-14",
+     "jama_document_key": "Rollout_Demo-SYSRQ-14",
+     "jama_global_id": "GID-57936",
+     "jama_id": 12742,
+     "jama_url": "https://useblocks-partner.jamacloud.com/perspective.req#/containers/12742/details?projectId=59",
+     "status": 292,
+     "title": "The battery management system shall restore the state of charge after a power cycle within 2 % of the value reported before shutdown",
+     "type": "req"
+    },
+    "JAMA_Rollout_Demo-SYSRQ-15": {
+     "content": "The battery management system shall report a remaining capacity, expressed as\na percentage of rated capacity, whose successive reported values never\nincrease. A newly measured capacity above the currently reported one is\ndiscarded, so an optimistic single measurement cannot make a worn pack look\nhealthier than it was.",
+     "global_id": "GID-57937",
+     "id": "JAMA_Rollout_Demo-SYSRQ-15",
+     "jama_document_key": "Rollout_Demo-SYSRQ-15",
+     "jama_global_id": "GID-57937",
+     "jama_id": 12743,
+     "jama_url": "https://useblocks-partner.jamacloud.com/perspective.req#/containers/12743/details?projectId=59",
+     "status": 292,
+     "title": "The battery management system shall report a remaining capacity that never increases over the life of the pack",
+     "type": "req"
+    },
+    "JAMA_Rollout_Demo-SYSRQ-16": {
+     "content": "The battery management system shall set an unreliable flag alongside the\npublished state of charge whenever no valid pack current measurement has been\nreceived for more than 5 seconds, and shall clear the flag only after the\nnext open-circuit-voltage correction. The flag is what lets the vehicle stop\npresenting a range prediction it cannot support.",
+     "global_id": "GID-57938",
+     "id": "JAMA_Rollout_Demo-SYSRQ-16",
+     "jama_document_key": "Rollout_Demo-SYSRQ-16",
+     "jama_global_id": "GID-57938",
+     "jama_id": 12744,
+     "jama_url": "https://useblocks-partner.jamacloud.com/perspective.req#/containers/12744/details?projectId=59",
+     "status": 292,
+     "title": "The battery management system shall flag the state of charge as unreliable when pack current measurements have been unavailable for more than 5 seconds",
+     "type": "req"
+    },
+    "JAMA_Rollout_Demo-SYSRQ-17": {
+     "content": "The battery management system shall raise a cooling request on the thermal\ninterface whenever the highest valid cell temperature is above 35 °C, and\nshall withdraw it once that temperature has fallen to 30 °C or below. The 5 K\ndifference between the two thresholds keeps the request from oscillating while\nthe pack sits at the limit.",
+     "global_id": "GID-57939",
+     "id": "JAMA_Rollout_Demo-SYSRQ-17",
+     "jama_document_key": "Rollout_Demo-SYSRQ-17",
+     "jama_global_id": "GID-57939",
+     "jama_id": 12745,
+     "jama_url": "https://useblocks-partner.jamacloud.com/perspective.req#/containers/12745/details?projectId=59",
+     "status": 292,
+     "title": "The battery management system shall request coolant flow when the highest cell temperature exceeds 35 °C",
+     "type": "req"
+    },
+    "JAMA_Rollout_Demo-SYSRQ-18": {
+     "content": "The battery management system shall raise a heating request on the thermal\ninterface whenever the lowest valid cell temperature is below 5 °C, and shall\nwithdraw it once that temperature has risen to 10 °C or above. This is what\nrestores the promised charging power on a cold morning instead of leaving it\nlow for the whole session.",
+     "global_id": "GID-57940",
+     "id": "JAMA_Rollout_Demo-SYSRQ-18",
+     "jama_document_key": "Rollout_Demo-SYSRQ-18",
+     "jama_global_id": "GID-57940",
+     "jama_id": 12746,
+     "jama_url": "https://useblocks-partner.jamacloud.com/perspective.req#/containers/12746/details?projectId=59",
+     "status": 292,
+     "title": "The battery management system shall request pack heating when the lowest cell temperature is below 5 °C",
+     "type": "req"
+    },
+    "JAMA_Rollout_Demo-SYSRQ-19": {
+     "content": "The battery management system shall publish a permitted discharge power that\nfalls linearly from the full permitted value at 55 °C to zero at 60 °C\nhighest valid cell temperature. The vehicle therefore loses power\npredictably as the pack heats up, instead of being cut off at a single\nthreshold.",
+     "global_id": "GID-57941",
+     "id": "JAMA_Rollout_Demo-SYSRQ-19",
+     "jama_document_key": "Rollout_Demo-SYSRQ-19",
+     "jama_global_id": "GID-57941",
+     "jama_id": 12747,
+     "jama_url": "https://useblocks-partner.jamacloud.com/perspective.req#/containers/12747/details?projectId=59",
+     "status": 292,
+     "title": "The battery management system shall reduce the permitted discharge power linearly to zero between 55 °C and 60 °C highest cell temperature",
+     "type": "req"
+    },
+    "JAMA_Rollout_Demo-SYSRQ-2": {
+     "content": "The battery management system shall bring the difference between the highest\nand the lowest cell voltage of the pack to 20 mV or less within 8 hours of\nthe end of a charge session, measured while the pack is at rest and every\ncell temperature is between 15 °C and 45 °C. The spread is evaluated on\nsettled cell voltages, so the 8 hour window includes the time the cells need\nto relax after charging.",
+     "global_id": "GID-57924",
+     "id": "JAMA_Rollout_Demo-SYSRQ-2",
+     "jama_document_key": "Rollout_Demo-SYSRQ-2",
+     "jama_global_id": "GID-57924",
+     "jama_id": 12730,
+     "jama_url": "https://useblocks-partner.jamacloud.com/perspective.req#/containers/12730/details?projectId=59",
+     "status": 292,
+     "title": "The battery management system shall reduce the cell voltage spread to 20 mV or less within 8 hours of a charge session ending",
+     "type": "req"
+    },
+    "JAMA_Rollout_Demo-SYSRQ-20": {
+     "content": "The battery management system shall set a thermal imbalance warning on the\ndiagnostic interface whenever the difference between the highest and the\nlowest valid cell temperature exceeds 8 K. The warning is what makes uneven\nageing visible in the workshop before it shows up as lost capacity.",
+     "global_id": "GID-57942",
+     "id": "JAMA_Rollout_Demo-SYSRQ-20",
+     "jama_document_key": "Rollout_Demo-SYSRQ-20",
+     "jama_global_id": "GID-57942",
+     "jama_id": 12748,
+     "jama_url": "https://useblocks-partner.jamacloud.com/perspective.req#/containers/12748/details?projectId=59",
+     "status": 292,
+     "title": "The battery management system shall report a thermal imbalance warning when the spread between highest and lowest cell temperature exceeds 8 K",
+     "type": "req"
+    },
+    "JAMA_Rollout_Demo-SYSRQ-21": {
+     "content": "The battery management system shall publish the thermal fallback power limit,\ndefined as 30 % of the full permitted discharge power, whenever a raised\ncooling or heating request has not been confirmed by the coolant actuator\nwithin 2 seconds. An unconfirmed request means the pack temperature can no\nlonger be influenced, so the power the pack is allowed to deliver is capped\ninstead.",
+     "global_id": "GID-57943",
+     "id": "JAMA_Rollout_Demo-SYSRQ-21",
+     "jama_document_key": "Rollout_Demo-SYSRQ-21",
+     "jama_global_id": "GID-57943",
+     "jama_id": 12749,
+     "jama_url": "https://useblocks-partner.jamacloud.com/perspective.req#/containers/12749/details?projectId=59",
+     "status": 292,
+     "title": "The battery management system shall apply the thermal fallback power limit when the coolant actuator does not confirm a request within 2 seconds",
+     "type": "req"
+    },
+    "JAMA_Rollout_Demo-SYSRQ-3": {
+     "content": "The battery management system shall command the high-voltage contactors open\nwhenever a valid cell voltage measurement is below :variant:`pack.cell_v_min` V\nor above :variant:`pack.cell_v_max` V. The limits apply to every cell of the\npack individually, so a single cell outside the range is sufficient to trigger\nthe reaction, regardless of the pack voltage.",
+     "global_id": "GID-57925",
+     "id": "JAMA_Rollout_Demo-SYSRQ-3",
+     "jama_document_key": "Rollout_Demo-SYSRQ-3",
+     "jama_global_id": "GID-57925",
+     "jama_id": 12731,
+     "jama_url": "https://useblocks-partner.jamacloud.com/perspective.req#/containers/12731/details?projectId=59",
+     "status": 292,
+     "title": "The battery management system shall open the high-voltage contactors when any cell voltage leaves the safe window of the pack chemistry",
+     "type": "req"
+    },
+    "JAMA_Rollout_Demo-SYSRQ-4": {
+     "content": "The battery management system shall command the high-voltage contactors open\nwhenever the measured pack current in the discharge direction stays above\n350 A continuously for more than 100 ms. Currents above the limit that fall\nback below it within 100 ms do not trigger the reaction, so a normal\nacceleration inrush is not treated as a fault.",
+     "global_id": "GID-57926",
+     "id": "JAMA_Rollout_Demo-SYSRQ-4",
+     "jama_document_key": "Rollout_Demo-SYSRQ-4",
+     "jama_global_id": "GID-57926",
+     "jama_id": 12732,
+     "jama_url": "https://useblocks-partner.jamacloud.com/perspective.req#/containers/12732/details?projectId=59",
+     "status": 292,
+     "title": "The battery management system shall open the high-voltage contactors when the pack discharge current exceeds 350 A for more than 100 ms",
+     "type": "req"
+    },
+    "JAMA_Rollout_Demo-SYSRQ-5": {
+     "content": "The battery management system shall command the high-voltage contactors open\nwhenever a valid cell temperature measurement is above 60 °C. The limit\napplies to every temperature sensor of the pack individually, so one sensor\nabove the limit is sufficient to trigger the reaction.",
+     "global_id": "GID-57927",
+     "id": "JAMA_Rollout_Demo-SYSRQ-5",
+     "jama_document_key": "Rollout_Demo-SYSRQ-5",
+     "jama_global_id": "GID-57927",
+     "jama_id": 12733,
+     "jama_url": "https://useblocks-partner.jamacloud.com/perspective.req#/containers/12733/details?projectId=59",
+     "status": 292,
+     "title": "The battery management system shall open the high-voltage contactors when any cell temperature exceeds 60 °C",
+     "type": "req"
+    },
+    "JAMA_Rollout_Demo-SYSRQ-6": {
+     "content": "The battery management system shall issue the contactor-open command no later\nthan 50 ms after the measurement sample that first violated a cell-protection\nlimit. The interval is measured from the timestamp of that sample to the\ntimestamp of the command on the contactor interface.",
+     "global_id": "GID-57928",
+     "id": "JAMA_Rollout_Demo-SYSRQ-6",
+     "jama_document_key": "Rollout_Demo-SYSRQ-6",
+     "jama_global_id": "GID-57928",
+     "jama_id": 12734,
+     "jama_url": "https://useblocks-partner.jamacloud.com/perspective.req#/containers/12734/details?projectId=59",
+     "status": 292,
+     "title": "The battery management system shall issue the contactor-open command within 50 ms of detecting a cell-protection limit violation",
+     "type": "req"
+    },
+    "JAMA_Rollout_Demo-SYSRQ-7": {
+     "content": "The battery management system shall mark a cell voltage measurement invalid\nwhenever its absolute difference from the median of the cell voltages of the\nsame module exceeds 250 mV. An invalid measurement is not used to evaluate a\ncell-protection limit, so a single failed sensor cannot by itself command the\ncontactors open.",
+     "global_id": "GID-57929",
+     "id": "JAMA_Rollout_Demo-SYSRQ-7",
+     "jama_document_key": "Rollout_Demo-SYSRQ-7",
+     "jama_global_id": "GID-57929",
+     "jama_id": 12735,
+     "jama_url": "https://useblocks-partner.jamacloud.com/perspective.req#/containers/12735/details?projectId=59",
+     "status": 292,
+     "title": "The battery management system shall classify a cell voltage measurement as invalid when it deviates from its module median by more than 250 mV",
+     "type": "req"
+    },
+    "JAMA_Rollout_Demo-SYSRQ-8": {
+     "content": "The battery management system shall hold the contactor-open command after a\ncell-protection fault, and shall release it only after receiving a diagnostic\nservice reset request. Measurements returning inside their limits do not\nrelease the hold, so an intermittent condition cannot re-close the\nhigh-voltage circuit without a service action.",
+     "global_id": "GID-57930",
+     "id": "JAMA_Rollout_Demo-SYSRQ-8",
+     "jama_document_key": "Rollout_Demo-SYSRQ-8",
+     "jama_global_id": "GID-57930",
+     "jama_id": 12736,
+     "jama_url": "https://useblocks-partner.jamacloud.com/perspective.req#/containers/12736/details?projectId=59",
+     "status": 292,
+     "title": "The battery management system shall keep the high-voltage contactors open after a cell-protection fault until a diagnostic service reset is received",
+     "type": "req"
+    },
+    "JAMA_Rollout_Demo-SYSRQ-9": {
+     "content": "The battery management system shall write one fault record per cell-protection\nfault into non-volatile memory, and each record shall carry the identifier of\nthe cell or sensor concerned, the identifier of the limit that was violated,\nand the measured value at the violating sample. The record remains readable\nover the diagnostic interface after a power cycle.",
+     "global_id": "GID-57931",
+     "id": "JAMA_Rollout_Demo-SYSRQ-9",
+     "jama_document_key": "Rollout_Demo-SYSRQ-9",
+     "jama_global_id": "GID-57931",
+     "jama_id": 12737,
+     "jama_url": "https://useblocks-partner.jamacloud.com/perspective.req#/containers/12737/details?projectId=59",
+     "status": 292,
+     "title": "The battery management system shall store a fault record naming the cell identifier, the violated limit and the measured value for every cell-protection fault",
+     "type": "req"
     }
+   },
+   "needs_amount": 20,
+   "needs_schema": {
+    "properties": {
+     "content": {
+      "required": false,
+      "type": "string"
+     },
+     "global_id": {
+      "required": false,
+      "type": "string"
+     },
+     "id": {
+      "required": true,
+      "type": "string"
+     },
+     "jama_document_key": {
+      "required": false,
+      "type": "string"
+     },
+     "jama_global_id": {
+      "required": false,
+      "type": "string"
+     },
+     "jama_id": {
+      "required": false,
+      "type": "integer"
+     },
+     "jama_url": {
+      "required": false,
+      "type": "string"
+     },
+     "status": {
+      "required": false,
+      "type": "integer"
+     },
+     "title": {
+      "required": true,
+      "type": "string"
+     },
+     "type": {
+      "required": false,
+      "type": "string"
+     }
+    },
+    "schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object"
+   }
   }
+ }
 }
