@@ -159,7 +159,7 @@ jobs:
         #
         # The exit code is deliberately NOT the gate. `ubc agent gaps` exits non-zero
         # whenever it finds a gap, and this project has one ON PURPOSE
-        # (REQ_CELL_BALANCING_WINDOW), so gating on the exit code would fail every run
+        # (JAMA_Rollout_Demo-SYSRQ-2), so gating on the exit code would fail every run
         # and gating on `|| true` would hide a crashed binary. Instead the output is
         # required to parse as a gap report first — that is what proves the command
         # ran — and only then compared.

@@ -45,7 +45,7 @@
         "WARNING IS NOT FREE, THOUGH -- `ubc check` EXITS 1 ON A WARNING, not only on an",
         "error, and it is a hard CI gate. So a backward rule that fires turns CI red even",
         "at `warning`. Two things follow, and both are already in place:",
-        "  - The project's ONE STANDING demo gap (REQ_CELL_BALANCING_WINDOW, whose stream",
+        "  - The project's ONE STANDING demo gap (JAMA_Rollout_Demo-SYSRQ-2, whose stream",
         "    has not reached the archs stage) is exempted in ubproject.toml by a",
         "    `[[lint.message-ignores]]` entry pinned to that need's message. Scoped that",
         "    tightly on purpose: a plain `[lint] ignore` of the code would blank the whole",
@@ -144,105 +144,276 @@
         "after every edit rather than trusting a clean build."
       ]
     },
-
-    "type-user_story": { "properties": { "type": { "const": "user_story" } } },
-    "type-req": { "properties": { "type": { "const": "req" } } },
-    "type-arch": { "properties": { "type": { "const": "arch" } } },
-    "type-swreq": { "properties": { "type": { "const": "swreq" } } },
-    "type-impl": { "properties": { "type": { "const": "impl" } } },
-    "type-test": { "properties": { "type": { "const": "test" } } },
-
+    "type-user_story": {
+      "properties": {
+        "type": {
+          "const": "user_story"
+        }
+      }
+    },
+    "type-req": {
+      "properties": {
+        "type": {
+          "const": "req"
+        }
+      }
+    },
+    "type-arch": {
+      "properties": {
+        "type": {
+          "const": "arch"
+        }
+      }
+    },
+    "type-swreq": {
+      "properties": {
+        "type": {
+          "const": "swreq"
+        }
+      }
+    },
+    "type-impl": {
+      "properties": {
+        "type": {
+          "const": "impl"
+        }
+      }
+    },
+    "type-test": {
+      "properties": {
+        "type": {
+          "const": "test"
+        }
+      }
+    },
     "select-spec-need": {
       "properties": {
-        "type": { "enum": ["user_story", "req", "arch", "swreq", "risk", "decision"] }
+        "type": {
+          "enum": [
+            "user_story",
+            "req",
+            "arch",
+            "swreq",
+            "risk",
+            "decision"
+          ]
+        }
       }
     }
   },
-
   "schemas": [
     {
       "id": "id-prefix-user_story",
       "severity": "violation",
       "message": "DECLARED: [[needs.types]] gives user_story the prefix US_.",
-      "select": { "$ref": "#/$defs/type-user_story" },
-      "validate": { "local": { "properties": { "id": { "pattern": "^US_" } } } }
+      "select": {
+        "$ref": "#/$defs/type-user_story"
+      },
+      "validate": {
+        "local": {
+          "properties": {
+            "id": {
+              "pattern": "^US_"
+            }
+          }
+        }
+      }
     },
     {
       "id": "id-prefix-req",
       "severity": "violation",
-      "message": "DECLARED: [[needs.types]] gives req the prefix REQ_.",
-      "select": { "$ref": "#/$defs/type-req" },
-      "validate": { "local": { "properties": { "id": { "pattern": "^REQ_" } } } }
+      "message": "DECLARED: a req carries REQ_ when it is authored here, or JAMA_ when it is owned by Jama and pulled down by tools/sync_alm.py.",
+      "select": {
+        "$ref": "#/$defs/type-req"
+      },
+      "validate": {
+        "local": {
+          "properties": {
+            "id": {
+              "pattern": "^(REQ_|JAMA_)"
+            }
+          }
+        }
+      }
     },
     {
       "id": "id-prefix-arch",
       "severity": "violation",
       "message": "DECLARED: [[needs.types]] gives arch the prefix ARCH_.",
-      "select": { "$ref": "#/$defs/type-arch" },
-      "validate": { "local": { "properties": { "id": { "pattern": "^ARCH_" } } } }
+      "select": {
+        "$ref": "#/$defs/type-arch"
+      },
+      "validate": {
+        "local": {
+          "properties": {
+            "id": {
+              "pattern": "^ARCH_"
+            }
+          }
+        }
+      }
     },
     {
       "id": "id-prefix-swreq",
       "severity": "violation",
       "message": "DECLARED: [[needs.types]] gives swreq the prefix SWREQ_.",
-      "select": { "$ref": "#/$defs/type-swreq" },
-      "validate": { "local": { "properties": { "id": { "pattern": "^SWREQ_" } } } }
+      "select": {
+        "$ref": "#/$defs/type-swreq"
+      },
+      "validate": {
+        "local": {
+          "properties": {
+            "id": {
+              "pattern": "^SWREQ_"
+            }
+          }
+        }
+      }
     },
     {
       "id": "id-prefix-impl",
       "severity": "violation",
       "message": "DECLARED: [[needs.types]] gives impl the prefix IMPL_.",
-      "select": { "$ref": "#/$defs/type-impl" },
-      "validate": { "local": { "properties": { "id": { "pattern": "^IMPL_" } } } }
+      "select": {
+        "$ref": "#/$defs/type-impl"
+      },
+      "validate": {
+        "local": {
+          "properties": {
+            "id": {
+              "pattern": "^IMPL_"
+            }
+          }
+        }
+      }
     },
     {
       "id": "id-prefix-test",
       "severity": "violation",
       "message": "DECLARED: [[needs.types]] gives test the prefix TEST_.",
-      "select": { "$ref": "#/$defs/type-test" },
-      "validate": { "local": { "properties": { "id": { "pattern": "^TEST_" } } } }
+      "select": {
+        "$ref": "#/$defs/type-test"
+      },
+      "validate": {
+        "local": {
+          "properties": {
+            "id": {
+              "pattern": "^TEST_"
+            }
+          }
+        }
+      }
     },
     {
       "id": "id-prefix-test_result",
       "severity": "violation",
       "message": "DECLARED: [[needs.types]] gives test_result the prefix TRES_.",
-      "select": { "properties": { "type": { "const": "test_result" } } },
-      "validate": { "local": { "properties": { "id": { "pattern": "^TRES_" } } } }
+      "select": {
+        "properties": {
+          "type": {
+            "const": "test_result"
+          }
+        }
+      },
+      "validate": {
+        "local": {
+          "properties": {
+            "id": {
+              "pattern": "^TRES_"
+            }
+          }
+        }
+      }
     },
     {
       "id": "id-prefix-risk",
       "severity": "violation",
       "message": "DECLARED: [[needs.types]] gives risk the prefix RISK_.",
-      "select": { "properties": { "type": { "const": "risk" } } },
-      "validate": { "local": { "properties": { "id": { "pattern": "^RISK_" } } } }
+      "select": {
+        "properties": {
+          "type": {
+            "const": "risk"
+          }
+        }
+      },
+      "validate": {
+        "local": {
+          "properties": {
+            "id": {
+              "pattern": "^RISK_"
+            }
+          }
+        }
+      }
     },
     {
       "id": "id-prefix-decision",
       "severity": "violation",
       "message": "DECLARED: [[needs.types]] gives decision the prefix DEC_.",
-      "select": { "properties": { "type": { "const": "decision" } } },
-      "validate": { "local": { "properties": { "id": { "pattern": "^DEC_" } } } }
+      "select": {
+        "properties": {
+          "type": {
+            "const": "decision"
+          }
+        }
+      },
+      "validate": {
+        "local": {
+          "properties": {
+            "id": {
+              "pattern": "^DEC_"
+            }
+          }
+        }
+      }
     },
     {
       "id": "id-prefix-gap",
       "severity": "violation",
       "message": "DECLARED: [[needs.types]] gives gap the prefix GAP_.",
-      "select": { "properties": { "type": { "const": "gap" } } },
-      "validate": { "local": { "properties": { "id": { "pattern": "^GAP_" } } } }
+      "select": {
+        "properties": {
+          "type": {
+            "const": "gap"
+          }
+        }
+      },
+      "validate": {
+        "local": {
+          "properties": {
+            "id": {
+              "pattern": "^GAP_"
+            }
+          }
+        }
+      }
     },
-
     {
       "id": "trace-req-traces_to",
       "severity": "violation",
       "message": "DECLARED (stage `reqs`, trace link=traces_to min=1 up=user_story): every req must trace up to a user_story. OBSERVED 19/19.",
-      "select": { "$ref": "#/$defs/type-req" },
+      "select": {
+        "$ref": "#/$defs/type-req"
+      },
       "validate": {
         "local": {
-          "properties": { "traces_to": { "minItems": 1 } },
-          "required": ["traces_to"]
+          "properties": {
+            "traces_to": {
+              "minItems": 1
+            }
+          },
+          "required": [
+            "traces_to"
+          ]
         },
         "network": {
-          "traces_to": { "items": { "local": { "$ref": "#/$defs/type-user_story" } } }
+          "traces_to": {
+            "items": {
+              "local": {
+                "$ref": "#/$defs/type-user_story"
+              }
+            }
+          }
         }
       }
     },
@@ -250,14 +421,28 @@
       "id": "trace-arch-satisfies",
       "severity": "violation",
       "message": "DECLARED (stage `archs`, trace link=satisfies min=1 up=req): every arch must satisfy at least one req. OBSERVED 14/14, fan-out 1..4 -- the upper end is left unbounded, an observed maximum is not a rule.",
-      "select": { "$ref": "#/$defs/type-arch" },
+      "select": {
+        "$ref": "#/$defs/type-arch"
+      },
       "validate": {
         "local": {
-          "properties": { "satisfies": { "minItems": 1 } },
-          "required": ["satisfies"]
+          "properties": {
+            "satisfies": {
+              "minItems": 1
+            }
+          },
+          "required": [
+            "satisfies"
+          ]
         },
         "network": {
-          "satisfies": { "items": { "local": { "$ref": "#/$defs/type-req" } } }
+          "satisfies": {
+            "items": {
+              "local": {
+                "$ref": "#/$defs/type-req"
+              }
+            }
+          }
         }
       }
     },
@@ -265,14 +450,28 @@
       "id": "trace-swreq-refines",
       "severity": "violation",
       "message": "DECLARED (stage `swreqs`, trace link=refines min=1 up=arch): every swreq must refine an arch. OBSERVED 23/23.",
-      "select": { "$ref": "#/$defs/type-swreq" },
+      "select": {
+        "$ref": "#/$defs/type-swreq"
+      },
       "validate": {
         "local": {
-          "properties": { "refines": { "minItems": 1 } },
-          "required": ["refines"]
+          "properties": {
+            "refines": {
+              "minItems": 1
+            }
+          },
+          "required": [
+            "refines"
+          ]
         },
         "network": {
-          "refines": { "items": { "local": { "$ref": "#/$defs/type-arch" } } }
+          "refines": {
+            "items": {
+              "local": {
+                "$ref": "#/$defs/type-arch"
+              }
+            }
+          }
         }
       }
     },
@@ -280,14 +479,28 @@
       "id": "trace-impl-implements",
       "severity": "violation",
       "message": "DECLARED (stage `code`, trace link=implements min=1 up=swreq): every impl marker must implement a swreq. OBSERVED 23/23.",
-      "select": { "$ref": "#/$defs/type-impl" },
+      "select": {
+        "$ref": "#/$defs/type-impl"
+      },
       "validate": {
         "local": {
-          "properties": { "implements": { "minItems": 1 } },
-          "required": ["implements"]
+          "properties": {
+            "implements": {
+              "minItems": 1
+            }
+          },
+          "required": [
+            "implements"
+          ]
         },
         "network": {
-          "implements": { "items": { "local": { "$ref": "#/$defs/type-swreq" } } }
+          "implements": {
+            "items": {
+              "local": {
+                "$ref": "#/$defs/type-swreq"
+              }
+            }
+          }
         }
       }
     },
@@ -295,14 +508,28 @@
       "id": "trace-test-verifies",
       "severity": "violation",
       "message": "DECLARED (stage `tests`, trace link=verifies min=1 up=swreq): every test marker must verify a swreq. OBSERVED 50/50.",
-      "select": { "$ref": "#/$defs/type-test" },
+      "select": {
+        "$ref": "#/$defs/type-test"
+      },
       "validate": {
         "local": {
-          "properties": { "verifies": { "minItems": 1 } },
-          "required": ["verifies"]
+          "properties": {
+            "verifies": {
+              "minItems": 1
+            }
+          },
+          "required": [
+            "verifies"
+          ]
         },
         "network": {
-          "verifies": { "items": { "local": { "$ref": "#/$defs/type-swreq" } } }
+          "verifies": {
+            "items": {
+              "local": {
+                "$ref": "#/$defs/type-swreq"
+              }
+            }
+          }
         }
       }
     },
@@ -310,14 +537,33 @@
       "id": "trace-test_result-results_for",
       "severity": "violation",
       "message": "DECLARED (stage `test_results`, trace link=results_for min=1 up=test) plus a STRUCTURAL upper bound: one recorded outcome belongs to exactly one test case in exactly one run, so a second target would make the evidence unattributable. Both bounds are violations, so they share one rule. OBSERVED 50/50, all exactly 1.",
-      "select": { "properties": { "type": { "const": "test_result" } } },
+      "select": {
+        "properties": {
+          "type": {
+            "const": "test_result"
+          }
+        }
+      },
       "validate": {
         "local": {
-          "properties": { "results_for": { "minItems": 1, "maxItems": 1 } },
-          "required": ["results_for"]
+          "properties": {
+            "results_for": {
+              "minItems": 1,
+              "maxItems": 1
+            }
+          },
+          "required": [
+            "results_for"
+          ]
         },
         "network": {
-          "results_for": { "items": { "local": { "$ref": "#/$defs/type-test" } } }
+          "results_for": {
+            "items": {
+              "local": {
+                "$ref": "#/$defs/type-test"
+              }
+            }
+          }
         }
       }
     },
@@ -325,14 +571,32 @@
       "id": "trace-risk-mitigates",
       "severity": "violation",
       "message": "DECLARED (stage `risks`, trace link=mitigates min=1 up=req): every risk must bear on at least one req. OBSERVED 5/5, fan-out 1..2, upper end left unbounded.",
-      "select": { "properties": { "type": { "const": "risk" } } },
+      "select": {
+        "properties": {
+          "type": {
+            "const": "risk"
+          }
+        }
+      },
       "validate": {
         "local": {
-          "properties": { "mitigates": { "minItems": 1 } },
-          "required": ["mitigates"]
+          "properties": {
+            "mitigates": {
+              "minItems": 1
+            }
+          },
+          "required": [
+            "mitigates"
+          ]
         },
         "network": {
-          "mitigates": { "items": { "local": { "$ref": "#/$defs/type-req" } } }
+          "mitigates": {
+            "items": {
+              "local": {
+                "$ref": "#/$defs/type-req"
+              }
+            }
+          }
         }
       }
     },
@@ -340,14 +604,32 @@
       "id": "trace-decision-affects",
       "severity": "violation",
       "message": "DECLARED (stage `decisions`, trace link=affects min=1 up=arch): every decision must constrain at least one arch. OBSERVED 5/5, fan-out 1..2, upper end left unbounded.",
-      "select": { "properties": { "type": { "const": "decision" } } },
+      "select": {
+        "properties": {
+          "type": {
+            "const": "decision"
+          }
+        }
+      },
       "validate": {
         "local": {
-          "properties": { "affects": { "minItems": 1 } },
-          "required": ["affects"]
+          "properties": {
+            "affects": {
+              "minItems": 1
+            }
+          },
+          "required": [
+            "affects"
+          ]
         },
         "network": {
-          "affects": { "items": { "local": { "$ref": "#/$defs/type-arch" } } }
+          "affects": {
+            "items": {
+              "local": {
+                "$ref": "#/$defs/type-arch"
+              }
+            }
+          }
         }
       }
     },
@@ -355,24 +637,42 @@
       "id": "trace-gap-gap_for",
       "severity": "violation",
       "message": "OBSERVED 1/1: an imported gap must attribute itself to exactly one need. No `items` type test, because a gap can legitimately be raised against any type. `gap_for` is deliberately named by no stage trace edge -- an obligation to carry a gap would make a clean graph fail the gap gate -- so this rule only checks the shape the importer writes.",
-      "select": { "properties": { "type": { "const": "gap" } } },
+      "select": {
+        "properties": {
+          "type": {
+            "const": "gap"
+          }
+        }
+      },
       "validate": {
         "local": {
-          "properties": { "gap_for": { "minItems": 1, "maxItems": 1 } },
-          "required": ["gap_for"]
+          "properties": {
+            "gap_for": {
+              "minItems": 1,
+              "maxItems": 1
+            }
+          },
+          "required": [
+            "gap_for"
+          ]
         }
       }
     },
-
     {
       "id": "coverage-user_story-traces_to-back",
       "severity": "warning",
       "message": "DECLARED (stage `reqs`, direction=both): every user_story must be decomposed into at least one req. OBSERVED 4/4, fan-in 1..7. BACKWARD, so `warning`, not `violation`: this is owed by a later stage and is unmet by construction while that stage is pending -- see the FORWARD IS A VIOLATION, BACKWARD IS A WARNING note in $defs._readme.",
-      "select": { "$ref": "#/$defs/type-user_story" },
+      "select": {
+        "$ref": "#/$defs/type-user_story"
+      },
       "validate": {
         "network_back": {
           "traces_to": {
-            "contains": { "local": { "$ref": "#/$defs/type-req" } },
+            "contains": {
+              "local": {
+                "$ref": "#/$defs/type-req"
+              }
+            },
             "minContains": 1
           }
         }
@@ -382,11 +682,17 @@
       "id": "coverage-arch-refines-back",
       "severity": "warning",
       "message": "DECLARED (stage `swreqs`, direction=both): every arch must be refined by at least one swreq, so no component is left without stated behaviour. OBSERVED 14/14, fan-in 1..4. BACKWARD, so `warning`, not `violation`: this is owed by a later stage and is unmet by construction while that stage is pending -- see the FORWARD IS A VIOLATION, BACKWARD IS A WARNING note in $defs._readme.",
-      "select": { "$ref": "#/$defs/type-arch" },
+      "select": {
+        "$ref": "#/$defs/type-arch"
+      },
       "validate": {
         "network_back": {
           "refines": {
-            "contains": { "local": { "$ref": "#/$defs/type-swreq" } },
+            "contains": {
+              "local": {
+                "$ref": "#/$defs/type-swreq"
+              }
+            },
             "minContains": 1
           }
         }
@@ -396,11 +702,17 @@
       "id": "coverage-swreq-implements-back",
       "severity": "warning",
       "message": "DECLARED (stage `code`, direction=both): every swreq must be implemented. OBSERVED 23/23, exactly one impl each. BACKWARD, so `warning`, not `violation`: this is owed by a later stage and is unmet by construction while that stage is pending -- see the FORWARD IS A VIOLATION, BACKWARD IS A WARNING note in $defs._readme.",
-      "select": { "$ref": "#/$defs/type-swreq" },
+      "select": {
+        "$ref": "#/$defs/type-swreq"
+      },
       "validate": {
         "network_back": {
           "implements": {
-            "contains": { "local": { "$ref": "#/$defs/type-impl" } },
+            "contains": {
+              "local": {
+                "$ref": "#/$defs/type-impl"
+              }
+            },
             "minContains": 1
           }
         }
@@ -410,11 +722,17 @@
       "id": "coverage-swreq-verifies-back",
       "severity": "warning",
       "message": "DECLARED (stage `tests`, direction=both): every swreq must be verified. OBSERVED 23/23, fan-in 1..3. BACKWARD, so `warning`, not `violation`: this is owed by a later stage and is unmet by construction while that stage is pending -- see the FORWARD IS A VIOLATION, BACKWARD IS A WARNING note in $defs._readme.",
-      "select": { "$ref": "#/$defs/type-swreq" },
+      "select": {
+        "$ref": "#/$defs/type-swreq"
+      },
       "validate": {
         "network_back": {
           "verifies": {
-            "contains": { "local": { "$ref": "#/$defs/type-test" } },
+            "contains": {
+              "local": {
+                "$ref": "#/$defs/type-test"
+              }
+            },
             "minContains": 1
           }
         }
@@ -424,60 +742,123 @@
       "id": "coverage-req-satisfies-back",
       "severity": "warning",
       "message": "DECLARED (stage `archs`, direction=both): every req should be satisfied by at least one arch. BACKWARD, so `warning`, not `violation`: this is owed by the `archs` stage, which by construction runs after `reqs`, so a req authored before its architecture exists is exactly where the workflow expects it to be -- see the FORWARD IS A VIOLATION, BACKWARD IS A WARNING note in $defs._readme. The finding is `ubc agent gaps`'s to own; it reports it as a tracked gap need and points `ubc agent next` at the stage that owes the work. Not carved out by id either: a carve-out would need `not` in `select`, which sphinx-needs rejects, and an id-free carve-out would silently stop checking whole streams.",
-      "select": { "$ref": "#/$defs/type-req" },
+      "select": {
+        "$ref": "#/$defs/type-req"
+      },
       "validate": {
         "network_back": {
           "satisfies": {
-            "contains": { "local": { "$ref": "#/$defs/type-arch" } },
+            "contains": {
+              "local": {
+                "$ref": "#/$defs/type-arch"
+              }
+            },
             "minContains": 1
           }
         }
       }
     },
-
     {
       "id": "single-parent-req-traces_to",
       "severity": "warning",
       "message": "OBSERVED 19/19: a req traces to exactly one user_story. Convention, not declared config -- a req that genuinely serves two stories is a design smell worth a second look, not an error. Kept separate from trace-req-traces_to because that rule's lower bound is declared and this upper bound is not.",
-      "select": { "$ref": "#/$defs/type-req" },
-      "validate": { "local": { "properties": { "traces_to": { "maxItems": 1 } } } }
+      "select": {
+        "$ref": "#/$defs/type-req"
+      },
+      "validate": {
+        "local": {
+          "properties": {
+            "traces_to": {
+              "maxItems": 1
+            }
+          }
+        }
+      }
     },
     {
       "id": "single-parent-swreq-refines",
       "severity": "warning",
       "message": "OBSERVED 23/23, and stated in ubproject.toml: a swreq refines THE arch element whose behaviour it pins down -- singular. Two parents means the behaviour belongs to neither component cleanly.",
-      "select": { "$ref": "#/$defs/type-swreq" },
-      "validate": { "local": { "properties": { "refines": { "maxItems": 1 } } } }
+      "select": {
+        "$ref": "#/$defs/type-swreq"
+      },
+      "validate": {
+        "local": {
+          "properties": {
+            "refines": {
+              "maxItems": 1
+            }
+          }
+        }
+      }
     },
     {
       "id": "single-parent-impl-implements",
       "severity": "warning",
       "message": "OBSERVED 23/23: one impl marker realises one swreq. The one-line marker grammar accepts a list, so this is a convention the grammar does not enforce.",
-      "select": { "$ref": "#/$defs/type-impl" },
-      "validate": { "local": { "properties": { "implements": { "maxItems": 1 } } } }
+      "select": {
+        "$ref": "#/$defs/type-impl"
+      },
+      "validate": {
+        "local": {
+          "properties": {
+            "implements": {
+              "maxItems": 1
+            }
+          }
+        }
+      }
     },
     {
       "id": "single-parent-test-verifies",
       "severity": "warning",
       "message": "OBSERVED 50/50: one test marker covers one swreq. A test asserting against two requirements at once is hard to attribute when it fails.",
-      "select": { "$ref": "#/$defs/type-test" },
-      "validate": { "local": { "properties": { "verifies": { "maxItems": 1 } } } }
+      "select": {
+        "$ref": "#/$defs/type-test"
+      },
+      "validate": {
+        "local": {
+          "properties": {
+            "verifies": {
+              "maxItems": 1
+            }
+          }
+        }
+      }
     },
-
     {
       "id": "field-test_result-run-evidence",
       "severity": "violation",
       "message": "OBSERVED 50/50 non-empty: tools/import_test_results.py stamps outcome, runtime_s, test_run_label and chain_reqs on every generated result. Fields are global in ubCode and default to \"\", so this checks they were actually POPULATED, not merely present -- an empty one means the importer half-wrote the need. NOTE THAT NON-EMPTY IS ALL THIS RULE HAS TO SAY, even for the two fields that have a vocabulary: `[needs.fields]` already admits exactly `\"\" | <the valid values>` for both, so excluding \"\" here yields the valid values without this file restating them. outcome becomes exactly `passed | failed | error | skipped`, and test_run_label exactly the non-ISO timestamp form. Writing the enum out again would be a second copy to keep in sync, and the vocabulary belongs on the field because it holds for every need, not just this type.",
-      "select": { "properties": { "type": { "const": "test_result" } } },
+      "select": {
+        "properties": {
+          "type": {
+            "const": "test_result"
+          }
+        }
+      },
       "validate": {
         "local": {
           "properties": {
-            "outcome": { "minLength": 1 },
-            "runtime_s": { "minLength": 1 },
-            "test_run_label": { "minLength": 1 },
-            "chain_reqs": { "minLength": 1 }
+            "outcome": {
+              "minLength": 1
+            },
+            "runtime_s": {
+              "minLength": 1
+            },
+            "test_run_label": {
+              "minLength": 1
+            },
+            "chain_reqs": {
+              "minLength": 1
+            }
           },
-          "required": ["outcome", "runtime_s", "test_run_label", "chain_reqs"]
+          "required": [
+            "outcome",
+            "runtime_s",
+            "test_run_label",
+            "chain_reqs"
+          ]
         }
       }
     },
@@ -485,7 +866,13 @@
       "id": "field-gap-category",
       "severity": "warning",
       "message": "WARNING, NOT VIOLATION, ON PURPOSE. These are the seven categories the 0.34 engine emits, per CATEGORIES in tools/import_gaps.py -- but that importer renders an UNKNOWN category generically rather than rejecting it, because `ubc agent` is alpha and \"a gate finding must never be dropped because this table has not caught up with the engine\". A violation here would invert that: a newer engine emitting an eighth category would fail the build instead of reporting the gap. At `warning` the drift is surfaced -- go add the new category to CATEGORIES and to this list -- while the finding still lands. This is also why `[needs.fields.gap_category]` in ubproject.toml carries no global enum.",
-      "select": { "properties": { "type": { "const": "gap" } } },
+      "select": {
+        "properties": {
+          "type": {
+            "const": "gap"
+          }
+        }
+      },
       "validate": {
         "local": {
           "properties": {
@@ -508,15 +895,31 @@
       "id": "field-gap-attribution",
       "severity": "violation",
       "message": "OBSERVED 1/1 non-empty: tools/import_gaps.py stamps gap_category, gap_need_id and gap_need_type on every generated gap. gap_need_id duplicates the gap_for link on purpose -- a report template cannot walk links, so the field is the half a Jinja report can read.",
-      "select": { "properties": { "type": { "const": "gap" } } },
+      "select": {
+        "properties": {
+          "type": {
+            "const": "gap"
+          }
+        }
+      },
       "validate": {
         "local": {
           "properties": {
-            "gap_category": { "minLength": 1 },
-            "gap_need_id": { "minLength": 1 },
-            "gap_need_type": { "minLength": 1 }
+            "gap_category": {
+              "minLength": 1
+            },
+            "gap_need_id": {
+              "minLength": 1
+            },
+            "gap_need_type": {
+              "minLength": 1
+            }
           },
-          "required": ["gap_category", "gap_need_id", "gap_need_type"]
+          "required": [
+            "gap_category",
+            "gap_need_id",
+            "gap_need_type"
+          ]
         }
       }
     },
@@ -524,11 +927,19 @@
       "id": "status-present-on-spec-needs",
       "severity": "violation",
       "message": "PRESENCE only -- the VALUE is constrained globally by `[needs.fields.status]` in ubproject.toml (enum draft/review/approved), which is the right home for it because the vocabulary is the same wherever a status appears. This rule adds the half a global schema cannot express: WHICH TYPES OWE ONE. All 70 authored spec needs (user_story, req, arch, swreq, risk, decision) carry a status; the four derived types (impl, test, test_result, gap) carry none, correctly -- their state is the source file or the import, not a lifecycle -- and `status` is nullable precisely so they can. Raised from warning to violation now that the vocabulary is declared: a spec need with no status is no longer an unwritten convention.",
-      "select": { "$ref": "#/$defs/select-spec-need" },
+      "select": {
+        "$ref": "#/$defs/select-spec-need"
+      },
       "validate": {
         "local": {
-          "properties": { "status": { "minLength": 1 } },
-          "required": ["status"]
+          "properties": {
+            "status": {
+              "minLength": 1
+            }
+          },
+          "required": [
+            "status"
+          ]
         }
       }
     }

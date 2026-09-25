@@ -38,7 +38,7 @@ Elements
 .. arch:: Coulomb Counter
    :id: ARCH_COULOMB_COUNTER
    :status: draft
-   :satisfies: REQ_SOC_ACCURACY
+   :satisfies: JAMA_Rollout_Demo-SYSRQ-11
 
    The Coulomb Counter element owns the charge integral of the pack. It
    integrates the signed pack current with the trapezoidal rule on a fixed 10 ms
@@ -51,7 +51,7 @@ Elements
 .. arch:: Open-Circuit-Voltage Corrector
    :id: ARCH_OCV_CORRECTOR
    :status: draft
-   :satisfies: REQ_SOC_ACCURACY, REQ_SOC_REST_CORRECTION
+   :satisfies: JAMA_Rollout_Demo-SYSRQ-11, JAMA_Rollout_Demo-SYSRQ-13
 
    The Open-Circuit-Voltage Corrector element owns the absolute state-of-charge
    anchor and the fused estimate that is published. It detects a rest condition
@@ -65,7 +65,7 @@ Elements
 .. arch:: State-of-Charge Store
    :id: ARCH_SOC_STORE
    :status: draft
-   :satisfies: REQ_SOC_PERSISTENCE
+   :satisfies: JAMA_Rollout_Demo-SYSRQ-14
 
    The State-of-Charge Store element owns the non-volatile shadow of the
    published state of charge. It writes a two-slot alternating record — value,
@@ -77,7 +77,7 @@ Elements
 .. arch:: Capacity Fade Tracker
    :id: ARCH_SOH_TRACKER
    :status: draft
-   :satisfies: REQ_SOH_CAPACITY_REPORT
+   :satisfies: JAMA_Rollout_Demo-SYSRQ-15
 
    The Capacity Fade Tracker element owns the remaining-capacity figure. It
    derives a capacity candidate from the charge counted between two
@@ -90,7 +90,7 @@ Elements
 .. arch:: Estimation Validity Monitor
    :id: ARCH_ESTIMATION_VALIDITY_MONITOR
    :status: draft
-   :satisfies: REQ_SOC_INVALID_FLAG
+   :satisfies: JAMA_Rollout_Demo-SYSRQ-16
 
    The Estimation Validity Monitor element owns the trustworthiness verdict for
    the estimate. It watches the pack-current signal with a 5 second staleness
@@ -101,7 +101,7 @@ Elements
 .. arch:: Battery State Publisher
    :id: ARCH_STATE_PUBLISHER
    :status: draft
-   :satisfies: REQ_SOC_UPDATE_PERIOD, REQ_SOC_INVALID_FLAG
+   :satisfies: JAMA_Rollout_Demo-SYSRQ-12, JAMA_Rollout_Demo-SYSRQ-16
 
    The Battery State Publisher element owns the vehicle-facing battery state
    frame. It runs on a dedicated 100 ms cycle and always sends the most recent

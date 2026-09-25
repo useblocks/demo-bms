@@ -102,6 +102,103 @@ output lands in `docs/_build/`). And `-p docs` is not just convenience for
 `review-brief` and `verdict-submit`: they print and resolve `verdicts_dir`
 relative to `-p`, and the review skills reuse that path.
 
+## The system requirements live in Jama
+
+The top of the V is **not authored in this repository**. The 20 system
+requirements are owned by the Jama Connect project
+[Rollout_Demo](https://useblocks-partner.jamacloud.com/perspective.req#/projects/59/)
+and acquired from there by [tools/sync_alm.py](tools/sync_alm.py). Everything
+below them — architecture, software requirements, code, tests — is authored here
+and links up into the acquired set.
+
+```
+Jama project 59  ──ubconnect jama from-jama──> docs/alm/needs.json   (committed snapshot)
+                                                        │
+                                            tools/sync_alm.py  (harden + render)
+                                                        │
+                            ┌───────────────────────────┴───────────────────────────┐
+                        mode rst                                              mode external
+        docs/specs/_global/alm_requirements.rst                    docs/alm/external.json
+             20 real `.. req::` blocks                          [[needs.external_needs]]
+             ordinary local needs                                read-only by construction
+                                  ▲                                            ▲
+                     arch ──satisfies──┤   risk ──mitigates──┘
+```
+
+```bash
+ubc script sync-jama            # acquire, in whichever mode is active
+ubc script sync-jama:rst        # acquire as RST      — the complete round trip
+ubc script sync-jama:external   # acquire as JSON     — read-only
+ubc script sync-jama:offline    # re-render the committed snapshot, no network
+```
+
+Credentials are the Jama OAuth client id and secret:
+
+```bash
+export JAMA_USERNAME=... JAMA_PASSWORD=...
+ubconnect jama check --config docs/ubproject.toml   # verify them first
+```
+
+`ALM_OFFLINE=1` in front of any of the four skips the network — `ubc script`
+forwards no arguments of its own, so that is how a mode switch happens on a
+laptop with no Jama reachable.
+
+### The demo: delete the system level, get it back
+
+```bash
+rm docs/specs/_global/alm_requirements.rst docs/alm/needs.json docs/alm/external.json
+ubc check docs            # 83 errors — every arch and risk now dangles
+ubc script sync-jama      # re-acquire from Jama
+ubc check docs            # No errors found — and the files are byte-identical
+```
+
+That is the whole claim of Connectivity-as-Code in one command: **the local copy
+is disposable, the ALM is not.** Keep `docs/alm/crosswalk.json` — it is the only
+file the sync cannot rebuild, because it holds what Jama does not model (see the
+table below).
+
+### The two modes
+
+Same 20 requirements, same Jama project, two different things in the repository.
+
+|  | `rst` | `external` |
+|---|---|---|
+| Lands as | `.. req::` blocks in a generated RST page | nothing — loaded from `docs/alm/external.json` |
+| Need kind | ordinary local needs | external needs, read-only by construction |
+| Editable locally | yes, the file is normal RST | **no**, there is no local text at all |
+| A reference to one opens | the page in this project | the item in Jama |
+| Round trip back to Jama | possible | not possible |
+| `ubc` resolves the links | yes | yes — verified with `ubc query cypher` |
+
+`[[needs.external_needs]]` stays wired in
+[docs/ubproject.toml](docs/ubproject.toml) in both modes and simply carries no
+needs while `rst` is active, so switching rewrites two generated artefacts and
+never edits configuration.
+
+Pick `rst` when the requirements are still moving and someone may want to propose
+a change from the repository side. Pick `external` when the ALM is the baseline
+and local drift must be impossible.
+
+### What the ALM cannot carry
+
+Three things the migration had to solve, all of them normal for an ALM bridge:
+
+| Problem | Where it is solved |
+|---|---|
+| Jama mints the id (`Rollout_Demo-SYSRQ-4`) and it is read-only there | ids are Jama's, prefixed `JAMA_`; the pre-migration name survives as `:legacy_id:` |
+| Jama returns picklists as numbers (`status: 292`) | `[jama_status_labels]` in `docs/ubproject.toml` |
+| Jama models no streams and no user stories | re-attached from `docs/alm/crosswalk.json`, keyed on the stable `globalId` |
+
+Requirements flow **down only**. There is deliberately no `[ubconnect.to_jama]`
+block anywhere in this repository, so a back-flow is not merely discouraged, it
+is unconfigured — the one-time migration that seeded the Jama project ran from a
+throw-away config outside this repository.
+
+`docs/alm/needs.json` is committed, so a normal build never needs Jama to be
+reachable; only the sync runs the online path, and **its diff is the change
+notification Jama never sent**. Run it nightly or on merge requests, never per
+build — the Jama REST API degrades under continuous sync load.
+
 ## Streams
 
 One directory per root user story. Four are decomposed all the way to code and
@@ -124,7 +221,7 @@ five [risks](docs/specs/_global/risks.rst), five
 
 ### The deliberate gap
 
-[`REQ_CELL_BALANCING_WINDOW`](docs/specs/cell-balancing/requirements.rst) —
+[`JAMA_Rollout_Demo-SYSRQ-2`](docs/specs/_global/alm_requirements.rst) —
 *"the BMS shall reduce the cell voltage spread to 20 mV or less within 8 hours of
 a charge session ending"* — has **no architecture, no software requirements, no
 implementation and no tests** beneath it. On purpose.
@@ -181,11 +278,11 @@ $UBC agent gaps -p docs                        # the trace gate, whole graph
 $UBC agent gaps --scope US_CELL_BALANCING -p docs   # ...narrowed to one stream
 $UBC agent verdict-check -p docs               # the substance gate (reads verdicts)
 
-$UBC agent audit   --id REQ_FAULT_LATCH -p docs          # one need, as data
+$UBC agent audit   --id JAMA_Rollout_Demo-SYSRQ-8 -p docs  # one need, as data
 $UBC agent context --id ARCH_SAFETY_SUPERVISOR --no-code -p docs   # its neighbourhood
-$UBC agent impact  --id REQ_CELL_VOLTAGE_LIMITS -p docs  # what a change reaches
-$UBC agent next    --id REQ_CELL_BALANCING_WINDOW -p docs # the single next action
-$UBC agent prompt  --id REQ_CELL_BALANCING_WINDOW -p docs # ...as an agent briefing
+$UBC agent impact  --id JAMA_Rollout_Demo-SYSRQ-3 -p docs  # what a change reaches
+$UBC agent next    --id JAMA_Rollout_Demo-SYSRQ-2 -p docs  # the single next action
+$UBC agent prompt  --id JAMA_Rollout_Demo-SYSRQ-2 -p docs  # ...as an agent briefing
 ```
 
 The tests are plain pytest, no dependencies beyond the standard library. Two of
@@ -193,6 +290,16 @@ them fail on purpose — see [Two tests are red, on purpose](#two-tests-are-red-
 
 ```bash
 uv run pytest -q     # 2 failed, 50 passed
+```
+
+The system level is acquired from Jama rather than authored — see
+[The system requirements live in Jama](#the-system-requirements-live-in-jama):
+
+```bash
+ubc script sync-jama --path docs          # acquire, in whichever mode is active
+ubc script sync-jama:rst --path docs      # ...as RST, the complete round trip
+ubc script sync-jama:external --path docs # ...as read-only JSON
+ALM_OFFLINE=1 ubc script sync-jama:rst --path docs   # switch mode, no network
 ```
 
 Both imported artefacts are refreshed the same way — capture a snapshot, then turn
@@ -210,7 +317,7 @@ The specification describes more than one product. The pack chemistry is the
 axis: [docs/variants/nmc.json](docs/variants/nmc.json) is the default profile and
 [docs/variants/lfp.json](docs/variants/lfp.json) the alternative, wired through
 `[needs] variant_data_file` in [docs/ubproject.toml](docs/ubproject.toml) and exposed as
-`var.*`. [`REQ_CELL_VOLTAGE_LIMITS`](docs/specs/cell-protection/requirements.rst)
+`var.*`. [`JAMA_Rollout_Demo-SYSRQ-3`](docs/specs/_global/alm_requirements.rst)
 is the one requirement that reads it: its limits are `:variant:` references
 resolved from the profile, its `chemistry` field is injected with
 `<{ var.pack.chemistry }>`, and an `.. if::` block on the same page only
@@ -498,7 +605,7 @@ It answers three questions: what is structurally *missing* from the graph, how m
 system requirements have a full chain down to a test, and of those, how many are
 backed by passing versus failing tests. Right now: **1 open structural gap**,
 **19 / 20** with a chain (95.0 %), and **15 verified vs 4 failing**. Both
-the gap and the requirement with no evidence are `REQ_CELL_BALANCING_WINDOW`, and
+the gap and the requirement with no evidence are `JAMA_Rollout_Demo-SYSRQ-2`, and
 the report shows them as separate facts — the structural half says the rung is
 missing, the evidence half says no outcome reaches it. That is the distinction the
 page exists to draw.
@@ -535,7 +642,7 @@ ORDER BY results, req
 ```
 
 Run it through the `ubc` MCP server (`query_cypher`). The requirement with zero
-results is `REQ_CELL_BALANCING_WINDOW` — the deliberate gap, showing up as an
+results is `JAMA_Rollout_Demo-SYSRQ-2` — the deliberate gap, showing up as an
 absence of evidence rather than as a special case anyone had to write down.
 
 > **One quirk worth knowing before you demo.** `ubc agent audit` does not render
@@ -549,7 +656,7 @@ absence of evidence rather than as a special case anyone had to write down.
 
 `ubc agent gaps` reports every structural hole in the graph as JSON and exits
 non-zero. That is a fine gate and a poor *view*: it tells you
-`REQ_CELL_BALANCING_WINDOW` has no incoming `satisfies` in a terminal, a long way
+`JAMA_Rollout_Demo-SYSRQ-2` has no incoming `satisfies` in a terminal, a long way
 from the requirement page where someone is actually reading.
 
 So the findings are imported back **into** the graph.
@@ -607,7 +714,7 @@ Three things about this arrangement are worth knowing before you demo it:
 3. **A gap disappears by being fixed.** The ids are derived from the need plus the
    gate that reported it, so re-importing an unchanged snapshot rewrites the same
    bytes, and a resolved gap vanishes instead of lingering under a stale id. Give
-   `REQ_CELL_BALANCING_WINDOW` an architecture element, re-snapshot, re-import, and
+   `JAMA_Rollout_Demo-SYSRQ-2` an architecture element, re-snapshot, re-import, and
    [docs/specs/_global/gaps.rst](docs/specs/_global/gaps.rst) becomes an empty page that says
    so.
 

@@ -9,14 +9,14 @@ Cell Balancing — Requirements
    show, and so the agent workflow can be driven live from a requirement whose
    downstream artefacts genuinely do not exist yet.
 
-.. req:: The battery management system shall reduce the cell voltage spread to 20 mV or less within 8 hours of a charge session ending
-   :id: REQ_CELL_BALANCING_WINDOW
-   :status: draft
-   :traces_to: US_CELL_BALANCING
+.. note::
 
-   The battery management system shall bring the difference between the highest
-   and the lowest cell voltage of the pack to 20 mV or less within 8 hours of
-   the end of a charge session, measured while the pack is at rest and every
-   cell temperature is between 15 °C and 45 °C. The spread is evaluated on
-   settled cell voltages, so the 8 hour window includes the time the cells need
-   to relax after charging.
+   **The requirements of this stream live in Jama Connect, not in this file.**
+   They are pulled down by ``tools/sync_alm.py`` and rendered on
+   :doc:`/specs/_global/alm_requirements`. Edit them in Jama; the architecture
+   below them is authored here and links up into the imported set.
+
+.. needtable::
+   :filter: type == "req" and alm_stream == "cell-balancing"
+   :columns: id;title;status;legacy_id;satisfied_by;gaps
+   :style: table

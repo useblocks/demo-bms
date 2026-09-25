@@ -1,0 +1,10 @@
+{
+ "project": "BMS system requirements (Jama)",
+ "current_version": "jama",
+ "versions": {
+  "jama": {
+   "needs_amount": 0,
+   "needs": {}
+  }
+ }
+}
