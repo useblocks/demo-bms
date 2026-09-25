@@ -112,25 +112,37 @@ below them — architecture, software requirements, code, tests — is authored 
 and links up into the acquired set.
 
 ```
-Jama project 59  ──ubconnect jama from-jama──> docs/alm/needs.json   (committed snapshot)
-                                                        │
-                                            tools/sync_alm.py  (harden + render)
-                                                        │
-                            ┌───────────────────────────┴───────────────────────────┐
-                        mode rst                                              mode external
-        docs/specs/_global/alm_requirements.rst                    docs/alm/external.json
-             20 real `.. req::` blocks                          [[needs.external_needs]]
-             ordinary local needs                                read-only by construction
-                                  ▲                                            ▲
-                     arch ──satisfies──┤   risk ──mitigates──┘
+Jama project 59 ──from-jama──> docs/_build/alm/needs.json   (raw, thrown away)
+                                          │
+                              tools/sync_alm.py  (harden + render)
+                                          │
+              ┌───────────────────────────┴───────────────────────────┐
+          mode rst                                              mode external
+  docs/specs/_global/alm_requirements.rst                docs/alm/external.json
+       20 real `.. req::` blocks                       [[needs.external_needs]]
+       ordinary local needs                            read-only by construction
+                          ▲                                        ▲
+                          └──── arch satisfies · risk mitigates ────┘
 ```
 
+**Exactly one of the two exists at a time.** Switching modes writes one and
+deletes the other, and rewrites the `sync-jama` region of
+[docs/ubproject.toml](docs/ubproject.toml) so only the live source is configured
+— two sources for the same need ids would collide, and a configured source whose
+file is missing is a warning this project treats as fatal.
+
 ```bash
-ubc script sync-jama            # acquire, in whichever mode is active
-ubc script sync-jama:rst        # acquire as RST      — the complete round trip
-ubc script sync-jama:external   # acquire as JSON     — read-only
-ubc script sync-jama:offline    # re-render the committed snapshot, no network
+ubc script sync-jama            # acquire, KEEPING the mode the tree is in
+ubc script sync-jama:rst        # acquire as RST   — round trip — and SWITCH
+ubc script sync-jama:external   # acquire as JSON  — read-only  — and SWITCH
 ```
+
+`sync-jama` and `sync-jama:rst` do the same thing while the tree is already in
+rst mode. They differ only when it is not: the bare form keeps the current mode,
+the suffixed forms force one.
+
+There is no offline path. `from-jama`'s raw export lands under `_build/`
+(gitignored) and is deleted once hardened, so acquiring means reaching Jama.
 
 Credentials are the Jama OAuth client id and secret. They live in `docs/.env`,
 which is gitignored; [docs/.env.example](docs/.env.example) records the two
@@ -150,7 +162,7 @@ CI secret is never clobbered by a stale local file.
 `docs/` rather than the repository root because that is the ubc project root —
 where `ubproject.toml` lives and where `ubc script` runs.
 
-A normal build never needs any of this: `docs/alm/needs.json` is committed, so a
+A normal build never needs any of this: the acquired artefact is committed, so a
 clone with no credentials still builds, it just cannot re-acquire.
 
 `ALM_OFFLINE=1` in front of any of the four skips the network — `ubc script`
@@ -160,19 +172,20 @@ laptop with no Jama reachable.
 ### The demo: delete the system level, get it back
 
 ```bash
-ubc script reset --path docs   # arm it: roll back, delete, clear caches
-ubc check docs                 # 83 errors — every arch and risk now dangles
+ubc script reset --path docs       # arm it: roll back, delete, clear caches
+ubc check docs                     # 83 errors — every arch and risk dangles
 ubc script sync-jama --path docs   # re-acquire from Jama
-ubc check docs                 # No errors found — files byte-identical
+ubc check docs                     # No errors found — byte-identical
 ```
 
 That is the whole claim of Connectivity-as-Code in one command: **the local copy
 is disposable, the ALM is not.**
 
-Because the snapshot is normalised — `tools/sync_alm.py` strips the timestamp
-`from-jama` stamps on every run and sorts the keys — a sync that changed nothing
-produces an **empty** `git diff`. So when the diff is not empty, something really
-did move in Jama. That is the change notification the ALM never sent.
+Because the acquired artefact is normalised — `tools/sync_alm.py` strips the
+timestamp `from-jama` stamps on every run and sorts the keys — a sync that
+changed nothing produces an **empty** `git diff`. So when the diff is not empty,
+something really did move in Jama. That is the change notification the ALM never
+sent.
 
 ### Resetting between runs
 
@@ -187,7 +200,7 @@ ALM_RESET_YES=1 ubc script reset --path docs   # ...without the prompt
 
 1. `git reset --hard HEAD` — a requirement someone edited live, a link someone
    broke, a staged experiment: all rolled back.
-2. deletes the three acquired artefacts, so `sync-jama` has something to do.
+2. deletes the acquired artefact, so `sync-jama` has something to do.
 3. clears `.ub_cache`, `_build`, `__pycache__` and the gitignored `needs.json`
    outputs, so the first `ubc check` of the demo is a real one.
 
@@ -206,17 +219,17 @@ Same 20 requirements, same Jama project, two different things in the repository.
 
 |  | `rst` | `external` |
 |---|---|---|
-| Lands as | `.. req::` blocks in a generated RST page | nothing — loaded from `docs/alm/external.json` |
+| The one file | `docs/specs/_global/alm_requirements.rst` | `docs/alm/external.json` |
+| Lands as | `.. req::` blocks in a generated RST page | nothing — loaded from JSON |
 | Need kind | ordinary local needs | external needs, read-only by construction |
 | Editable locally | yes, the file is normal RST | **no**, there is no local text at all |
 | A reference to one opens | the page in this project | the item in Jama |
 | Round trip back to Jama | possible | not possible |
 | `ubc` resolves the links | yes | yes — verified with `ubc query cypher` |
 
-`[[needs.external_needs]]` stays wired in
-[docs/ubproject.toml](docs/ubproject.toml) in both modes and simply carries no
-needs while `rst` is active, so switching rewrites two generated artefacts and
-never edits configuration.
+The `[[needs.external_needs]]` entry exists only in `external` mode — the sync
+writes it into the marked `sync-jama` region of
+[docs/ubproject.toml](docs/ubproject.toml) and removes it again on the way back.
 
 Pick `rst` when the requirements are still moving and someone may want to propose
 a change from the repository side. Pick `external` when the ALM is the baseline
@@ -237,10 +250,10 @@ block anywhere in this repository, so a back-flow is not merely discouraged, it
 is unconfigured — the one-time migration that seeded the Jama project ran from a
 throw-away config outside this repository.
 
-`docs/alm/needs.json` is committed, so a normal build never needs Jama to be
-reachable; only the sync runs the online path, and **its diff is the change
-notification Jama never sent**. Run it nightly or on merge requests, never per
-build — the Jama REST API degrades under continuous sync load.
+The acquired artefact is committed, so a normal build never needs Jama to be
+reachable; only the sync talks to it, and **its diff is the change notification
+Jama never sent**. Run the sync nightly or on merge requests, never per build —
+the Jama REST API degrades under continuous sync load.
 
 ## Streams
 
@@ -341,10 +354,9 @@ The system level is acquired from Jama rather than authored — see
 ```bash
 ubc script reset --path docs              # arm the showcase (asks first)
 ubc script reset:dry --path docs          # ...print the plan, change nothing
-ubc script sync-jama --path docs          # acquire, in whichever mode is active
+ubc script sync-jama --path docs          # acquire, keeping the current mode
 ubc script sync-jama:rst --path docs      # ...as RST, the complete round trip
 ubc script sync-jama:external --path docs # ...as read-only JSON
-ALM_OFFLINE=1 ubc script sync-jama:rst --path docs   # switch mode, no network
 ```
 
 Both imported artefacts are refreshed the same way — capture a snapshot, then turn

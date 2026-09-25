@@ -114,7 +114,6 @@ sphinx = "uv run --extra ubtrace sphinx-build -W --keep-going -b html . _build/h
 sync-jama = "python3 ../tools/sync_alm.py"
 "sync-jama:rst" = "python3 ../tools/sync_alm.py --mode rst"
 "sync-jama:external" = "python3 ../tools/sync_alm.py --mode external"
-"sync-jama:offline" = "python3 ../tools/sync_alm.py --offline"
 
 # Put the tree back to the showcase starting position: roll every tracked file
 # back to the last commit, delete the Jama-acquired artefacts so the sync has
@@ -1147,20 +1146,21 @@ context_present = 1
 #   ubconnect jama list-types --config ubproject.toml   # discover typeKeys
 #   python3 ../tools/sync_alm.py                        # pull + render
 
-# The READ-ONLY face of the same requirements. `tools/sync_alm.py --mode external`
-# fills `alm/external.json`; `--mode rst` empties it and writes RST blocks
-# instead. The source stays wired either way, so switching modes rewrites two
-# generated artefacts and never edits configuration.
+# --- GENERATED: `tools/sync_alm.py` owns everything between these markers ---
 #
-# Needs loaded this way are read-only BY CONSTRUCTION: no local text exists to
+# In `external` mode it writes an `[[needs.external_needs]]` entry here pointing
+# at `alm/external.json`; in `rst` mode it leaves the region EMPTY, because the
+# requirements are then ordinary needs in `specs/_global/alm_requirements.rst`
+# and a second source of the same ids would collide.
+#
+# The region exists because the choice cannot be made anywhere else: a configured
+# source whose file is missing is a warning, and this project builds with -W.
+#
+# Needs loaded through it are read-only BY CONSTRUCTION — no local text exists to
 # edit, and `base_url` + `target_url` send every reference to the item in Jama
-# rather than to a page here. That is the difference from the RST mode, where the
-# same requirements are ordinary local needs you could edit and push back.
-[[needs.external_needs]]
-json_path = "alm/external.json"
-base_url = "https://useblocks-partner.jamacloud.com"
-target_url = "perspective.req#/containers/{{need['jama_id']}}/details?projectId=59"
-css_class = "alm-external"
+# rather than to a page here.
+# sync-jama:begin
+# sync-jama:end
 
 [ubconnect.from_jama]
 url = "https://useblocks-partner.jamacloud.com"
@@ -1173,9 +1173,14 @@ oauth = true
 # Taken from the `/projects/59/` segment of the Jama UI URL.
 project_id = 59
 
-# Where the snapshot lands, relative to this file. COMMITTED, so the build never
-# needs Jama to be reachable — only the nightly sync job runs the online path.
-outdir = "alm"
+# Where `from-jama` drops its RAW output, relative to this file. `_build/` is
+# gitignored: the raw export is a THROW-AWAY. `tools/sync_alm.py` reads it,
+# hardens it, writes the one artefact the active mode needs, and deletes it.
+#
+# It used to land in `alm/` and be committed, which meant every sync produced
+# three files — the raw export, the external source and the RST page — of which
+# at most one was ever the real thing. One mode, one artefact.
+outdir = "_build/alm"
 
 # Prefix on every imported need id, so an ALM-sourced requirement is recognisable
 # as one wherever it appears: `:satisfies: JAMA_Rollout_Demo-SYSRQ-4` says where

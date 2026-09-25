@@ -10,10 +10,13 @@ Delete every requirement in this repository and run this script: they come back,
 byte for byte, from Jama. That is the whole point — the local copy is disposable,
 the ALM is not.
 
-    ubc script sync-jama              acquire, in whichever mode is active
-    ubc script sync-jama:rst          acquire as RST      (round-trip)
-    ubc script sync-jama:external     acquire as JSON     (read-only)
-    ubc script sync-jama:offline      re-render, no network
+    ubc script sync-jama              acquire, keeping the mode the tree is in
+    ubc script sync-jama:rst          acquire as RST   (round-trip)  and switch
+    ubc script sync-jama:external     acquire as JSON  (read-only)   and switch
+
+`sync-jama` and `sync-jama:rst` do the same thing WHILE the tree is already in
+rst mode. They differ only when it is not: the bare form keeps the current mode,
+the suffixed forms force one.
 
 TWO MODES, ONE SOURCE
 =====================
@@ -40,13 +43,23 @@ wired in `ubproject.toml` permanently and simply carries no needs while `rst` is
 active, so flipping modes never edits configuration — it only rewrites the two
 artefacts this script owns.
 
-THE PIPELINE
-============
+ONE MODE, ONE ARTEFACT
+======================
 
-    ubconnect jama from-jama    Jama project 59  ->  docs/alm/needs.json
-    harden (in this script)     make that snapshot buildable
-    render (in this script)     ->  docs/alm/external.json   (external mode)
-                                ->  docs/specs/_global/alm_requirements.rst
+    ubconnect jama from-jama    Jama project 59 -> docs/_build/alm/needs.json
+    harden (in this script)     make that raw export buildable
+    render (in this script)     -> EXACTLY ONE of:
+                                     docs/specs/_global/alm_requirements.rst
+                                     docs/alm/external.json
+    then                        delete the raw export and the other artefact
+
+The raw export is a throw-away under `_build/` (gitignored). It used to be
+committed as `docs/alm/needs.json`, which meant a sync left THREE copies of the
+same 20 requirements in the tree — the raw export, the external source and the
+RST page — of which at most one was ever live. There is now one.
+
+Because the raw export is gone, there is no offline path: acquiring means
+acquiring, and switching modes needs Jama reachable.
 
 Requirements flow DOWN only. There is deliberately no `[ubconnect.to_jama]` block
 in `docs/ubproject.toml`, so a back-flow from here is not merely discouraged, it
@@ -89,7 +102,9 @@ except ModuleNotFoundError:  # Python < 3.11
 
 REPO = Path(__file__).resolve().parent.parent
 CONFIG = REPO / "docs" / "ubproject.toml"
-SNAPSHOT = REPO / "docs" / "alm" / "needs.json"
+# `from-jama` drops its raw export here (`[ubconnect.from_jama] outdir`). It is
+# under _build/, so it is gitignored and thrown away after hardening.
+RAW = REPO / "docs" / "_build" / "alm" / "needs.json"
 EXTERNAL = REPO / "docs" / "alm" / "external.json"
 CROSSWALK = REPO / "docs" / "alm" / "crosswalk.json"
 # Where the Jama credentials are looked for, in order. `docs/` is first because
@@ -185,14 +200,38 @@ def load_config() -> dict:
 def current_mode() -> str:
     """Which mode the working tree is in, read off the artefacts themselves.
 
-    No marker file: the mode IS whether the external source carries needs.
+    No marker file and no ambiguity: exactly one data artefact exists at a time,
+    so its presence IS the mode.
     """
-    if not EXTERNAL.exists():
-        return "rst"
-    try:
-        return "external" if needs_of(json.loads(EXTERNAL.read_text())) else "rst"
-    except (json.JSONDecodeError, SystemExit):
-        return "rst"
+    return "external" if EXTERNAL.exists() else "rst"
+
+
+MARK_BEGIN = "# sync-jama:begin"
+MARK_END = "# sync-jama:end"
+
+EXTERNAL_BLOCK = """[[needs.external_needs]]
+json_path = "alm/external.json"
+base_url = "https://useblocks-partner.jamacloud.com"
+target_url = "perspective.req#/containers/{{need['jama_id']}}/details?projectId=59"
+css_class = "alm-external"
+"""
+
+
+def write_mode_config(mode: str) -> None:
+    """Put (or remove) the `[[needs.external_needs]]` entry for the active mode.
+
+    The two modes are two sources for the same need ids, so exactly one of them
+    may be configured at a time — and a configured source whose file is missing
+    is a warning this project treats as fatal. Neither condition can be expressed
+    in static TOML, so the sync owns a marked region and rewrites it.
+    """
+    text = CONFIG.read_text(encoding="utf-8")
+    start = text.index(MARK_BEGIN) + len(MARK_BEGIN)
+    end = text.index(MARK_END)
+    body = f"\n{EXTERNAL_BLOCK}\n" if mode == "external" else "\n"
+    updated = text[:start] + body + text[end:]
+    if updated != text:
+        CONFIG.write_text(updated, encoding="utf-8")
 
 
 def pull(config: dict) -> None:
@@ -213,8 +252,7 @@ def pull(config: dict) -> None:
             f"{' and '.join(missing)} not set, and no .env supplied "
             f"{'them' if len(missing) > 1 else 'it'} (looked in {looked}).\n"
             "       cp docs/.env.example docs/.env and fill in the Jama OAuth "
-            "client id and secret,\n       or run with --offline to re-render the "
-            "committed snapshot."
+            "client id and secret."
         )
 
     project = config["ubconnect"]["from_jama"]["project_id"]
@@ -238,11 +276,11 @@ def normalise_snapshot() -> None:
     Dropping `created` is safe — nothing reads it, and the commit already carries
     a better timestamp than the one the exporter invents.
     """
-    snapshot = json.loads(SNAPSHOT.read_text(encoding="utf-8"))
+    snapshot = json.loads(RAW.read_text(encoding="utf-8"))
     snapshot.pop("created", None)
     for version in (snapshot.get("versions") or {}).values():
         version.pop("created", None)
-    SNAPSHOT.write_text(
+    RAW.write_text(
         json.dumps(snapshot, indent=1, ensure_ascii=False, sort_keys=True) + "\n",
         encoding="utf-8",
     )
@@ -390,13 +428,9 @@ def render_page(needs: list[dict], mode: str) -> str:
     return "\n".join(chunks)
 
 
-def render_external(needs: list[dict], mode: str) -> str:
-    """The `[[needs.external_needs]]` source. Empty unless external mode is on."""
-    payload = {}
-    if mode == "external":
-        payload = {
-            n["id"]: {k: v for k, v in n.items() if k != "_sort"} for n in needs
-        }
+def render_external(needs: list[dict]) -> str:
+    """The `[[needs.external_needs]]` source. Only written in external mode."""
+    payload = {n["id"]: {k: v for k, v in n.items() if k != "_sort"} for n in needs}
     return json.dumps(
         {
             "project": "BMS system requirements (Jama)",
@@ -418,42 +452,47 @@ def main() -> int:
         help="rst: generated RST blocks (round-trip). external: read-only JSON. "
         "Omitted keeps the mode the working tree is already in.",
     )
-    parser.add_argument(
-        "--offline",
-        action="store_true",
-        help="skip the Jama call and re-render the committed snapshot",
-    )
     args = parser.parse_args()
-
-    # `ubc script` forwards no extra arguments, so the offline switch has to be
-    # reachable from the environment too: `ALM_OFFLINE=1 ubc script sync-jama:rst`
-    # flips modes on a laptop with no Jama reachable.
-    offline = args.offline or os.environ.get("ALM_OFFLINE") == "1"
     mode = args.mode or current_mode()
     config = load_config()
 
-    if not offline:
-        pull(config)
-        normalise_snapshot()
-    if not SNAPSHOT.exists():
-        die(f"{SNAPSHOT} does not exist — run once without --offline")
+    pull(config)
+    normalise_snapshot()
     if not CROSSWALK.exists():
         die(f"{CROSSWALK} does not exist")
 
     needs = harden(
-        needs_of(json.loads(SNAPSHOT.read_text(encoding="utf-8"))),
+        needs_of(json.loads(RAW.read_text(encoding="utf-8"))),
         config,
         json.loads(CROSSWALK.read_text(encoding="utf-8")),
     )
     if not needs:
         die("no needs survived hardening — check docs/alm/crosswalk.json")
 
+    # ONE data artefact. The other is removed, so the working tree can never
+    # show two answers to "where do the requirements live".
     PAGE.parent.mkdir(parents=True, exist_ok=True)
     PAGE.write_text(render_page(needs, mode), encoding="utf-8")
-    EXTERNAL.write_text(render_external(needs, mode), encoding="utf-8")
+    if mode == "external":
+        EXTERNAL.write_text(render_external(needs), encoding="utf-8")
+    else:
+        EXTERNAL.unlink(missing_ok=True)
+    write_mode_config(mode)
 
-    where = "external.json (read-only)" if mode == "external" else "alm_requirements.rst"
-    print(f"mode {mode}: {len(needs)} requirement(s) acquired into {where}")
+    # The raw export has done its job. Keeping it would put a third copy of the
+    # same 20 requirements in the tree.
+    RAW.unlink(missing_ok=True)
+
+    if mode == "external":
+        print(
+            f"mode external: {len(needs)} requirement(s) in "
+            f"{EXTERNAL.relative_to(REPO)} (read-only), no RST blocks"
+        )
+    else:
+        print(
+            f"mode rst: {len(needs)} requirement(s) in "
+            f"{PAGE.relative_to(REPO)}, no external.json"
+        )
     return 0
 
 
