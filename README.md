@@ -132,18 +132,26 @@ ubc script sync-jama:external   # acquire as JSON     — read-only
 ubc script sync-jama:offline    # re-render the committed snapshot, no network
 ```
 
-Credentials are the Jama OAuth client id and secret, and they live in `.env`,
-which is gitignored. [.env.example](.env.example) records the two variable names:
+Credentials are the Jama OAuth client id and secret. They live in `docs/.env`,
+which is gitignored; [docs/.env.example](docs/.env.example) records the two
+variable names:
 
 ```bash
-cp .env.example .env && $EDITOR .env    # generate the pair in the Jama UI:
-                                        # your profile -> Set API Credentials
-set -a && . ./.env && set +a            # load it into the shell
-ubconnect jama check --config docs/ubproject.toml   # verify before syncing
+cp docs/.env.example docs/.env && $EDITOR docs/.env
+ubc script sync-jama --path docs        # that is all — the sync reads the file
 ```
 
-A normal build never needs any of this — `docs/alm/needs.json` is committed, so
-only the sync talks to Jama.
+**No `source` needed.** `ubc script` does not read `.env` files and neither does
+ubConnect, so `tools/sync_alm.py` reads it itself and the child process inherits
+it. It looks in `docs/.env`, then `.env` at the repository root, then wherever
+`ALM_ENV_FILE` points; a variable already exported in the shell always wins, so a
+CI secret is never clobbered by a stale local file.
+
+`docs/` rather than the repository root because that is the ubc project root —
+where `ubproject.toml` lives and where `ubc script` runs.
+
+A normal build never needs any of this: `docs/alm/needs.json` is committed, so a
+clone with no credentials still builds, it just cannot re-acquire.
 
 `ALM_OFFLINE=1` in front of any of the four skips the network — `ubc script`
 forwards no arguments of its own, so that is how a mode switch happens on a

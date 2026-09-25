@@ -92,6 +92,20 @@ CONFIG = REPO / "docs" / "ubproject.toml"
 SNAPSHOT = REPO / "docs" / "alm" / "needs.json"
 EXTERNAL = REPO / "docs" / "alm" / "external.json"
 CROSSWALK = REPO / "docs" / "alm" / "crosswalk.json"
+# Where the Jama credentials are looked for, in order. `docs/` is first because
+# it is the ubc project root — it holds `ubproject.toml`, and it is the working
+# directory `ubc script` runs a script in, so that is where someone naturally
+# puts the file. Both are gitignored. `ALM_ENV_FILE` overrides the search
+# entirely, e.g. to share one file across several repositories.
+ENV_CANDIDATES = [REPO / "docs" / ".env", REPO / ".env"]
+
+
+def env_file() -> Path:
+    """The `.env` that will be read — the first that exists, else the preferred one."""
+    override = os.environ.get("ALM_ENV_FILE")
+    if override:
+        return Path(override)
+    return next((p for p in ENV_CANDIDATES if p.is_file()), ENV_CANDIDATES[0])
 PAGE = REPO / "docs" / "specs" / "_global" / "alm_requirements.rst"
 
 JAMA_PROJECT_URL = "https://useblocks-partner.jamacloud.com/perspective.req#/projects/59/"
@@ -116,6 +130,47 @@ CARRIED_FIELDS = (
     "jama_url",
     "global_id",
 )
+
+
+def load_dotenv(path: Path) -> list[str]:
+    """Read KEY=VALUE lines from `path` into os.environ, returning the keys set.
+
+    Neither ubConnect nor `ubc script` reads a `.env` file, so without this the
+    file would have no effect at all and every sync would need
+    `set -a && . ./.env && set +a` in front of it. Loading it here works because
+    ubConnect is started as a CHILD process and inherits this environment — and
+    it saves needing `source` on Linux and its non-existent equivalent on Windows.
+
+    Deliberately minimal: no interpolation, no multi-line values, no escapes.
+    Everything after the first `=` is the value, so a `#` inside a secret is kept
+    rather than silently truncating it as an inline comment. Surrounding quotes
+    are stripped, which is how a value gets leading or trailing spaces.
+
+    A variable already in the real environment WINS over the file, so an explicit
+    `export` or a CI secret is never clobbered by a stale local `.env`.
+    """
+    if not path.is_file():
+        return []
+
+    loaded: list[str] = []
+    for raw in path.read_text(encoding="utf-8").splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#"):
+            continue
+        if line.startswith("export "):  # tolerate a shell-style file
+            line = line[len("export ") :].lstrip()
+        key, separator, value = line.partition("=")
+        key = key.strip()
+        if not separator or not key:
+            continue
+        value = value.strip()
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
+            value = value[1:-1]
+        if key in os.environ:  # the real environment wins
+            continue
+        os.environ[key] = value
+        loaded.append(key)
+    return loaded
 
 
 def die(message: str) -> NoReturn:
@@ -145,11 +200,21 @@ def pull(config: dict) -> None:
     exe = shutil.which("ubconnect")
     if exe is None:
         die("ubconnect is not on PATH — it is a standalone binary, not a pip package")
+
+    env = env_file()
+    loaded = load_dotenv(env)
+    if loaded:
+        print(f"read {', '.join(loaded)} from {env.relative_to(REPO)}")
+
     missing = [v for v in ("JAMA_USERNAME", "JAMA_PASSWORD") if not os.environ.get(v)]
     if missing:
+        looked = " or ".join(str(p.relative_to(REPO)) for p in ENV_CANDIDATES)
         die(
-            f"{' and '.join(missing)} not set. Export the Jama OAuth client id and "
-            "secret, or run with --offline to re-render the committed snapshot."
+            f"{' and '.join(missing)} not set, and no .env supplied "
+            f"{'them' if len(missing) > 1 else 'it'} (looked in {looked}).\n"
+            "       cp docs/.env.example docs/.env and fill in the Jama OAuth "
+            "client id and secret,\n       or run with --offline to re-render the "
+            "committed snapshot."
         )
 
     project = config["ubconnect"]["from_jama"]["project_id"]
