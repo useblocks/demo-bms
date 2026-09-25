@@ -132,12 +132,18 @@ ubc script sync-jama:external   # acquire as JSON     — read-only
 ubc script sync-jama:offline    # re-render the committed snapshot, no network
 ```
 
-Credentials are the Jama OAuth client id and secret:
+Credentials are the Jama OAuth client id and secret, and they live in `.env`,
+which is gitignored. [.env.example](.env.example) records the two variable names:
 
 ```bash
-export JAMA_USERNAME=... JAMA_PASSWORD=...
-ubconnect jama check --config docs/ubproject.toml   # verify them first
+cp .env.example .env && $EDITOR .env    # generate the pair in the Jama UI:
+                                        # your profile -> Set API Credentials
+set -a && . ./.env && set +a            # load it into the shell
+ubconnect jama check --config docs/ubproject.toml   # verify before syncing
 ```
+
+A normal build never needs any of this — `docs/alm/needs.json` is committed, so
+only the sync talks to Jama.
 
 `ALM_OFFLINE=1` in front of any of the four skips the network — `ubc script`
 forwards no arguments of its own, so that is how a mode switch happens on a
