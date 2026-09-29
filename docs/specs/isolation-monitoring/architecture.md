@@ -5,7 +5,7 @@
 ```{arch} Isolation Monitor
 :id: ARCH_ISOLATION_MONITOR
 :status: draft
-:satisfies: JAMA_Rollout_Demo-SYSRQ-10[fingerprint=="349f31e5"]
+:satisfies: JAMA_Rollout_Demo-SYSRQ-10
 
 The Isolation Monitor element owns the isolation picture of the pack. Once per
 measurement cycle it takes the isolation resistance from the insulation

@@ -112,9 +112,9 @@ def collect_spec_links(specs_dir: Path) -> dict[str, list[str]]:
                     parents.setdefault(current_id, []).extend(pending)
                     pending = []
             else:
-                # A link may carry a condition — the suspect-link pin,
-                # `JAMA_...-4[fingerprint=="3f9a01bc"]` — which is not part of
-                # the target id. Strip it, splitting only on commas outside [...].
+                # A link may carry a sphinx-needs condition, `ID[status=="x"]`,
+                # which is not part of the target id. Strip it, splitting only on
+                # commas outside [...].
                 targets = [CONDITION.sub("", t).strip() for t in split_links(value)]
                 targets = [t for t in targets if t]
                 if current_id is None:

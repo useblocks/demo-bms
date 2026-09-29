@@ -9,10 +9,10 @@ name: Jama sync
 #   no diff     it stops. An unchanged Jama gives an EMPTY diff, because the sync
 #               normalises what it writes — so an empty diff really means nothing
 #               moved, and no pull request is opened
-#   a diff      it runs the suspect-link analysis and the review gate, and opens
+#   a diff      it runs the review gate (stale reviews), and opens
 #               (or updates) the pull request `sync/jama` with both reports in
-#               the description: which requirements changed, which architecture
-#               links are now suspect, what each change reaches down the V
+#               the description: which requirements changed, and which
+#               reviews went out of date
 #
 # Once, nightly, never per build: the Jama REST API degrades under continuous
 # sync load, and a live coupling between the ALM and every SW build is exactly
@@ -126,11 +126,9 @@ jobs:
           fi
 
       - name: Analyse the change
-        # Both reports are informational here: the pull request is where a human
-        # decides. `suspects` exits 1 while a link is open, which is the point.
+        # Informational here: the pull request is where a human decides.
         if: steps.diff.outputs.changed == 'true'
         run: |
-          python3 tools/suspects.py > "$RUNNER_TEMP/suspects.txt" 2>&1 || true
           ubc agent verdict-check -p docs > "$RUNNER_TEMP/verdicts.json" 2>/dev/null || true
           {
             echo "Nightly acquisition of the system requirements from Jama."
@@ -139,11 +137,6 @@ jobs:
             echo "### What changed"
             echo '```'
             git diff --stat
-            echo '```'
-            echo
-            echo "### Suspect links"
-            echo '```'
-            cat "$RUNNER_TEMP/suspects.txt"
             echo '```'
             echo
             echo "### Review gate"
@@ -163,7 +156,7 @@ jobs:
                   print(f"- `{need}`")
           PY
             echo
-            echo "After review: \`ubc script suspects:accept --path docs\`, commit, merge."
+            echo "After a new review of the outdated needs: commit, merge."
           } > "$RUNNER_TEMP/body.md"
           cat "$RUNNER_TEMP/body.md"
 

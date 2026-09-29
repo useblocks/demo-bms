@@ -86,7 +86,6 @@ build: the Jama REST API degrades under continuous sync load.
 from __future__ import annotations
 
 import argparse
-import hashlib
 import html
 import json
 import re
@@ -140,7 +139,6 @@ STREAM_TITLES = {
 # the external JSON cannot drift apart in which fields they carry.
 CARRIED_FIELDS = (
     "status",
-    "fingerprint",
     "traces_to",
     "alm_stream",
     "legacy_id",
@@ -319,25 +317,6 @@ def plain_text(value: str) -> str:
     return re.sub(r"\n{3,}", "\n\n", "\n".join(lines)).strip()
 
 
-def fingerprint(title: str, content: str) -> str:
-    """Eight hex characters that change whenever the substance of a requirement does.
-
-    Downstream needs pin the fingerprint they were reviewed against in their link
-    — `:satisfies: JAMA_...-4[fingerprint=="3f9a01bc"]` — and sphinx-needs
-    evaluates that condition on every build. Edit the requirement in Jama, re-sync,
-    and the fingerprint moves: every link still pinned to the old value fails with
-    `needs.link_condition_failed`, in the editor, in `ubc check` and in
-    `sphinx-build -W`. That is a suspect link, computed rather than remembered.
-
-    Title and content only. A status change is not a change of substance, and the
-    Jama ids, urls and the crosswalk fields are identity, not meaning. Whitespace
-    is collapsed first, so Jama re-wrapping a paragraph raises no false suspect —
-    only a changed word does.
-    """
-    words = " ".join(title.split()) + "\n" + " ".join(content.split())
-    return hashlib.sha256(words.encode("utf-8")).hexdigest()[:8]
-
-
 def harden(needs: dict, config: dict, crosswalk: dict) -> list[dict]:
     """Turn raw from-jama output into needs this project can build."""
     labels = {str(k): v for k, v in config.get("jama_status_labels", {}).items()}
@@ -364,7 +343,6 @@ def harden(needs: dict, config: dict, crosswalk: dict) -> list[dict]:
                 "type": "req",
                 "title": title,
                 "content": content,
-                "fingerprint": fingerprint(title, content),
                 "status": labels.get(raw_status, raw_status.lower()),
                 "traces_to": entry.get("traces_to") or [],
                 "alm_stream": entry["stream"],

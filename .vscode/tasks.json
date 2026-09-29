@@ -5,12 +5,10 @@
     // the terminal and CI all run the same commands. `ubc` is the CLI the ubCode
     // extension bundles; settings.json puts it on the integrated terminal's PATH.
     //
-    // The suspect links these tasks report are ALSO live in the editor: the
-    // ubCode sidebar's "Diagnostics" view lists every `:satisfies:` link whose
-    // requirement moved in Jama (`needs.link_condition_failed`), with "Go to
-    // Source" to the exact line. Note it is that view, not an inline squiggle:
-    // ubCode 0.35 underlines syntax problems in the file, and reports graph
-    // problems — dead links, schema violations, suspect links — project-wide.
+    // Stale reviews are live in the editor too: when a requirement changes in
+    // Jama, ubCode marks the review of that requirement and of each child as
+    // stale — the Pharaoh Gaps view lists them, and "Run Quality Analysis" on a
+    // child shows why (parent fit).
     "version": "2.0.0",
     "tasks": [
         {
@@ -36,17 +34,17 @@
             "problemMatcher": []
         },
         {
-            "label": "Suspect links: show",
-            "detail": "ubc script suspects — what changed in Jama and what it reaches",
+            "label": "Reviews: show the gaps",
+            "detail": "ubc agent gaps — stale reviews after a change upstream",
             "type": "shell",
-            "command": "ubc script suspects --path docs",
+            "command": "ubc agent gaps -p docs",
             "problemMatcher": []
         },
         {
-            "label": "Suspect links: accept after review",
-            "detail": "ubc script suspects:accept — the git diff is the review record",
+            "label": "Reviews: verdict check",
+            "detail": "ubc agent verdict-check — which reviews are outdated",
             "type": "shell",
-            "command": "ubc script suspects:accept --path docs",
+            "command": "ubc agent verdict-check -p docs",
             "problemMatcher": []
         },
         {

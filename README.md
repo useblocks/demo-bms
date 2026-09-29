@@ -41,7 +41,7 @@ point of the Connectivity-as-Code showcase:
 ```
 Jama req ◀──satisfies── SysML v2 part          (model owns the link)
     ▲
-    └──satisfies[fingerprint]── arch ◀──realizes── AUTOSAR component
+    └──satisfies── arch ◀──realizes── AUTOSAR component
                                   ▲               (model owns the link)
                                   └──refines── swreq ◀── impl / test
 ```
@@ -230,56 +230,35 @@ before doing it. Three things it deliberately leaves alone:
 | `.venv/`, `.env`, untracked files | the cache list is an explicit allowlist, never `git clean -fdx` |
 | Jama itself | a local reset cannot undo an edit made in the ALM — change it back in the Jama UI |
 
-### Suspect links: a change in Jama flags what it touched
+### Stale reviews: a change in Jama flags what it touched
 
-Every `:satisfies:` link from the architecture to a Jama requirement **pins the
-fingerprint** of the requirement it was reviewed against:
-
-```rst
-:satisfies: JAMA_Rollout_Demo-SYSRQ-4[fingerprint=="0824db15"]
-```
-
-The sync stamps each requirement with 8 hex characters derived from its title and
-text (whitespace-insensitive, so a Jama re-wrap raises nothing). When the text
-changes in Jama, the next sync moves the fingerprint, and every link still pinned
-to the old value fails the sphinx-needs condition — `needs.link_condition_failed`
-in `ubc check`, in `sphinx-build -W`, and in the ubCode **Diagnostics** view in
-VS Code. That is a suspect link, computed rather than remembered.
+Nothing extra to configure. ubCode keeps a fingerprint of each reviewed need
+**and its parents** in the review verdict (`docs/.pharaoh/verdicts/`). When a
+requirement changes in Jama and the sync brings the new text in, the review of
+that requirement and of each architecture element that satisfies it becomes
+**stale**:
 
 ```bash
-ubc script suspects --path docs         # what changed, and what it reaches
-ubc script suspects:accept --path docs  # re-baseline after review
+ubc agent gaps -p docs            # review gaps: the requirement + its children
+ubc agent verdict-check -p docs   # the same needs, listed as "outdated"
 ```
 
-```
-2 suspect link(s) — 1 requirement changed in Jama since they were reviewed
+Measured with `JAMA_Rollout_Demo-SYSRQ-4` changed from 350 A to 300 A in Jama:
+`review` gaps for `JAMA_Rollout_Demo-SYSRQ-4`, `ARCH_CURRENT_PATH_MONITOR` and
+`ARCH_SAFETY_SUPERVISOR`. Change the architecture text to match (350 → 300) and
+the cascade goes one level down: `SWREQ_OVERCURRENT_DEBOUNCE` becomes stale too.
+In VS Code the Pharaoh **Gaps** view shows the same list, and *Run Quality
+Analysis* on a child explains it on the `parent_fit` axis.
 
-JAMA_Rollout_Demo-SYSRQ-4   fingerprint now d5efb53d
-  SUSPECT  ARCH_CURRENT_PATH_MONITOR   reviewed against 0824db15   specs/cell-protection/architecture.rst:52
-  SUSPECT  ARCH_SAFETY_SUPERVISOR      reviewed against 0824db15   specs/cell-protection/architecture.rst:64
-  reaches  2 architecture, 4 software requirements, 4 implementations, 8 tests,
-           2 AUTOSAR components, 1 SysML v2 part
-```
-
-`suspects:accept` rewrites the pinned values and nothing else, so its git diff is
-the review record: which link a human confirmed against which version of which
-requirement. Only links this repository owns are pinned; a SysML part or an
-AUTOSAR component belongs to its model and is reported as reached, never
-rewritten.
-
-A second, independent detector comes for free. `ubc agent verdict-check`
-fingerprints each review verdict **one hop out**, so when a Jama requirement
-changes, the verdicts of the requirement and of every architecture element that
-satisfies it go `outdated` by themselves. A pinned link clears with
-`suspects:accept`; an outdated verdict clears only with a fresh review — the two
-never mask each other.
+Only words count. Jama re-wraps a rich-text description into one line; that
+alone makes no review stale. Clear a stale review with a new review, not by hand.
 
 ### The nightly sync
 
 [.github/workflows/sync-jama.yml](.github/workflows/sync-jama.yml) runs the sync
 at 02:30 UTC on weekdays. An unchanged Jama gives an empty diff and the job ends;
-a change becomes a pull request `sync/jama` whose description carries the diff,
-the suspect-link report and the review gate. Nothing lands on main unreviewed, and
+a change becomes a pull request `sync/jama` whose description carries the diff
+and the review gate. Nothing lands on main unreviewed, and
 the merge is what `ubtrace.yml` then publishes to ubTrace.
 
 It skips with a notice — not a red run — until these repository secrets exist:
@@ -371,7 +350,7 @@ SYSML_CELL_PROTECTION  ARCH_SAFETY_SUPERVISOR     AR_SWC_SAFETY_SUPERVISOR     S
 **What this is and is not.** Neither ubConnect nor Sphinx-Needs has a SysML v2 or
 an AUTOSAR connector today. The importer is the *pattern*: any model exported as
 structured text becomes needs in ~100 lines, and from then on it takes part in
-everything the graph does — the trace above, the suspect-link blast radius,
+everything the graph does — the trace above, the review gate,
 ubTrace. The ARXML reader is complete for what it reads. The SysML v2 reader
 handles the subset of the textual notation this model uses and names any line it
 cannot place; a production bridge reads the model through the SysML v2 API.
@@ -423,11 +402,10 @@ And it is **in the graph as a need**, not only in a CLI's exit code — see
 ## Setup
 
 **In VS Code**, the whole ALM loop is in the command palette — `Tasks: Run Task`
-lists acquiring from Jama in either mode, the suspect-link report and its accept,
+lists acquiring from Jama in either mode, the review gaps and the verdict check,
 the model import, the cross-tool trace and the showcase reset
-([.vscode/tasks.json](.vscode/tasks.json)). Suspect links also appear in the
-ubCode sidebar's **Diagnostics** view with *Go to Source*; the inline squiggles
-cover syntax problems only.
+([.vscode/tasks.json](.vscode/tasks.json)). Stale reviews appear in the
+Pharaoh **Gaps** view.
 
 
 The Python side is managed by [uv](https://docs.astral.sh/uv/), so the

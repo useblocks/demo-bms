@@ -115,14 +115,6 @@ sync-jama = "python3 ../tools/sync_alm.py"
 "sync-jama:rst" = "python3 ../tools/sync_alm.py --mode rst"
 "sync-jama:external" = "python3 ../tools/sync_alm.py --mode external"
 
-# Suspect-link analysis. Every `:satisfies:` link to a Jama requirement pins the
-# fingerprint it was reviewed against; `suspects` lists the links whose
-# requirement moved since, with what each change reaches, and exits 1 while any
-# is open. `suspects:accept` re-baselines them after review — its git diff is the
-# review record.
-suspects = "python3 ../tools/suspects.py"
-"suspects:accept" = "python3 ../tools/suspects.py --accept"
-
 # The model bridge. `import-models` re-reads the SysML v2 and AUTOSAR exports in
 # models/ (no network); `trace` walks one Jama requirement through every tool at
 # once — the SysML v2 part that satisfies it, the architecture in Git, the
@@ -1249,18 +1241,6 @@ default = ""
 
 [needs.fields.global_id]
 description = "Jama globalId — stable across project copies; the crosswalk key."
-default = ""
-
-# The suspect-link anchor. `tools/sync_alm.py` stamps every acquired requirement
-# with 8 hex characters derived from its title and content; a downstream need
-# pins the value it was reviewed against in its link —
-#   :satisfies: JAMA_Rollout_Demo-SYSRQ-4[fingerprint=="3f9a01bc"]
-# — and sphinx-needs evaluates that condition on every build. A requirement that
-# changes in Jama gets a new fingerprint on the next sync, and every link still
-# pinned to the old one fails with `needs.link_condition_failed`. Re-baseline
-# after review with `ubc script suspects:accept`.
-[needs.fields.fingerprint]
-description = "Content fingerprint of an ALM-sourced requirement; downstream links pin it to detect suspect links."
 default = ""
 
 [needs.fields.alm_stream]
