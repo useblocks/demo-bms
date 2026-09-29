@@ -49,7 +49,7 @@ Elements
 .. arch:: Pack Current Path Monitor
    :id: ARCH_CURRENT_PATH_MONITOR
    :status: draft
-   :satisfies: JAMA_Rollout_Demo-SYSRQ-4[fingerprint=="0824db15"]
+   :satisfies: JAMA_Rollout_Demo-SYSRQ-4
 
    The Pack Current Path Monitor element owns the acquisition of the pack current
    from the shunt amplifier, sampled at 1 ms and reported with a signed sign
