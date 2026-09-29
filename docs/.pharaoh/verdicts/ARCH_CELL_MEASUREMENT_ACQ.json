@@ -27,7 +27,7 @@
   "criteria_fingerprint": "48337dfa0b294b1882460a938500fa11eb3e8fd873d5cd9afa31ff1f7923f377",
   "model": "claude-fable-5-1",
   "need": "ARCH_CELL_MEASUREMENT_ACQ",
-  "reviewed_fingerprint": "b53737ce71c91bd28c612f738de39a1322f16fda369607807250e3eca8540615",
+  "reviewed_fingerprint": "249bd1101d7ef4a83e49e26d072b99a5205cf477bdce69eb4fa88c417175e650",
   "schema": 2,
   "summary": "Re-reviewed after REQ_CELL_VOLTAGE_LIMITS became variant-resolved; the element is unaffected by that change and still covers the measurement half cleanly."
 }

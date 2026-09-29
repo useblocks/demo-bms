@@ -27,7 +27,7 @@
   "criteria_fingerprint": "48337dfa0b294b1882460a938500fa11eb3e8fd873d5cd9afa31ff1f7923f377",
   "model": "claude-opus-5[1m]",
   "need": "ARCH_POWER_LIMIT_CALCULATOR",
-  "reviewed_fingerprint": "e680f14870a764a27c9d600d8d230f24ff0c75ea4a1f7baba4f7eba3fd871c10",
+  "reviewed_fingerprint": "b42e62e88cc5ca81dbd13ab866df87ba896c3341b7c4910a7ed0489c8b34db4a",
   "schema": 2,
   "summary": "Strong element: both derating causes are specified at their own numbers and the min-of-two combination rule is stated with its rationale. The only softness is the published quantity itself - percentages of an unnamed 'full permitted discharge power', with no publication cycle."
 }

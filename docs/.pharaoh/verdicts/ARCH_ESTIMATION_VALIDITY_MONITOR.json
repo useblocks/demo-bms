@@ -28,7 +28,7 @@
   "criteria_fingerprint": "48337dfa0b294b1882460a938500fa11eb3e8fd873d5cd9afa31ff1f7923f377",
   "model": "claude-opus-5[1m]",
   "need": "ARCH_ESTIMATION_VALIDITY_MONITOR",
-  "reviewed_fingerprint": "bb8507fb99eb615ce77bae54356f31d6e05eed2f458b852e6bddbbc255af3fda",
+  "reviewed_fingerprint": "3dc790668b9e44743b869629e860063f5d055cea3821ab3a6106d20d70c9958b",
   "schema": 2,
   "summary": "A tight, single-purpose observer that mirrors its parent's set and clear conditions exactly. The gap is the cold-start case: after a power cycle no current sample has ever arrived and the only clear condition is an OCV correction, so the initial verdict and timer state need to be stated."
 }

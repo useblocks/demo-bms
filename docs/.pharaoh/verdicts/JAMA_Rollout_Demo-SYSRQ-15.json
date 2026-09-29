@@ -31,7 +31,7 @@
   "criteria": "requirement",
   "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
   "model": "claude-opus-5[1m]",
-  "need": "REQ_SOH_CAPACITY_REPORT",
+  "need": "JAMA_Rollout_Demo-SYSRQ-15",
   "reviewed_fingerprint": "2d09dd28f7d5837c51201c5cbe43f63095e57bd6ab485e165421cc9f9dd12ce5",
   "schema": 2,
   "summary": "Faithful to the parent's monotonic-capacity observable, but the never-increase rule has no exception for a repaired pack and the requirement sets no accuracy bound at all, so a constant reported value would satisfy it."

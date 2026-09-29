@@ -14,7 +14,7 @@ version = "0.1.0"
 # diagnostic code. JAMA_Rollout_Demo-SYSRQ-2 carries no incoming `satisfies`
 # because the cell-balancing stream has not reached the archs stage — the standing
 # demo gap this project exists to show, reported by `ubc agent gaps` as
-# GAP_REQ_CELL_BALANCING_WINDOW_NO_SATISFIES_BACK and rendered on
+# GAP_JAMA_ROLLOUT_DEMO_SYSRQ_2_NO_SATISFIES_BACK and rendered on
 # traceability.rst. schemas.json's `coverage-req-satisfies-back` re-reports the
 # same fact as a lint warning, which turns that intended demo into red CI.
 #
@@ -114,6 +114,23 @@ sphinx = "uv run --extra ubtrace sphinx-build -W --keep-going -b html . _build/h
 sync-jama = "python3 ../tools/sync_alm.py"
 "sync-jama:rst" = "python3 ../tools/sync_alm.py --mode rst"
 "sync-jama:external" = "python3 ../tools/sync_alm.py --mode external"
+
+# Suspect-link analysis. Every `:satisfies:` link to a Jama requirement pins the
+# fingerprint it was reviewed against; `suspects` lists the links whose
+# requirement moved since, with what each change reaches, and exits 1 while any
+# is open. `suspects:accept` re-baselines them after review — its git diff is the
+# review record.
+suspects = "python3 ../tools/suspects.py"
+"suspects:accept" = "python3 ../tools/suspects.py --accept"
+
+# The model bridge. `import-models` re-reads the SysML v2 and AUTOSAR exports in
+# models/ (no network); `trace` walks one Jama requirement through every tool at
+# once — the SysML v2 part that satisfies it, the architecture in Git, the
+# AUTOSAR component that realizes that, the software requirement and the code.
+# `ubc script` forwards no arguments, so the demo requirement is fixed here:
+# change the id to trace another.
+import-models = "python3 ../tools/import_models.py"
+trace = """ubc query cypher "MATCH (r:req {id:'JAMA_Rollout_Demo-SYSRQ-4'}) MATCH (m:sysml_part)-[:satisfies]->(r) MATCH (a:arch)-[:satisfies]->(r) OPTIONAL MATCH (s:swc)-[:realizes]->(a) OPTIONAL MATCH (w:swreq)-[:refines]->(a) OPTIONAL MATCH (i:impl)-[:implements]->(w) RETURN m.id AS sysml_v2, a.id AS architecture, s.id AS autosar, w.id AS sw_requirement, i.id AS code ORDER BY architecture, sw_requirement""""
 
 # Put the tree back to the showcase starting position: roll every tracked file
 # back to the last commit, delete the Jama-acquired artefacts so the sync has
@@ -1234,6 +1251,18 @@ default = ""
 description = "Jama globalId — stable across project copies; the crosswalk key."
 default = ""
 
+# The suspect-link anchor. `tools/sync_alm.py` stamps every acquired requirement
+# with 8 hex characters derived from its title and content; a downstream need
+# pins the value it was reviewed against in its link —
+#   :satisfies: JAMA_Rollout_Demo-SYSRQ-4[fingerprint=="3f9a01bc"]
+# — and sphinx-needs evaluates that condition on every build. A requirement that
+# changes in Jama gets a new fingerprint on the next sync, and every link still
+# pinned to the old one fails with `needs.link_condition_failed`. Re-baseline
+# after review with `ubc script suspects:accept`.
+[needs.fields.fingerprint]
+description = "Content fingerprint of an ALM-sourced requirement; downstream links pin it to detect suspect links."
+default = ""
+
 [needs.fields.alm_stream]
 description = "Which BMS stream an ALM-sourced requirement belongs to. Re-attached from the crosswalk; Jama does not model streams."
 default = ""
@@ -1241,3 +1270,89 @@ default = ""
 [needs.fields.legacy_id]
 description = "The id the requirement carried while it was still authored in this repository, kept so the migration to Jama stays auditable."
 default = ""
+
+# --- MODEL BRIDGE (SysML v2, AUTOSAR) ---
+# The system models are NOT authored here. Their masters are the modelling tools;
+# `models/` holds their exports (`bms.sysml`, SysML v2 textual notation;
+# `bms.arxml`, AUTOSAR classic R4.x), and `../tools/import_models.py` turns them
+# into two read-only external-needs sources. The links come FROM the models,
+# because the models own them:
+#
+#   sysml_part --satisfies--> req         a SysML v2 `satisfy`; the requirement is
+#                                         mirrored in the model by its Jama id
+#   sysml_part --part_of-->   sysml_part  the subsystems of the system
+#   swc        --realizes-->  arch        an AUTOSAR SDG, GID useblocks.Traceability
+#   swc        --provides-->  port_if     a P-PORT-PROTOTYPE
+#   swc        --requires-->  port_if     an R-PORT-PROTOTYPE
+#
+# `satisfies` from a SysML part does NOT close an architecture gap: the coverage
+# rule in schemas.json counts incoming `satisfies` from `arch` only, so the
+# deliberate cell-balancing gap stays open while the system model covers it.
+#
+# Neither ubConnect nor Sphinx-Needs has a SysML v2 or AUTOSAR connector today;
+# the importer is the pattern — any model exported as structured text becomes
+# needs — not a product feature.
+
+[[needs.types]]
+directive = "sysml_part"
+title = "SysML v2 Part"
+prefix = "SYSML_"
+color = "#C7D2FE"
+style = "rectangle"
+
+[[needs.types]]
+directive = "swc"
+title = "AUTOSAR SW Component"
+prefix = "AR_SWC_"
+color = "#A7F3D0"
+style = "component"
+
+[[needs.types]]
+directive = "port_if"
+title = "AUTOSAR Port Interface"
+prefix = "AR_IF_"
+color = "#D9F99D"
+style = "rectangle"
+
+[needs.links.part_of]
+incoming = "has_part"
+outgoing = "part_of"
+
+[needs.links.realizes]
+incoming = "realized_by"
+outgoing = "realizes"
+
+[needs.links.provides]
+incoming = "provided_by"
+outgoing = "provides"
+
+[needs.links.requires]
+incoming = "required_by"
+outgoing = "requires"
+
+[needs.fields.model_file]
+description = "The model export a model-sourced need was read from (bms.sysml, bms.arxml)."
+default = ""
+
+[needs.fields.model_line]
+description = "Line in the model export that defines the element; the external link opens it."
+default = ""
+
+[needs.fields.model_kind]
+description = "The model element kind, e.g. SysML v2 part def, AUTOSAR APPLICATION-SW-COMPONENT-TYPE."
+default = ""
+
+# Every model element links back to the line that defines it, in the repository
+# on GitHub. Sphinx-Needs REQUIRES a `base_url` on an external source (it aborts
+# the build without one), and `ubc` warns that the needs render unlinked.
+[[needs.external_needs]]
+json_path = "models/sysml.json"
+base_url = "https://github.com/useblocks/rollout-demo-bms/blob/main/docs/models"
+target_url = "{{need['model_file']}}#L{{need['model_line']}}"
+css_class = "model-external"
+
+[[needs.external_needs]]
+json_path = "models/autosar.json"
+base_url = "https://github.com/useblocks/rollout-demo-bms/blob/main/docs/models"
+target_url = "{{need['model_file']}}#L{{need['model_line']}}"
+css_class = "model-external"

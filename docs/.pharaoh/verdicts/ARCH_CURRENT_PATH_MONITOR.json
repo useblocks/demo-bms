@@ -28,7 +28,7 @@
   "criteria_fingerprint": "48337dfa0b294b1882460a938500fa11eb3e8fd873d5cd9afa31ff1f7923f377",
   "model": "claude-opus-5[1m]",
   "need": "ARCH_CURRENT_PATH_MONITOR",
-  "reviewed_fingerprint": "c3b8da6df7877d54e9998856286f9bae85c32a8f96990976a56d795beac60524",
+  "reviewed_fingerprint": "41ced76c286dc53edb008800851ece24d94dbe5f40858737d65df0a23b99c949",
   "schema": 2,
   "summary": "The debounce is specified precisely enough to implement and test. The problem is ownership: this element compares samples against 350 A while its sibling ARCH_SAFETY_SUPERVISOR also lists overcurrent in its static limit table, so the threshold appears to be evaluated twice."
 }

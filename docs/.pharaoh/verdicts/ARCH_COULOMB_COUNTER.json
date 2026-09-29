@@ -28,7 +28,7 @@
   "criteria_fingerprint": "48337dfa0b294b1882460a938500fa11eb3e8fd873d5cd9afa31ff1f7923f377",
   "model": "claude-opus-5[1m]",
   "need": "ARCH_COULOMB_COUNTER",
-  "reviewed_fingerprint": "4af1717fc421068b43acfaec8d3b1fe25e1dc3f749d6417a13e8d9a0529cc548",
+  "reviewed_fingerprint": "068d904702c7a091a5c4f2294fc9cec3f021470842371a82cd8ae0fa2dd1bf04",
   "schema": 2,
   "summary": "The numeric core is well chosen and precisely stated, and the split against ARCH_OCV_CORRECTOR is clean. What is missing is any engagement with the 3 % error budget it is supposed to serve, and the relationship between its 10 ms tick and the 1 ms current sampling upstream."
 }

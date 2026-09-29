@@ -28,7 +28,7 @@
   "criteria_fingerprint": "48337dfa0b294b1882460a938500fa11eb3e8fd873d5cd9afa31ff1f7923f377",
   "model": "claude-opus-5[1m]",
   "need": "ARCH_THERMAL_STATE_EVALUATOR",
-  "reviewed_fingerprint": "5f802f6c8b71fdd4929655b9bc1cf165e5710ffb8578923df83008d720d1946d",
+  "reviewed_fingerprint": "81c8b21d45d5dd06c65b5562cec2860fb9ec775980846d70962cac9efe997b3d",
   "schema": 2,
   "summary": "All three parents are hit at their own numbers with both hysteresis edges named - very good design content. Two gaps: the imbalance warning is raised only as an internal verdict, while the parent obligates it on the diagnostic interface, and the claim to read temperature sensors directly collides with ARCH_CELL_MEASUREMENT_ACQ's ownership of all cell temperature readout."
 }

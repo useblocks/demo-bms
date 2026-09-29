@@ -31,7 +31,7 @@
   "criteria": "requirement",
   "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
   "model": "claude-opus-5[1m]",
-  "need": "REQ_CELL_TEMP_SPREAD",
+  "need": "JAMA_Rollout_Demo-SYSRQ-20",
   "reviewed_fingerprint": "187f9835bcb9e584b573430e0ce98364b3d3f7f3d0db39052a9faf83bd213fc5",
   "schema": 2,
   "summary": "Well-quantified diagnostic warning, but it only detects the imbalance the parent story promises to contain, and it states no condition for clearing the warning."

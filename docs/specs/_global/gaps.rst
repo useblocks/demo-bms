@@ -23,7 +23,7 @@ diagram and as a non-empty ``gaps`` cell in every level table on
 ``ubc agent next --id <NEED_ID>``.
 
 .. gap:: JAMA_Rollout_Demo-SYSRQ-2 — nothing links back to it with satisfies
-   :id: GAP_REQ_CELL_BALANCING_WINDOW_NO_SATISFIES_BACK
+   :id: GAP_JAMA_ROLLOUT_DEMO_SYSRQ_2_NO_SATISFIES_BACK
    :gap_for: JAMA_Rollout_Demo-SYSRQ-2
    :gap_category: trace_backward
    :gap_link: satisfies

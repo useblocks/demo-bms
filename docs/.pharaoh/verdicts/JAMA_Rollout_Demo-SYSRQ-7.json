@@ -32,7 +32,7 @@
   "criteria": "requirement",
   "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
   "model": "claude-opus-5[1m]",
-  "need": "REQ_MEASUREMENT_PLAUSIBILITY",
+  "need": "JAMA_Rollout_Demo-SYSRQ-7",
   "reviewed_fingerprint": "5a84deb2a9be6d8b8b23b1e03a0e523266b13ebab6ac67bbb0d7fbaefa9fff36",
   "schema": 2,
   "summary": "LOUD FLAG: the plausibility rule as written can mask the very fault the voltage-limit requirement exists to catch. A genuinely collapsed cell deviates from its module median by far more than 250 mV, is therefore marked invalid, and is then excluded from limit evaluation - so no contactor-open command is issued."

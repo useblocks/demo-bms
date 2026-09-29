@@ -1,0 +1,112 @@
+{
+ "current_version": "model",
+ "project": "BMS system model (SysML v2)",
+ "versions": {
+  "model": {
+   "needs": {
+    "SYSML_BATTERY_MANAGEMENT_SYSTEM": {
+     "content": "The controller that keeps the traction battery inside its safe operating window, reports its state and keeps it at a usable temperature.",
+     "id": "SYSML_BATTERY_MANAGEMENT_SYSTEM",
+     "model_file": "bms.sysml",
+     "model_kind": "SysML v2 part def",
+     "model_line": "45",
+     "part_of": [],
+     "satisfies": [],
+     "title": "Battery Management System",
+     "type": "sysml_part"
+    },
+    "SYSML_CELL_BALANCING": {
+     "content": "Brings the cell voltages of the pack back together after a charge session.",
+     "id": "SYSML_CELL_BALANCING",
+     "model_file": "bms.sysml",
+     "model_kind": "SysML v2 part def",
+     "model_line": "98",
+     "part_of": [
+      "SYSML_BATTERY_MANAGEMENT_SYSTEM"
+     ],
+     "satisfies": [
+      "JAMA_Rollout_Demo-SYSRQ-2"
+     ],
+     "title": "Cell Balancing",
+     "type": "sysml_part"
+    },
+    "SYSML_CELL_PROTECTION": {
+     "content": "Keeps every cell inside the safe window of its chemistry: measures voltage, temperature and current, and opens the high-voltage contactors when a limit is violated.",
+     "id": "SYSML_CELL_PROTECTION",
+     "model_file": "bms.sysml",
+     "model_kind": "SysML v2 part def",
+     "model_line": "82",
+     "part_of": [
+      "SYSML_BATTERY_MANAGEMENT_SYSTEM"
+     ],
+     "satisfies": [
+      "JAMA_Rollout_Demo-SYSRQ-3",
+      "JAMA_Rollout_Demo-SYSRQ-4",
+      "JAMA_Rollout_Demo-SYSRQ-5",
+      "JAMA_Rollout_Demo-SYSRQ-6",
+      "JAMA_Rollout_Demo-SYSRQ-7",
+      "JAMA_Rollout_Demo-SYSRQ-8",
+      "JAMA_Rollout_Demo-SYSRQ-9"
+     ],
+     "title": "Cell Protection",
+     "type": "sysml_part"
+    },
+    "SYSML_ISOLATION_MONITORING": {
+     "content": "Watches the insulation between the high-voltage bus and the vehicle chassis.",
+     "id": "SYSML_ISOLATION_MONITORING",
+     "model_file": "bms.sysml",
+     "model_kind": "SysML v2 part def",
+     "model_line": "103",
+     "part_of": [
+      "SYSML_BATTERY_MANAGEMENT_SYSTEM"
+     ],
+     "satisfies": [
+      "JAMA_Rollout_Demo-SYSRQ-10"
+     ],
+     "title": "Isolation Monitoring",
+     "type": "sysml_part"
+    },
+    "SYSML_STATE_ESTIMATION": {
+     "content": "Estimates the state of charge and the remaining capacity, and says when that estimate can no longer be trusted.",
+     "id": "SYSML_STATE_ESTIMATION",
+     "model_file": "bms.sysml",
+     "model_kind": "SysML v2 part def",
+     "model_line": "88",
+     "part_of": [
+      "SYSML_BATTERY_MANAGEMENT_SYSTEM"
+     ],
+     "satisfies": [
+      "JAMA_Rollout_Demo-SYSRQ-11",
+      "JAMA_Rollout_Demo-SYSRQ-12",
+      "JAMA_Rollout_Demo-SYSRQ-13",
+      "JAMA_Rollout_Demo-SYSRQ-14",
+      "JAMA_Rollout_Demo-SYSRQ-15",
+      "JAMA_Rollout_Demo-SYSRQ-16"
+     ],
+     "title": "State Estimation",
+     "type": "sysml_part"
+    },
+    "SYSML_THERMAL_MANAGEMENT": {
+     "content": "Keeps the pack at a usable temperature and derates the permitted discharge power when it runs hot.",
+     "id": "SYSML_THERMAL_MANAGEMENT",
+     "model_file": "bms.sysml",
+     "model_kind": "SysML v2 part def",
+     "model_line": "93",
+     "part_of": [
+      "SYSML_BATTERY_MANAGEMENT_SYSTEM"
+     ],
+     "satisfies": [
+      "JAMA_Rollout_Demo-SYSRQ-17",
+      "JAMA_Rollout_Demo-SYSRQ-18",
+      "JAMA_Rollout_Demo-SYSRQ-19",
+      "JAMA_Rollout_Demo-SYSRQ-20",
+      "JAMA_Rollout_Demo-SYSRQ-21"
+     ],
+     "title": "Thermal Management",
+     "type": "sysml_part"
+    }
+   },
+   "needs_amount": 6
+  }
+ }
+}

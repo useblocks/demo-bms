@@ -86,7 +86,10 @@ build: the Jama REST API degrades under continuous sync load.
 from __future__ import annotations
 
 import argparse
+import hashlib
+import html
 import json
+import re
 import os
 import shutil
 import subprocess
@@ -137,6 +140,7 @@ STREAM_TITLES = {
 # the external JSON cannot drift apart in which fields they carry.
 CARRIED_FIELDS = (
     "status",
+    "fingerprint",
     "traces_to",
     "alm_stream",
     "legacy_id",
@@ -294,6 +298,46 @@ def needs_of(snapshot: dict) -> dict:
     return versions[key].get("needs") or {}
 
 
+def plain_text(value: str) -> str:
+    """Turn a Jama rich-text description into plain text an RST body can hold.
+
+    Jama stores what the migration pushed verbatim, but the moment someone edits
+    a description in the Jama UI its rich-text editor saves HTML (`<p>...</p>`,
+    `<br>`, `&nbsp;`, lists). Rendered unchanged, that would put raw tags on the
+    requirement page on the first live edit of the demo. Paragraphs and line
+    breaks survive as blank lines, list items as `- ` bullets; every other tag is
+    dropped and entities are decoded.
+    """
+    if "<" not in value and "&" not in value:
+        return value.strip()
+    text = re.sub(r"(?i)<br\s*/?>", "\n", value)
+    text = re.sub(r"(?i)</p\s*>|</div\s*>|</h[1-6]\s*>", "\n\n", text)
+    text = re.sub(r"(?i)<li[^>]*>", "\n- ", text)
+    text = re.sub(r"<[^>]+>", "", text)
+    text = html.unescape(text).replace("\u00a0", " ")
+    lines = [line.rstrip() for line in text.splitlines()]
+    return re.sub(r"\n{3,}", "\n\n", "\n".join(lines)).strip()
+
+
+def fingerprint(title: str, content: str) -> str:
+    """Eight hex characters that change whenever the substance of a requirement does.
+
+    Downstream needs pin the fingerprint they were reviewed against in their link
+    — `:satisfies: JAMA_...-4[fingerprint=="3f9a01bc"]` — and sphinx-needs
+    evaluates that condition on every build. Edit the requirement in Jama, re-sync,
+    and the fingerprint moves: every link still pinned to the old value fails with
+    `needs.link_condition_failed`, in the editor, in `ubc check` and in
+    `sphinx-build -W`. That is a suspect link, computed rather than remembered.
+
+    Title and content only. A status change is not a change of substance, and the
+    Jama ids, urls and the crosswalk fields are identity, not meaning. Whitespace
+    is collapsed first, so Jama re-wrapping a paragraph raises no false suspect —
+    only a changed word does.
+    """
+    words = " ".join(title.split()) + "\n" + " ".join(content.split())
+    return hashlib.sha256(words.encode("utf-8")).hexdigest()[:8]
+
+
 def harden(needs: dict, config: dict, crosswalk: dict) -> list[dict]:
     """Turn raw from-jama output into needs this project can build."""
     labels = {str(k): v for k, v in config.get("jama_status_labels", {}).items()}
@@ -312,12 +356,15 @@ def harden(needs: dict, config: dict, crosswalk: dict) -> list[dict]:
         if raw_status and raw_status not in labels:
             unknown_status.add(raw_status)
 
+        title = (need.get("title") or "").strip()
+        content = plain_text(need.get("content") or "")
         out.append(
             {
                 "id": need["id"],
                 "type": "req",
-                "title": need["title"],
-                "content": (need.get("content") or "").strip(),
+                "title": title,
+                "content": content,
+                "fingerprint": fingerprint(title, content),
                 "status": labels.get(raw_status, raw_status.lower()),
                 "traces_to": entry.get("traces_to") or [],
                 "alm_stream": entry["stream"],

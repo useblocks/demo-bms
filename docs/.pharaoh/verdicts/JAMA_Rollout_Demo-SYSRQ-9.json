@@ -31,7 +31,7 @@
   "criteria": "requirement",
   "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
   "model": "claude-opus-5[1m]",
-  "need": "REQ_FAULT_RECORD",
+  "need": "JAMA_Rollout_Demo-SYSRQ-9",
   "reviewed_fingerprint": "f9128368b2ddb4ecd3ff298c35a08abc5dfa1072530ada077cb998fb98a3edf8",
   "schema": 2,
   "summary": "Content fields are well chosen and match the parent's workshop observable, but the requirement bundles the retrieval path with the write, and leaves repeat-fault and memory-full behaviour open."

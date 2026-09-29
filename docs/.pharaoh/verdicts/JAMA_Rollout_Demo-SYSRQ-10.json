@@ -30,7 +30,7 @@
   "criteria": "requirement",
   "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
   "model": "claude-fable-5-1",
-  "need": "REQ_ISOLATION_FAULT",
+  "need": "JAMA_Rollout_Demo-SYSRQ-10",
   "reviewed_fingerprint": "c2d43ebc111dc5f45b906b8d37a0d37bd377419118bf3814a97504c519c46216",
   "schema": 2,
   "summary": "Concrete and traceable; the de-energised case and the clearing behaviour are decided one level down and should be stated here too."

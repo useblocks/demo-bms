@@ -1,0 +1,82 @@
+{
+    // The ALM loop from the command palette: Ctrl+Shift+P -> "Tasks: Run Task".
+    //
+    // Every task is a `ubc script` defined in docs/ubproject.toml, so the editor,
+    // the terminal and CI all run the same commands. `ubc` is the CLI the ubCode
+    // extension bundles; settings.json puts it on the integrated terminal's PATH.
+    //
+    // The suspect links these tasks report are ALSO live in the editor: the
+    // ubCode sidebar's "Diagnostics" view lists every `:satisfies:` link whose
+    // requirement moved in Jama (`needs.link_condition_failed`), with "Go to
+    // Source" to the exact line. Note it is that view, not an inline squiggle:
+    // ubCode 0.35 underlines syntax problems in the file, and reports graph
+    // problems — dead links, schema violations, suspect links — project-wide.
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Jama: acquire the system requirements",
+            "detail": "ubc script sync-jama — keeps the current mode",
+            "type": "shell",
+            "command": "ubc script sync-jama --path docs",
+            "problemMatcher": [],
+            "group": { "kind": "build", "isDefault": true }
+        },
+        {
+            "label": "Jama: acquire as RST (round trip)",
+            "detail": "ubc script sync-jama:rst",
+            "type": "shell",
+            "command": "ubc script sync-jama:rst --path docs",
+            "problemMatcher": []
+        },
+        {
+            "label": "Jama: acquire as external needs (read-only)",
+            "detail": "ubc script sync-jama:external",
+            "type": "shell",
+            "command": "ubc script sync-jama:external --path docs",
+            "problemMatcher": []
+        },
+        {
+            "label": "Suspect links: show",
+            "detail": "ubc script suspects — what changed in Jama and what it reaches",
+            "type": "shell",
+            "command": "ubc script suspects --path docs",
+            "problemMatcher": []
+        },
+        {
+            "label": "Suspect links: accept after review",
+            "detail": "ubc script suspects:accept — the git diff is the review record",
+            "type": "shell",
+            "command": "ubc script suspects:accept --path docs",
+            "problemMatcher": []
+        },
+        {
+            "label": "Models: re-import SysML v2 and AUTOSAR",
+            "detail": "ubc script import-models — no network",
+            "type": "shell",
+            "command": "ubc script import-models --path docs",
+            "problemMatcher": []
+        },
+        {
+            "label": "Trace: one requirement through every tool",
+            "detail": "ubc script trace — Jama, SysML v2, Git, AUTOSAR, code",
+            "type": "shell",
+            "command": "ubc script trace --path docs",
+            "problemMatcher": []
+        },
+        {
+            "label": "Graph: check",
+            "detail": "ubc check docs",
+            "type": "shell",
+            "command": "ubc check docs",
+            "problemMatcher": []
+        },
+        {
+            "label": "Showcase: reset",
+            "detail": "ubc script reset — DISCARDS uncommitted work, asks first",
+            "type": "shell",
+            "command": "ubc script reset --path docs",
+            "problemMatcher": [],
+            "presentation": { "focus": true, "panel": "dedicated" }
+        }
+    ]
+}

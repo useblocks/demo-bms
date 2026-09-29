@@ -86,7 +86,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :outcome: passed
    :runtime_s: 0.000
    :test_run_label: 2026-09-10 13:09:32 +02:00
-   :chain_reqs: JAMA_Rollout_Demo-SYSRQ-5, JAMA_Rollout_Demo-SYSRQ-3, JAMA_Rollout_Demo-SYSRQ-7
+   :chain_reqs: JAMA_Rollout_Demo-SYSRQ-3, JAMA_Rollout_Demo-SYSRQ-5, JAMA_Rollout_Demo-SYSRQ-7
 
    ``tests/cell_protection/test_acquisition.py::test_complete_sample_set_every_cycle`` recorded ``passed`` in 0.000 s.
 
@@ -96,7 +96,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :outcome: passed
    :runtime_s: 0.000
    :test_run_label: 2026-09-10 13:09:32 +02:00
-   :chain_reqs: JAMA_Rollout_Demo-SYSRQ-5, JAMA_Rollout_Demo-SYSRQ-3, JAMA_Rollout_Demo-SYSRQ-7
+   :chain_reqs: JAMA_Rollout_Demo-SYSRQ-3, JAMA_Rollout_Demo-SYSRQ-5, JAMA_Rollout_Demo-SYSRQ-7
 
    ``tests/cell_protection/test_acquisition.py::test_cycle_is_due_only_after_ten_milliseconds`` recorded ``passed`` in 0.000 s.
 
@@ -136,7 +136,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :outcome: passed
    :runtime_s: 0.000
    :test_run_label: 2026-09-10 13:09:32 +02:00
-   :chain_reqs: JAMA_Rollout_Demo-SYSRQ-8, JAMA_Rollout_Demo-SYSRQ-6
+   :chain_reqs: JAMA_Rollout_Demo-SYSRQ-6, JAMA_Rollout_Demo-SYSRQ-8
 
    ``tests/cell_protection/test_contactor.py::test_open_deenergises_both_channels_within_budget`` recorded ``passed`` in 0.000 s.
 
@@ -146,7 +146,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :outcome: passed
    :runtime_s: 0.000
    :test_run_label: 2026-09-10 13:09:32 +02:00
-   :chain_reqs: JAMA_Rollout_Demo-SYSRQ-8, JAMA_Rollout_Demo-SYSRQ-6
+   :chain_reqs: JAMA_Rollout_Demo-SYSRQ-6, JAMA_Rollout_Demo-SYSRQ-8
 
    ``tests/cell_protection/test_contactor.py::test_close_is_refused_while_latched`` recorded ``passed`` in 0.000 s.
 
@@ -156,7 +156,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :outcome: passed
    :runtime_s: 0.000
    :test_run_label: 2026-09-10 13:09:32 +02:00
-   :chain_reqs: JAMA_Rollout_Demo-SYSRQ-20, JAMA_Rollout_Demo-SYSRQ-17, JAMA_Rollout_Demo-SYSRQ-18
+   :chain_reqs: JAMA_Rollout_Demo-SYSRQ-17, JAMA_Rollout_Demo-SYSRQ-18, JAMA_Rollout_Demo-SYSRQ-20
 
    ``tests/thermal_management/test_evaluator.py::test_cooling_request_holds_inside_the_band`` recorded ``passed`` in 0.000 s.
 
@@ -216,7 +216,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :outcome: passed
    :runtime_s: 0.000
    :test_run_label: 2026-09-10 13:09:32 +02:00
-   :chain_reqs: JAMA_Rollout_Demo-SYSRQ-20, JAMA_Rollout_Demo-SYSRQ-17, JAMA_Rollout_Demo-SYSRQ-18
+   :chain_reqs: JAMA_Rollout_Demo-SYSRQ-17, JAMA_Rollout_Demo-SYSRQ-18, JAMA_Rollout_Demo-SYSRQ-20
 
    ``tests/thermal_management/test_evaluator.py::test_heating_request_holds_inside_the_band`` recorded ``passed`` in 0.000 s.
 
@@ -226,7 +226,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :outcome: passed
    :runtime_s: 0.000
    :test_run_label: 2026-09-10 13:09:32 +02:00
-   :chain_reqs: JAMA_Rollout_Demo-SYSRQ-5, JAMA_Rollout_Demo-SYSRQ-3, JAMA_Rollout_Demo-SYSRQ-8, JAMA_Rollout_Demo-SYSRQ-4
+   :chain_reqs: JAMA_Rollout_Demo-SYSRQ-3, JAMA_Rollout_Demo-SYSRQ-4, JAMA_Rollout_Demo-SYSRQ-5, JAMA_Rollout_Demo-SYSRQ-8
 
    ``tests/cell_protection/test_supervisor.py::test_fully_invalid_cycle_is_silent`` recorded ``passed`` in 0.000 s.
 
@@ -236,7 +236,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :outcome: passed
    :runtime_s: 0.000
    :test_run_label: 2026-09-10 13:09:32 +02:00
-   :chain_reqs: JAMA_Rollout_Demo-SYSRQ-5, JAMA_Rollout_Demo-SYSRQ-3, JAMA_Rollout_Demo-SYSRQ-8, JAMA_Rollout_Demo-SYSRQ-4
+   :chain_reqs: JAMA_Rollout_Demo-SYSRQ-3, JAMA_Rollout_Demo-SYSRQ-4, JAMA_Rollout_Demo-SYSRQ-5, JAMA_Rollout_Demo-SYSRQ-8
 
    ``tests/cell_protection/test_supervisor.py::test_invalid_samples_are_excluded_from_evaluation`` recorded ``passed`` in 0.000 s.
 
@@ -246,7 +246,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :outcome: failed
    :runtime_s: 0.000
    :test_run_label: 2026-09-10 13:09:32 +02:00
-   :chain_reqs: JAMA_Rollout_Demo-SYSRQ-20, JAMA_Rollout_Demo-SYSRQ-17, JAMA_Rollout_Demo-SYSRQ-18
+   :chain_reqs: JAMA_Rollout_Demo-SYSRQ-17, JAMA_Rollout_Demo-SYSRQ-18, JAMA_Rollout_Demo-SYSRQ-20
 
    ``tests/thermal_management/test_evaluator.py::test_imbalance_warning_tracks_the_spread_directly`` recorded ``failed`` in 0.000 s.
 
@@ -278,7 +278,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :outcome: passed
    :runtime_s: 0.000
    :test_run_label: 2026-09-10 13:09:32 +02:00
-   :chain_reqs: JAMA_Rollout_Demo-SYSRQ-5, JAMA_Rollout_Demo-SYSRQ-3, JAMA_Rollout_Demo-SYSRQ-8, JAMA_Rollout_Demo-SYSRQ-4
+   :chain_reqs: JAMA_Rollout_Demo-SYSRQ-3, JAMA_Rollout_Demo-SYSRQ-4, JAMA_Rollout_Demo-SYSRQ-5, JAMA_Rollout_Demo-SYSRQ-8
 
    ``tests/cell_protection/test_supervisor.py::test_latch_retains_the_first_violation`` recorded ``passed`` in 0.000 s.
 
@@ -288,7 +288,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :outcome: passed
    :runtime_s: 0.000
    :test_run_label: 2026-09-10 13:09:32 +02:00
-   :chain_reqs: JAMA_Rollout_Demo-SYSRQ-5, JAMA_Rollout_Demo-SYSRQ-3, JAMA_Rollout_Demo-SYSRQ-8, JAMA_Rollout_Demo-SYSRQ-4
+   :chain_reqs: JAMA_Rollout_Demo-SYSRQ-3, JAMA_Rollout_Demo-SYSRQ-4, JAMA_Rollout_Demo-SYSRQ-5, JAMA_Rollout_Demo-SYSRQ-8
 
    ``tests/cell_protection/test_supervisor.py::test_latch_survives_healthy_samples_and_clears_only_on_reset`` recorded ``passed`` in 0.000 s.
 
@@ -308,7 +308,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :outcome: passed
    :runtime_s: 0.000
    :test_run_label: 2026-09-10 13:09:32 +02:00
-   :chain_reqs: JAMA_Rollout_Demo-SYSRQ-5, JAMA_Rollout_Demo-SYSRQ-3, JAMA_Rollout_Demo-SYSRQ-8, JAMA_Rollout_Demo-SYSRQ-4
+   :chain_reqs: JAMA_Rollout_Demo-SYSRQ-3, JAMA_Rollout_Demo-SYSRQ-4, JAMA_Rollout_Demo-SYSRQ-5, JAMA_Rollout_Demo-SYSRQ-8
 
    ``tests/cell_protection/test_supervisor.py::test_each_limit_table_entry_is_evaluated`` recorded ``passed`` in 0.000 s.
 
@@ -318,7 +318,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :outcome: passed
    :runtime_s: 0.000
    :test_run_label: 2026-09-10 13:09:32 +02:00
-   :chain_reqs: JAMA_Rollout_Demo-SYSRQ-5, JAMA_Rollout_Demo-SYSRQ-3, JAMA_Rollout_Demo-SYSRQ-8, JAMA_Rollout_Demo-SYSRQ-4
+   :chain_reqs: JAMA_Rollout_Demo-SYSRQ-3, JAMA_Rollout_Demo-SYSRQ-4, JAMA_Rollout_Demo-SYSRQ-5, JAMA_Rollout_Demo-SYSRQ-8
 
    ``tests/cell_protection/test_supervisor.py::test_nominal_sample_produces_no_violation`` recorded ``passed`` in 0.000 s.
 
@@ -338,7 +338,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :outcome: passed
    :runtime_s: 0.000
    :test_run_label: 2026-09-10 13:09:32 +02:00
-   :chain_reqs: JAMA_Rollout_Demo-SYSRQ-5, JAMA_Rollout_Demo-SYSRQ-3, JAMA_Rollout_Demo-SYSRQ-7
+   :chain_reqs: JAMA_Rollout_Demo-SYSRQ-3, JAMA_Rollout_Demo-SYSRQ-5, JAMA_Rollout_Demo-SYSRQ-7
 
    ``tests/cell_protection/test_acquisition.py::test_median_is_scoped_to_the_module`` recorded ``passed`` in 0.000 s.
 
@@ -348,7 +348,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :outcome: passed
    :runtime_s: 0.000
    :test_run_label: 2026-09-10 13:09:32 +02:00
-   :chain_reqs: JAMA_Rollout_Demo-SYSRQ-5, JAMA_Rollout_Demo-SYSRQ-3, JAMA_Rollout_Demo-SYSRQ-7
+   :chain_reqs: JAMA_Rollout_Demo-SYSRQ-3, JAMA_Rollout_Demo-SYSRQ-5, JAMA_Rollout_Demo-SYSRQ-7
 
    ``tests/cell_protection/test_acquisition.py::test_module_median_deviation_marks_sample_invalid`` recorded ``passed`` in 0.000 s.
 
@@ -468,7 +468,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :outcome: passed
    :runtime_s: 0.000
    :test_run_label: 2026-09-10 13:09:32 +02:00
-   :chain_reqs: JAMA_Rollout_Demo-SYSRQ-16, JAMA_Rollout_Demo-SYSRQ-12
+   :chain_reqs: JAMA_Rollout_Demo-SYSRQ-12, JAMA_Rollout_Demo-SYSRQ-16
 
    ``tests/state_estimation/test_publisher.py::test_frame_carries_the_latest_values`` recorded ``passed`` in 0.000 s.
 
@@ -478,7 +478,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :outcome: passed
    :runtime_s: 0.000
    :test_run_label: 2026-09-10 13:09:32 +02:00
-   :chain_reqs: JAMA_Rollout_Demo-SYSRQ-16, JAMA_Rollout_Demo-SYSRQ-12
+   :chain_reqs: JAMA_Rollout_Demo-SYSRQ-12, JAMA_Rollout_Demo-SYSRQ-16
 
    ``tests/state_estimation/test_publisher.py::test_frame_is_sent_once_per_period`` recorded ``passed`` in 0.000 s.
 
@@ -488,7 +488,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :outcome: passed
    :runtime_s: 0.000
    :test_run_label: 2026-09-10 13:09:32 +02:00
-   :chain_reqs: JAMA_Rollout_Demo-SYSRQ-16, JAMA_Rollout_Demo-SYSRQ-12
+   :chain_reqs: JAMA_Rollout_Demo-SYSRQ-12, JAMA_Rollout_Demo-SYSRQ-16
 
    ``tests/state_estimation/test_publisher.py::test_stale_producer_values_are_repeated_not_skipped`` recorded ``passed`` in 0.000 s.
 
@@ -518,7 +518,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :outcome: passed
    :runtime_s: 0.000
    :test_run_label: 2026-09-10 13:09:32 +02:00
-   :chain_reqs: JAMA_Rollout_Demo-SYSRQ-20, JAMA_Rollout_Demo-SYSRQ-17, JAMA_Rollout_Demo-SYSRQ-18
+   :chain_reqs: JAMA_Rollout_Demo-SYSRQ-17, JAMA_Rollout_Demo-SYSRQ-18, JAMA_Rollout_Demo-SYSRQ-20
 
    ``tests/thermal_management/test_evaluator.py::test_extrema_and_spread_ignore_invalid_samples`` recorded ``passed`` in 0.000 s.
 
@@ -528,7 +528,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :outcome: passed
    :runtime_s: 0.000
    :test_run_label: 2026-09-10 13:09:32 +02:00
-   :chain_reqs: JAMA_Rollout_Demo-SYSRQ-20, JAMA_Rollout_Demo-SYSRQ-17, JAMA_Rollout_Demo-SYSRQ-18
+   :chain_reqs: JAMA_Rollout_Demo-SYSRQ-17, JAMA_Rollout_Demo-SYSRQ-18, JAMA_Rollout_Demo-SYSRQ-20
 
    ``tests/thermal_management/test_evaluator.py::test_fully_invalid_cycle_reports_unavailable`` recorded ``passed`` in 0.000 s.
 
@@ -538,6 +538,6 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :outcome: passed
    :runtime_s: 0.000
    :test_run_label: 2026-09-10 13:09:32 +02:00
-   :chain_reqs: JAMA_Rollout_Demo-SYSRQ-20, JAMA_Rollout_Demo-SYSRQ-17, JAMA_Rollout_Demo-SYSRQ-18
+   :chain_reqs: JAMA_Rollout_Demo-SYSRQ-17, JAMA_Rollout_Demo-SYSRQ-18, JAMA_Rollout_Demo-SYSRQ-20
 
    ``tests/thermal_management/test_evaluator.py::test_cycle_drives_every_output`` recorded ``passed`` in 0.000 s.

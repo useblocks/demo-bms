@@ -31,7 +31,7 @@
   "criteria": "requirement",
   "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
   "model": "claude-opus-5[1m]",
-  "need": "REQ_SOC_PERSISTENCE",
+  "need": "JAMA_Rollout_Demo-SYSRQ-14",
   "reviewed_fingerprint": "926151e67d16643ce88fba5ab486d249072a082274045f2e2cb5a32192b72316",
   "schema": 2,
   "summary": "Matches the parent's no-jump observable, but its precondition ('no charge left or entered the pack') is not physically realisable as written, and the 2 % bound collides with the unbounded open-circuit-voltage correction, which triggers in exactly the same standstill."

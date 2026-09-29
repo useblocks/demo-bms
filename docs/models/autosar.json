@@ -1,0 +1,413 @@
+{
+ "current_version": "model",
+ "project": "BMS software components (AUTOSAR)",
+ "versions": {
+  "model": {
+   "needs": {
+    "AR_IF_BATTERY_STATE": {
+     "content": "Vehicle-facing battery state frame, sent on a 100 ms cycle. Data elements: soc_permille, capacity_mAh, stateValid.",
+     "id": "AR_IF_BATTERY_STATE",
+     "model_file": "bms.arxml",
+     "model_kind": "AUTOSAR SENDER-RECEIVER-INTERFACE",
+     "model_line": "194",
+     "title": "BatteryState_I",
+     "type": "port_if"
+    },
+    "AR_IF_CELL_MEASUREMENTS": {
+     "content": "Validated cell voltages and cell temperatures, one sample per 10 ms cycle. Data elements: cellVoltages_mV, cellTemperatures_dC, measurementValid.",
+     "id": "AR_IF_CELL_MEASUREMENTS",
+     "model_file": "bms.arxml",
+     "model_kind": "AUTOSAR SENDER-RECEIVER-INTERFACE",
+     "model_line": "23",
+     "title": "CellMeasurements_I",
+     "type": "port_if"
+    },
+    "AR_IF_CHARGE_INTEGRAL": {
+     "content": "Charge integral of the pack current in ampere-seconds. Data elements: charge_As.",
+     "id": "AR_IF_CHARGE_INTEGRAL",
+     "model_file": "bms.arxml",
+     "model_kind": "AUTOSAR SENDER-RECEIVER-INTERFACE",
+     "model_line": "142",
+     "title": "ChargeIntegral_I",
+     "type": "port_if"
+    },
+    "AR_IF_CONTACTOR_COMMAND": {
+     "content": "Open command from the safety supervisor to the contactor drivers. Data elements: openCommand.",
+     "id": "AR_IF_CONTACTOR_COMMAND",
+     "model_file": "bms.arxml",
+     "model_kind": "AUTOSAR SENDER-RECEIVER-INTERFACE",
+     "model_line": "87",
+     "title": "ContactorCommand_I",
+     "type": "port_if"
+    },
+    "AR_IF_ESTIMATE_VALIDITY": {
+     "content": "Trustworthiness verdict for the state-of-charge estimate. Data elements: estimateReliable.",
+     "id": "AR_IF_ESTIMATE_VALIDITY",
+     "model_file": "bms.arxml",
+     "model_kind": "AUTOSAR SENDER-RECEIVER-INTERFACE",
+     "model_line": "181",
+     "title": "EstimateValidity_I",
+     "type": "port_if"
+    },
+    "AR_IF_ISOLATION_STATUS": {
+     "content": "Isolation resistance per volt of pack voltage and the derived isolation fault. Data elements: isolation_OhmPerVolt, isolationFault.",
+     "id": "AR_IF_ISOLATION_STATUS",
+     "model_file": "bms.arxml",
+     "model_kind": "AUTOSAR SENDER-RECEIVER-INTERFACE",
+     "model_line": "125",
+     "title": "IsolationStatus_I",
+     "type": "port_if"
+    },
+    "AR_IF_OVERCURRENT_CONDITION": {
+     "content": "Debounced overcurrent condition after the 100 ms persistence window. Data elements: overcurrentActive.",
+     "id": "AR_IF_OVERCURRENT_CONDITION",
+     "model_file": "bms.arxml",
+     "model_kind": "AUTOSAR SENDER-RECEIVER-INTERFACE",
+     "model_line": "74",
+     "title": "OvercurrentCondition_I",
+     "type": "port_if"
+    },
+    "AR_IF_PACK_CURRENT": {
+     "content": "Signed pack current, discharge positive, sampled at 1 ms. Data elements: packCurrent_mA, currentValid.",
+     "id": "AR_IF_PACK_CURRENT",
+     "model_file": "bms.arxml",
+     "model_kind": "AUTOSAR SENDER-RECEIVER-INTERFACE",
+     "model_line": "57",
+     "title": "PackCurrent_I",
+     "type": "port_if"
+    },
+    "AR_IF_PACK_VOLTAGE": {
+     "content": "Pack voltage as the sum of the validated cell voltages. Data elements: packVoltage_mV.",
+     "id": "AR_IF_PACK_VOLTAGE",
+     "model_file": "bms.arxml",
+     "model_kind": "AUTOSAR SENDER-RECEIVER-INTERFACE",
+     "model_line": "44",
+     "title": "PackVoltage_I",
+     "type": "port_if"
+    },
+    "AR_IF_POWER_LIMIT": {
+     "content": "Permitted discharge power after thermal derating. Data elements: permittedDischargePower_W.",
+     "id": "AR_IF_POWER_LIMIT",
+     "model_file": "bms.arxml",
+     "model_kind": "AUTOSAR SENDER-RECEIVER-INTERFACE",
+     "model_line": "257",
+     "title": "PowerLimit_I",
+     "type": "port_if"
+    },
+    "AR_IF_PROTECTION_FAULT": {
+     "content": "Latched cell-protection fault with the cell, the limit and the measured value. Data elements: faultActive, cellId, limitId, measuredValue.",
+     "id": "AR_IF_PROTECTION_FAULT",
+     "model_file": "bms.arxml",
+     "model_kind": "AUTOSAR SENDER-RECEIVER-INTERFACE",
+     "model_line": "100",
+     "title": "ProtectionFault_I",
+     "type": "port_if"
+    },
+    "AR_IF_REMAINING_CAPACITY": {
+     "content": "Remaining capacity of the pack; never increases over the life of the pack. Data elements: capacity_mAh.",
+     "id": "AR_IF_REMAINING_CAPACITY",
+     "model_file": "bms.arxml",
+     "model_kind": "AUTOSAR SENDER-RECEIVER-INTERFACE",
+     "model_line": "168",
+     "title": "RemainingCapacity_I",
+     "type": "port_if"
+    },
+    "AR_IF_STATE_OF_CHARGE": {
+     "content": "Fused state-of-charge estimate in per mille of rated capacity. Data elements: soc_permille.",
+     "id": "AR_IF_STATE_OF_CHARGE",
+     "model_file": "bms.arxml",
+     "model_kind": "AUTOSAR SENDER-RECEIVER-INTERFACE",
+     "model_line": "155",
+     "title": "StateOfCharge_I",
+     "type": "port_if"
+    },
+    "AR_IF_THERMAL_REQUEST": {
+     "content": "Cooling and heating request to the coolant pump and the pack heater. Data elements: coolingRequest, heatingRequest, requestId.",
+     "id": "AR_IF_THERMAL_REQUEST",
+     "model_file": "bms.arxml",
+     "model_kind": "AUTOSAR SENDER-RECEIVER-INTERFACE",
+     "model_line": "236",
+     "title": "ThermalRequest_I",
+     "type": "port_if"
+    },
+    "AR_IF_THERMAL_STATE": {
+     "content": "Highest and lowest valid cell temperature and their spread. Data elements: highestCellTemp_dC, lowestCellTemp_dC, spread_dK.",
+     "id": "AR_IF_THERMAL_STATE",
+     "model_file": "bms.arxml",
+     "model_kind": "AUTOSAR SENDER-RECEIVER-INTERFACE",
+     "model_line": "215",
+     "title": "ThermalState_I",
+     "type": "port_if"
+    },
+    "AR_SWC_CELL_MEASUREMENT_ACQ": {
+     "content": "Reads all cell voltages and temperatures from the analogue front-end every 10 ms.",
+     "id": "AR_SWC_CELL_MEASUREMENT_ACQ",
+     "model_file": "bms.arxml",
+     "model_kind": "AUTOSAR APPLICATION-SW-COMPONENT-TYPE",
+     "model_line": "275",
+     "provides": [
+      "AR_IF_CELL_MEASUREMENTS",
+      "AR_IF_PACK_VOLTAGE"
+     ],
+     "realizes": [
+      "ARCH_CELL_MEASUREMENT_ACQ"
+     ],
+     "requires": [],
+     "title": "Cell Measurement Acq",
+     "type": "swc"
+    },
+    "AR_SWC_CONTACTOR_ACTUATOR": {
+     "content": "Drives the two contactor coils as a dual-channel low-side pair.",
+     "id": "AR_SWC_CONTACTOR_ACTUATOR",
+     "model_file": "bms.arxml",
+     "model_kind": "AUTOSAR APPLICATION-SW-COMPONENT-TYPE",
+     "model_line": "352",
+     "provides": [],
+     "realizes": [
+      "ARCH_CONTACTOR_ACTUATOR"
+     ],
+     "requires": [
+      "AR_IF_CONTACTOR_COMMAND"
+     ],
+     "title": "Contactor Actuator",
+     "type": "swc"
+    },
+    "AR_SWC_COOLANT_ACTUATOR_IF": {
+     "content": "Forwards the thermal request to the coolant pump and the pack heater and supervises the acknowledgement.",
+     "id": "AR_SWC_COOLANT_ACTUATOR_IF",
+     "model_file": "bms.arxml",
+     "model_kind": "AUTOSAR APPLICATION-SW-COMPONENT-TYPE",
+     "model_line": "590",
+     "provides": [],
+     "realizes": [
+      "ARCH_COOLANT_ACTUATOR_IF"
+     ],
+     "requires": [
+      "AR_IF_THERMAL_REQUEST"
+     ],
+     "title": "Coolant Actuator If",
+     "type": "swc"
+    },
+    "AR_SWC_COULOMB_COUNTER": {
+     "content": "Integrates the signed pack current on a 10 ms tick.",
+     "id": "AR_SWC_COULOMB_COUNTER",
+     "model_file": "bms.arxml",
+     "model_kind": "AUTOSAR APPLICATION-SW-COMPONENT-TYPE",
+     "model_line": "413",
+     "provides": [
+      "AR_IF_CHARGE_INTEGRAL"
+     ],
+     "realizes": [
+      "ARCH_COULOMB_COUNTER"
+     ],
+     "requires": [
+      "AR_IF_PACK_CURRENT"
+     ],
+     "title": "Coulomb Counter",
+     "type": "swc"
+    },
+    "AR_SWC_CURRENT_PATH_MONITOR": {
+     "content": "Samples the shunt amplifier at 1 ms and debounces the overcurrent condition over 100 ms.",
+     "id": "AR_SWC_CURRENT_PATH_MONITOR",
+     "model_file": "bms.arxml",
+     "model_kind": "AUTOSAR APPLICATION-SW-COMPONENT-TYPE",
+     "model_line": "298",
+     "provides": [
+      "AR_IF_OVERCURRENT_CONDITION",
+      "AR_IF_PACK_CURRENT"
+     ],
+     "realizes": [
+      "ARCH_CURRENT_PATH_MONITOR"
+     ],
+     "requires": [],
+     "title": "Current Path Monitor",
+     "type": "swc"
+    },
+    "AR_SWC_ESTIMATION_VALIDITY_MONITOR": {
+     "content": "Flags the estimate unreliable when the pack current is stale for 5 seconds.",
+     "id": "AR_SWC_ESTIMATION_VALIDITY_MONITOR",
+     "model_file": "bms.arxml",
+     "model_kind": "AUTOSAR APPLICATION-SW-COMPONENT-TYPE",
+     "model_line": "509",
+     "provides": [
+      "AR_IF_ESTIMATE_VALIDITY"
+     ],
+     "realizes": [
+      "ARCH_ESTIMATION_VALIDITY_MONITOR"
+     ],
+     "requires": [
+      "AR_IF_PACK_CURRENT"
+     ],
+     "title": "Estimation Validity Monitor",
+     "type": "swc"
+    },
+    "AR_SWC_FAULT_MEMORY": {
+     "content": "Stores cell-protection fault records in a non-volatile ring of 64 entries.",
+     "id": "AR_SWC_FAULT_MEMORY",
+     "model_file": "bms.arxml",
+     "model_kind": "AUTOSAR APPLICATION-SW-COMPONENT-TYPE",
+     "model_line": "371",
+     "provides": [],
+     "realizes": [
+      "ARCH_FAULT_MEMORY"
+     ],
+     "requires": [
+      "AR_IF_PROTECTION_FAULT"
+     ],
+     "title": "Fault Memory",
+     "type": "swc"
+    },
+    "AR_SWC_ISOLATION_MONITOR": {
+     "content": "Reduces the insulation measurement and the pack voltage to ohm per volt and derives the isolation fault.",
+     "id": "AR_SWC_ISOLATION_MONITOR",
+     "model_file": "bms.arxml",
+     "model_kind": "AUTOSAR APPLICATION-SW-COMPONENT-TYPE",
+     "model_line": "390",
+     "provides": [
+      "AR_IF_ISOLATION_STATUS"
+     ],
+     "realizes": [
+      "ARCH_ISOLATION_MONITOR"
+     ],
+     "requires": [
+      "AR_IF_PACK_VOLTAGE"
+     ],
+     "title": "Isolation Monitor",
+     "type": "swc"
+    },
+    "AR_SWC_OCV_CORRECTOR": {
+     "content": "Anchors the state of charge on the open-circuit voltage after 30 minutes of rest.",
+     "id": "AR_SWC_OCV_CORRECTOR",
+     "model_file": "bms.arxml",
+     "model_kind": "AUTOSAR APPLICATION-SW-COMPONENT-TYPE",
+     "model_line": "436",
+     "provides": [
+      "AR_IF_STATE_OF_CHARGE"
+     ],
+     "realizes": [
+      "ARCH_OCV_CORRECTOR"
+     ],
+     "requires": [
+      "AR_IF_CELL_MEASUREMENTS",
+      "AR_IF_CHARGE_INTEGRAL",
+      "AR_IF_PACK_CURRENT"
+     ],
+     "title": "Ocv Corrector",
+     "type": "swc"
+    },
+    "AR_SWC_POWER_LIMIT_CALCULATOR": {
+     "content": "Derates the permitted discharge power linearly between 55 and 60 degrees Celsius.",
+     "id": "AR_SWC_POWER_LIMIT_CALCULATOR",
+     "model_file": "bms.arxml",
+     "model_kind": "AUTOSAR APPLICATION-SW-COMPONENT-TYPE",
+     "model_line": "609",
+     "provides": [
+      "AR_IF_POWER_LIMIT"
+     ],
+     "realizes": [
+      "ARCH_POWER_LIMIT_CALCULATOR"
+     ],
+     "requires": [
+      "AR_IF_THERMAL_STATE"
+     ],
+     "title": "Power Limit Calculator",
+     "type": "swc"
+    },
+    "AR_SWC_SAFETY_SUPERVISOR": {
+     "content": "Single decision point of cell protection: evaluates limits, latches the fault, commands the contactors open.",
+     "id": "AR_SWC_SAFETY_SUPERVISOR",
+     "model_file": "bms.arxml",
+     "model_kind": "AUTOSAR APPLICATION-SW-COMPONENT-TYPE",
+     "model_line": "321",
+     "provides": [
+      "AR_IF_CONTACTOR_COMMAND",
+      "AR_IF_PROTECTION_FAULT"
+     ],
+     "realizes": [
+      "ARCH_SAFETY_SUPERVISOR"
+     ],
+     "requires": [
+      "AR_IF_CELL_MEASUREMENTS",
+      "AR_IF_OVERCURRENT_CONDITION"
+     ],
+     "title": "Safety Supervisor",
+     "type": "swc"
+    },
+    "AR_SWC_SOC_STORE": {
+     "content": "Keeps the non-volatile shadow of the published state of charge.",
+     "id": "AR_SWC_SOC_STORE",
+     "model_file": "bms.arxml",
+     "model_kind": "AUTOSAR APPLICATION-SW-COMPONENT-TYPE",
+     "model_line": "467",
+     "provides": [],
+     "realizes": [
+      "ARCH_SOC_STORE"
+     ],
+     "requires": [
+      "AR_IF_STATE_OF_CHARGE"
+     ],
+     "title": "Soc Store",
+     "type": "swc"
+    },
+    "AR_SWC_SOH_TRACKER": {
+     "content": "Derives the remaining capacity from the charge counted between two rest anchors.",
+     "id": "AR_SWC_SOH_TRACKER",
+     "model_file": "bms.arxml",
+     "model_kind": "AUTOSAR APPLICATION-SW-COMPONENT-TYPE",
+     "model_line": "486",
+     "provides": [
+      "AR_IF_REMAINING_CAPACITY"
+     ],
+     "realizes": [
+      "ARCH_SOH_TRACKER"
+     ],
+     "requires": [
+      "AR_IF_CHARGE_INTEGRAL"
+     ],
+     "title": "Soh Tracker",
+     "type": "swc"
+    },
+    "AR_SWC_STATE_PUBLISHER": {
+     "content": "Sends the battery state frame to the vehicle every 100 ms.",
+     "id": "AR_SWC_STATE_PUBLISHER",
+     "model_file": "bms.arxml",
+     "model_kind": "AUTOSAR APPLICATION-SW-COMPONENT-TYPE",
+     "model_line": "532",
+     "provides": [
+      "AR_IF_BATTERY_STATE"
+     ],
+     "realizes": [
+      "ARCH_STATE_PUBLISHER"
+     ],
+     "requires": [
+      "AR_IF_ESTIMATE_VALIDITY",
+      "AR_IF_REMAINING_CAPACITY",
+      "AR_IF_STATE_OF_CHARGE"
+     ],
+     "title": "State Publisher",
+     "type": "swc"
+    },
+    "AR_SWC_THERMAL_STATE_EVALUATOR": {
+     "content": "Reduces the cell temperatures to highest, lowest and spread and derives the thermal requests.",
+     "id": "AR_SWC_THERMAL_STATE_EVALUATOR",
+     "model_file": "bms.arxml",
+     "model_kind": "AUTOSAR APPLICATION-SW-COMPONENT-TYPE",
+     "model_line": "563",
+     "provides": [
+      "AR_IF_THERMAL_REQUEST",
+      "AR_IF_THERMAL_STATE"
+     ],
+     "realizes": [
+      "ARCH_THERMAL_STATE_EVALUATOR"
+     ],
+     "requires": [
+      "AR_IF_CELL_MEASUREMENTS"
+     ],
+     "title": "Thermal State Evaluator",
+     "type": "swc"
+    }
+   },
+   "needs_amount": 30
+  }
+ }
+}

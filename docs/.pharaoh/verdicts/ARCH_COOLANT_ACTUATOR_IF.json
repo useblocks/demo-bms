@@ -29,7 +29,7 @@
   "criteria_fingerprint": "48337dfa0b294b1882460a938500fa11eb3e8fd873d5cd9afa31ff1f7923f377",
   "model": "claude-opus-5[1m]",
   "need": "ARCH_COOLANT_ACTUATOR_IF",
-  "reviewed_fingerprint": "6297c00773734475a3f6c82bfcd1d70f29f5f01d9cd01f5b0be30bf1c07922a7",
+  "reviewed_fingerprint": "d3fdab89d760c4fcf86aea0ac0c5c57d5f7ee348f8865929dee35507933d9741",
   "schema": 2,
   "summary": "Ownership is exemplary - the element explicitly refuses to re-derive requests or decide power limits - but the interface itself is under-specified: the setpoint frame's content, the retry/withdrawal semantics and the timer's behaviour on request withdrawal are all left open."
 }

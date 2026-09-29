@@ -29,6 +29,23 @@ optional:  risk ──mitigates──> req        decision ──affects──> 
            test_result ──results_for──> test
 ```
 
+Three of these levels are **not authored in this repository**, and that is the
+point of the Connectivity-as-Code showcase:
+
+| Level | Master | Arrives as |
+|---|---|---|
+| `req` — system requirements | Jama Connect, project 59 | acquired by `ubc script sync-jama` |
+| `sysml_part` — system architecture | the MBSE tool | `docs/models/bms.sysml`, SysML v2 |
+| `swc`, `port_if` — software components | the AUTOSAR tool | `docs/models/bms.arxml`, ARXML |
+
+```
+Jama req ◀──satisfies── SysML v2 part          (model owns the link)
+    ▲
+    └──satisfies[fingerprint]── arch ◀──realizes── AUTOSAR component
+                                  ▲               (model owns the link)
+                                  └──refines── swreq ◀── impl / test
+```
+
 Both lower arms hang off `swreq`, not off `arch`: the software requirement is the
 last level that states testable behaviour, so it is the level code realises and
 the level a test can assert against.
@@ -173,7 +190,7 @@ laptop with no Jama reachable.
 
 ```bash
 ubc script reset --path docs       # arm it: roll back, delete, clear caches
-ubc check docs                     # 83 errors — every arch and risk dangles
+ubc check docs                     # 35 errors, 67 warnings — everything dangles
 ubc script sync-jama --path docs   # re-acquire from Jama
 ubc check docs                     # No errors found — byte-identical
 ```
@@ -212,6 +229,68 @@ before doing it. Three things it deliberately leaves alone:
 | `docs/alm/crosswalk.json` | the only file the sync cannot rebuild — it holds what Jama does not model |
 | `.venv/`, `.env`, untracked files | the cache list is an explicit allowlist, never `git clean -fdx` |
 | Jama itself | a local reset cannot undo an edit made in the ALM — change it back in the Jama UI |
+
+### Suspect links: a change in Jama flags what it touched
+
+Every `:satisfies:` link from the architecture to a Jama requirement **pins the
+fingerprint** of the requirement it was reviewed against:
+
+```rst
+:satisfies: JAMA_Rollout_Demo-SYSRQ-4[fingerprint=="0824db15"]
+```
+
+The sync stamps each requirement with 8 hex characters derived from its title and
+text (whitespace-insensitive, so a Jama re-wrap raises nothing). When the text
+changes in Jama, the next sync moves the fingerprint, and every link still pinned
+to the old value fails the sphinx-needs condition — `needs.link_condition_failed`
+in `ubc check`, in `sphinx-build -W`, and in the ubCode **Diagnostics** view in
+VS Code. That is a suspect link, computed rather than remembered.
+
+```bash
+ubc script suspects --path docs         # what changed, and what it reaches
+ubc script suspects:accept --path docs  # re-baseline after review
+```
+
+```
+2 suspect link(s) — 1 requirement changed in Jama since they were reviewed
+
+JAMA_Rollout_Demo-SYSRQ-4   fingerprint now d5efb53d
+  SUSPECT  ARCH_CURRENT_PATH_MONITOR   reviewed against 0824db15   specs/cell-protection/architecture.rst:52
+  SUSPECT  ARCH_SAFETY_SUPERVISOR      reviewed against 0824db15   specs/cell-protection/architecture.rst:64
+  reaches  2 architecture, 4 software requirements, 4 implementations, 8 tests,
+           2 AUTOSAR components, 1 SysML v2 part
+```
+
+`suspects:accept` rewrites the pinned values and nothing else, so its git diff is
+the review record: which link a human confirmed against which version of which
+requirement. Only links this repository owns are pinned; a SysML part or an
+AUTOSAR component belongs to its model and is reported as reached, never
+rewritten.
+
+A second, independent detector comes for free. `ubc agent verdict-check`
+fingerprints each review verdict **one hop out**, so when a Jama requirement
+changes, the verdicts of the requirement and of every architecture element that
+satisfies it go `outdated` by themselves. A pinned link clears with
+`suspects:accept`; an outdated verdict clears only with a fresh review — the two
+never mask each other.
+
+### The nightly sync
+
+[.github/workflows/sync-jama.yml](.github/workflows/sync-jama.yml) runs the sync
+at 02:30 UTC on weekdays. An unchanged Jama gives an empty diff and the job ends;
+a change becomes a pull request `sync/jama` whose description carries the diff,
+the suspect-link report and the review gate. Nothing lands on main unreviewed, and
+the merge is what `ubtrace.yml` then publishes to ubTrace.
+
+It skips with a notice — not a red run — until these repository secrets exist:
+`JAMA_USERNAME`, `JAMA_PASSWORD`, `UBCONNECT_LICENSE_KEY`, `UBCONNECT_LICENSE_USER`,
+`UBCODE_LICENSE_KEY`, `UBCODE_LICENSE_USER`. Add `SYNC_BOT_TOKEN` (a PAT or GitHub
+App token) if the graph gates should run on the bot's pull request: GitHub does
+not trigger workflows from a pull request opened with the default token.
+
+**Not yet run in CI.** The workflow is validated locally (YAML, `bash -n`, and the
+pull-request description rendered against a simulated Jama change); its first real
+run needs the secrets above.
 
 ### The two modes
 
@@ -255,6 +334,52 @@ reachable; only the sync talks to it, and **its diff is the change notification
 Jama never sent**. Run the sync nightly or on merge requests, never per build —
 the Jama REST API degrades under continuous sync load.
 
+## System models: SysML v2 and AUTOSAR
+
+The system architecture and the software components are **bridged in from their
+modelling tools**, read-only. `docs/models/` holds the tools' exports; the
+repository never edits them:
+
+| File | Model | Becomes |
+|---|---|---|
+| [docs/models/bms.sysml](docs/models/bms.sysml) | SysML v2 textual notation | 6 `sysml_part` needs, 20 `satisfies` links to the Jama requirements |
+| [docs/models/bms.arxml](docs/models/bms.arxml) | AUTOSAR classic R4.x | 15 `swc` + 15 `port_if` needs, `realizes` links to the architecture |
+
+[tools/import_models.py](tools/import_models.py) reads both and writes
+`docs/models/sysml.json` and `docs/models/autosar.json`, loaded through
+`[[needs.external_needs]]`. Every model element opens the model file at the line
+that defines it. The links come **from the model**, because the model owns them:
+
+- SysML v2 mirrors each requirement by its Jama id as the element short name —
+  `requirement <'JAMA_Rollout_Demo-SYSRQ-4'> packOvercurrent;` — and says which
+  subsystem answers it: `satisfy packOvercurrent by cellProtection;`
+- AUTOSAR carries the trace in a special data group on each component,
+  `<SDG GID="useblocks.Traceability"><SD GID="realizes">ARCH_…</SD></SDG>` —
+  the place the AUTOSAR standard defines for tool-specific data.
+
+```bash
+ubc script import-models --path docs   # re-read both models (no network)
+ubc script trace --path docs           # one requirement through every tool
+```
+
+```
+sysml_v2               architecture               autosar                      sw_requirement              code
+SYSML_CELL_PROTECTION  ARCH_CURRENT_PATH_MONITOR  AR_SWC_CURRENT_PATH_MONITOR  SWREQ_OVERCURRENT_DEBOUNCE  IMPL_OVERCURRENT_DEBOUNCE
+SYSML_CELL_PROTECTION  ARCH_SAFETY_SUPERVISOR     AR_SWC_SAFETY_SUPERVISOR     SWREQ_LIMIT_EVALUATION      IMPL_LIMIT_EVALUATION
+```
+
+**What this is and is not.** Neither ubConnect nor Sphinx-Needs has a SysML v2 or
+an AUTOSAR connector today. The importer is the *pattern*: any model exported as
+structured text becomes needs in ~100 lines, and from then on it takes part in
+everything the graph does — the trace above, the suspect-link blast radius,
+ubTrace. The ARXML reader is complete for what it reads. The SysML v2 reader
+handles the subset of the textual notation this model uses and names any line it
+cannot place; a production bridge reads the model through the SysML v2 API.
+
+A SysML part's `satisfies` does **not** close the deliberate cell-balancing gap:
+the coverage rule counts incoming `satisfies` from `arch` only, so the system model
+can cover a requirement the software architecture has not reached yet.
+
 ## Streams
 
 One directory per root user story. Four are decomposed all the way to code and
@@ -296,6 +421,14 @@ And it is **in the graph as a need**, not only in a CLI's exit code — see
 [Workflow gaps, from the structural gate](#workflow-gaps-from-the-structural-gate).
 
 ## Setup
+
+**In VS Code**, the whole ALM loop is in the command palette — `Tasks: Run Task`
+lists acquiring from Jama in either mode, the suspect-link report and its accept,
+the model import, the cross-tool trace and the showcase reset
+([.vscode/tasks.json](.vscode/tasks.json)). Suspect links also appear in the
+ubCode sidebar's **Diagnostics** view with *Go to Source*; the inline squiggles
+cover syntax problems only.
+
 
 The Python side is managed by [uv](https://docs.astral.sh/uv/), so the
 environment is reproducible: [.python-version](.python-version) pins the
@@ -782,6 +915,16 @@ pack in [docs/quality/](docs/quality/) — `requirement.toml` (used by both `req
 `swreq`), `arch.toml`, `feat.toml`, `decision.toml` — and every verdict under
 `docs/.pharaoh/verdicts/` was produced by an independent reviewer context scoring
 those axes, then stamped by `ubc agent verdict-submit`.
+
+**Carried over, not re-reviewed, when the requirements moved to Jama.** The 20
+requirement verdicts were recorded against the `REQ_*` ids, and the 15
+architecture verdicts against links to them; the migration changed both ids, so
+the gate reported 20 missing and 15 outdated. Their axes and summaries were
+re-submitted unchanged through `ubc agent verdict-submit`, which re-stamps the
+fingerprints — justified because the reviewed title and text of all 20
+requirements is byte-identical before and after the round trip through Jama
+(checked against the pre-migration commit). The `agent` / `model` provenance is
+the original reviewer's.
 
 Two consequences worth knowing before you demo:
 

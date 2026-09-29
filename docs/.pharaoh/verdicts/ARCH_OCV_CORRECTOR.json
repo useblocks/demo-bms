@@ -28,7 +28,7 @@
   "criteria_fingerprint": "48337dfa0b294b1882460a938500fa11eb3e8fd873d5cd9afa31ff1f7923f377",
   "model": "claude-opus-5[1m]",
   "need": "ARCH_OCV_CORRECTOR",
-  "reviewed_fingerprint": "7768ffa11b480d451ecc455d93ea1b56d52a0291b1c2f4414018c704beeed2aa",
+  "reviewed_fingerprint": "4bf9c1d4bc65adb387170b06e145f2297716909d32bbbf71e0bc03d9da45399d",
   "schema": 2,
   "summary": "The rest-correction parent is covered essentially completely and concretely. The accuracy parent is engaged only by assertion: no error budget, no temperature argument on the OCV table (the requirement's reference is a pack conditioned to 25 degC), and no statement of which capacity figure scales the counter's delta into a percentage."
 }

@@ -29,7 +29,7 @@ Elements
 .. arch:: Thermal State Evaluator
    :id: ARCH_THERMAL_STATE_EVALUATOR
    :status: draft
-   :satisfies: JAMA_Rollout_Demo-SYSRQ-17, JAMA_Rollout_Demo-SYSRQ-18, JAMA_Rollout_Demo-SYSRQ-20
+   :satisfies: JAMA_Rollout_Demo-SYSRQ-17[fingerprint=="fa9923d9"], JAMA_Rollout_Demo-SYSRQ-18[fingerprint=="32fd945d"], JAMA_Rollout_Demo-SYSRQ-20[fingerprint=="352de02c"]
 
    The Thermal State Evaluator element owns the thermal picture of the pack. Once
    per 100 ms cycle it reduces the valid cell temperatures to three figures —
@@ -42,7 +42,7 @@ Elements
 .. arch:: Coolant Actuator Interface
    :id: ARCH_COOLANT_ACTUATOR_IF
    :status: draft
-   :satisfies: JAMA_Rollout_Demo-SYSRQ-17, JAMA_Rollout_Demo-SYSRQ-18, JAMA_Rollout_Demo-SYSRQ-21
+   :satisfies: JAMA_Rollout_Demo-SYSRQ-17[fingerprint=="fa9923d9"], JAMA_Rollout_Demo-SYSRQ-18[fingerprint=="32fd945d"], JAMA_Rollout_Demo-SYSRQ-21[fingerprint=="75850f72"]
 
    The Coolant Actuator Interface element owns the conversation with the coolant
    pump and the pack heater. It forwards the evaluator's request as a setpoint
@@ -54,7 +54,7 @@ Elements
 .. arch:: Thermal Power Limit Calculator
    :id: ARCH_POWER_LIMIT_CALCULATOR
    :status: draft
-   :satisfies: JAMA_Rollout_Demo-SYSRQ-19, JAMA_Rollout_Demo-SYSRQ-21
+   :satisfies: JAMA_Rollout_Demo-SYSRQ-19[fingerprint=="9702082c"], JAMA_Rollout_Demo-SYSRQ-21[fingerprint=="75850f72"]
 
    The Thermal Power Limit Calculator element owns the permitted discharge power
    the vehicle sees. It computes the temperature-driven limit as a linear ramp

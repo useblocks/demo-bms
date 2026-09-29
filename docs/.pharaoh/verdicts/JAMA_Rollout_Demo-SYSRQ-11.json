@@ -30,7 +30,7 @@
   "criteria": "requirement",
   "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
   "model": "claude-opus-5[1m]",
-  "need": "REQ_SOC_ACCURACY",
+  "need": "JAMA_Rollout_Demo-SYSRQ-11",
   "reviewed_fingerprint": "b0485c353344bcc5dc4a17b425d9574487832a8501c338115884c1daa68abaeb",
   "schema": 2,
   "summary": "The most rigorously specified requirement in the set - it even names its reference measurement - with one gap: the reference run's load profile is unspecified, and coulomb-counting error depends strongly on it."
