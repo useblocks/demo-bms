@@ -1,4 +1,4 @@
 {
     "ubcode.cli.terminalIntegration": true,
-    "ubcode.views.pinnedProject": "/Users/ruby/git/useblocks/demos/rollout-demo-bms/docs/ubproject.toml"
+    "ubcode.views.pinnedProject": "${workspaceFolder}/docs/ubproject.toml"
 }
