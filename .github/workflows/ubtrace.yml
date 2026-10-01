@@ -423,17 +423,38 @@ jobs:
           retention-days: ${{ steps.vars.outputs.retention }}
           if-no-files-found: error
 
-      - name: Build ubTrace artefact
+      - name: Build ubTrace artefact, once per variant
         env:
           UBTRACE_VERSION: ${{ steps.vars.outputs.version }}
-        # `-W --keep-going` is the gate: the export must build warning-free.
-        # `-D ubtrace_version` overrides conf.py so a tag publishes as its own
-        # version; it must stay in sync with what upload_ubtrace.sh packages,
-        # which is why the same value is exported to that script below.
+        # `-W --keep-going` is the gate: the export must build warning-free, for
+        # every variant. `-D ubtrace_version` overrides conf.py so a tag publishes
+        # as its own version; it must stay in sync with what upload_ubtrace.sh
+        # packages, which is why the same value is exported to that script below.
+        #
+        # The variants come from `[ubtrace.variants]` in docs/ubproject.toml: one
+        # build per entry, each in its own root, with the entry's data file and
+        # dimensions passed as `-D` flags. One line per variant: its name, then
+        # the `-D` values, which contain no spaces. Read on fd 3 so sphinx-build
+        # cannot consume the list from stdin.
         run: |
-          uv run --extra ubtrace sphinx-build -b ubtrace -W --keep-going \
-            -D "ubtrace_version=${UBTRACE_VERSION}" \
-            docs _build/ubtrace
+          set -euo pipefail
+          python3 - > "$RUNNER_TEMP/variants.txt" <<'EOF'
+          import tomllib
+          with open("docs/ubproject.toml", "rb") as f:
+              variants = tomllib.load(f)["ubtrace"]["variants"]
+          for name, v in variants.items():
+              flags = [f"needs_variant_data_file={v['variant_data_file']}"]
+              flags += [f"ubtrace_dimensions.{k}={val}" for k, val in v["dimensions"].items()]
+              print(name, *flags)
+          EOF
+          while read -r variant overrides <&3; do
+            flags=(-D "ubtrace_version=${UBTRACE_VERSION}")
+            for o in ${overrides}; do flags+=(-D "$o"); done
+            echo "::group::Build variant ${variant}: ${overrides}"
+            uv run --extra ubtrace sphinx-build -b ubtrace -W --keep-going \
+              "${flags[@]}" docs "_build/ubtrace/${variant}"
+            echo "::endgroup::"
+          done 3< "$RUNNER_TEMP/variants.txt"
 
       - name: Upload to team.useblocks.com
         # Pull requests and demo branches build the artefact but never publish
@@ -443,8 +464,17 @@ jobs:
         # but note a slashed branch name (`demo/foo`) then needs handling too:
         # upload_ubtrace.sh locates the built version at exactly depth 3 under
         # the build root, and such a name nests one level deeper.
+        #
+        # Every variant goes to the same version URL with `?overwrite=true`; the
+        # dimensions inside each artefact keep the uploads apart on the server.
         if: github.event_name != 'pull_request' && steps.vars.outputs.publish == 'true'
         env:
           UBTRACE_INGEST_TOKEN: ${{ secrets.UBTRACE_INGEST_TOKEN }}
           UBTRACE_VERSION: ${{ steps.vars.outputs.version }}
-        run: bash upload_ubtrace.sh
+        run: |
+          set -euo pipefail
+          for build_root in _build/ubtrace/*/; do
+            echo "::group::Upload variant $(basename "${build_root}")"
+            BUILD_ROOT="${build_root%/}" bash upload_ubtrace.sh
+            echo "::endgroup::"
+          done

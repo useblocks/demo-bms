@@ -237,6 +237,10 @@ used: the Sphinx side honours it only with `sphinx-mounts` installed, and the
 `-W` publish must build the same document set as `ubc`. The implementation and
 verification arms in this repository are the NMC build.
 
+ubTrace gets every variant: `[ubtrace.variants]` in
+[docs/ubproject.toml](docs/ubproject.toml) lists each one with its data file and
+its ubTrace `dimensions`, and CI builds and uploads one artefact per entry.
+
 ## Markdown next to RST
 
 [docs/specs/isolation-monitoring/](docs/specs/isolation-monitoring/) is a complete stream

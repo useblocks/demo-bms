@@ -188,6 +188,22 @@ schema_definitions_from_json = "schemas.json"
 # variant_data_file = "variants/nmc.json"
 variant_data_file = "variants/lfp.json"
 
+# --- ubTRACE VARIANTS ---
+# The variants published to ubTrace, one build each. ubTrace shows the variants of
+# one version side by side by their `dimensions`; a build without them is a single,
+# dimensionless upload and the variant selector stays empty.
+#
+# Not a ubc setting: ubc ignores this table, and ubt-sphinx cannot read toml. CI
+# turns each entry into sphinx-build flags (`-D needs_variant_data_file=...`,
+# `-D ubtrace_dimensions.<key>=...`), so conf.py stays free of variant logic.
+[ubtrace.variants.nmc]
+variant_data_file = "variants/nmc.json"
+dimensions = { chemistry = "NMC" }
+
+[ubtrace.variants.lfp]
+variant_data_file = "variants/lfp.json"
+dimensions = { chemistry = "LFP" }
+
 # --- FIELDS ---
 # Fields the built-in need schema does not carry, in two groups, one per IMPORTED
 # type, plus a vocabulary for the built-in `status`.
