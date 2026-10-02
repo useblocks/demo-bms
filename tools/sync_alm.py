@@ -62,7 +62,7 @@ Because the raw export is gone, there is no offline path: acquiring means
 acquiring, and switching modes needs Jama reachable.
 
 Requirements flow DOWN only. There is deliberately no `[ubconnect.to_jama]` block
-in `docs/ubproject.toml`, so a back-flow from here is not merely discouraged, it
+in `docs/ubconnect.toml`, so a back-flow from here is not merely discouraged, it
 is unconfigured. The one-time migration that seeded the Jama project ran from a
 throw-away config outside this repository.
 
@@ -70,7 +70,7 @@ Hardening exists for the reason it exists in every ALM pipeline: what the ALM
 returns is not what a needs build accepts.
 
   * Jama sends picklists as numeric option ids, so `status` arrives as `292`
-    rather than `Draft`. `[jama_status_labels]` in `docs/ubproject.toml` resolves
+    rather than `Draft`. `[jama_status_labels]` in `docs/ubconnect.toml` resolves
     it into the vocabulary `[needs.fields.status]` enum-validates.
   * Jama knows nothing about this repository's streams or user stories, so the
     `traces_to` link up to the user story and the `alm_stream` grouping are
@@ -103,7 +103,10 @@ except ModuleNotFoundError:  # Python < 3.11
     import tomli as tomllib  # type: ignore[no-redef]
 
 REPO = Path(__file__).resolve().parent.parent
+# The needs build config: only the marked `sync-jama` region is touched here.
 CONFIG = REPO / "docs" / "ubproject.toml"
+# The ubConnect config: the Jama connection and `[jama_status_labels]`.
+UBCONNECT = REPO / "docs" / "ubconnect.toml"
 # `from-jama` drops its raw export here (`[ubconnect.from_jama] outdir`). It is
 # under _build/, so it is gitignored and thrown away after hardening.
 RAW = REPO / "docs" / "_build" / "alm" / "needs.json"
@@ -196,7 +199,7 @@ def die(message: str) -> NoReturn:
 
 
 def load_config() -> dict:
-    return tomllib.loads(CONFIG.read_text(encoding="utf-8"))
+    return tomllib.loads(UBCONNECT.read_text(encoding="utf-8"))
 
 
 def current_mode() -> str:
@@ -260,8 +263,8 @@ def pull(config: dict) -> None:
     project = config["ubconnect"]["from_jama"]["project_id"]
     print(f"acquiring the system level from Jama project {project}")
     subprocess.run(
-        [exe, "jama", "from-jama", "--config", str(CONFIG)],
-        cwd=CONFIG.parent,
+        [exe, "jama", "from-jama", "--config", str(UBCONNECT)],
+        cwd=UBCONNECT.parent,
         check=True,
     )
 
@@ -363,7 +366,7 @@ def harden(needs: dict, config: dict, crosswalk: dict) -> list[dict]:
         print(
             "note: unmapped Jama status option id(s): "
             + ", ".join(sorted(unknown_status))
-            + " — add them to [jama_status_labels] in docs/ubproject.toml"
+            + " — add them to [jama_status_labels] in docs/ubconnect.toml"
         )
 
     out.sort(key=lambda n: (n["alm_stream"], n["_sort"]))

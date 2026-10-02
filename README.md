@@ -29,22 +29,12 @@ optional:  risk ──mitigates──> req        decision ──affects──> 
            test_result ──results_for──> test
 ```
 
-Three of these levels are **not authored in this repository**, and that is the
+One of these levels is **not authored in this repository**, and that is the
 point of the Connectivity-as-Code showcase:
 
 | Level | Master | Arrives as |
 |---|---|---|
 | `req` — system requirements | Jama Connect, project 59 | acquired by `ubc script sync-jama` |
-| `sysml_part` — system architecture | the MBSE tool | `docs/models/bms.sysml`, SysML v2 |
-| `swc`, `port_if` — software components | the AUTOSAR tool | `docs/models/bms.arxml`, ARXML |
-
-```
-Jama req ◀──satisfies── SysML v2 part          (model owns the link)
-    ▲
-    └──satisfies── arch ◀──realizes── AUTOSAR component
-                                  ▲               (model owns the link)
-                                  └──refines── swreq ◀── impl / test
-```
 
 Both lower arms hang off `swreq`, not off `arch`: the software requirement is the
 last level that states testable behaviour, so it is the level code realises and
@@ -71,7 +61,8 @@ project — see [docs/arms/implementation.rst](docs/arms/implementation.rst) and
 
 ```
 docs/                     the ubCode project AND the Sphinx source directory
-  ubproject.toml          ontology, workflow, codelinks — the one configuration
+  ubproject.toml          ontology, workflow, codelinks — the needs configuration
+  ubconnect.toml          the Jama connection (ubConnect), read only by the sync
   conf.py                 Sphinx reads ubproject.toml; nothing is declared twice
   specs/                  the needs, one directory per stream (RST and Markdown)
   arms/                   the two `.. src-trace::` pages that materialise src/ and tests/
@@ -300,7 +291,7 @@ Three things the migration had to solve, all of them normal for an ALM bridge:
 | Problem | Where it is solved |
 |---|---|
 | Jama mints the id (`Rollout_Demo-SYSRQ-4`) and it is read-only there | ids are Jama's, prefixed `JAMA_`; the pre-migration name survives as `:legacy_id:` |
-| Jama returns picklists as numbers (`status: 292`) | `[jama_status_labels]` in `docs/ubproject.toml` |
+| Jama returns picklists as numbers (`status: 292`) | `[jama_status_labels]` in `docs/ubconnect.toml` |
 | Jama models no streams and no user stories | re-attached from `docs/alm/crosswalk.json`, keyed on the stable `globalId` |
 
 Requirements flow **down only**. There is deliberately no `[ubconnect.to_jama]`
@@ -312,52 +303,6 @@ The acquired artefact is committed, so a normal build never needs Jama to be
 reachable; only the sync talks to it, and **its diff is the change notification
 Jama never sent**. Run the sync nightly or on merge requests, never per build —
 the Jama REST API degrades under continuous sync load.
-
-## System models: SysML v2 and AUTOSAR
-
-The system architecture and the software components are **bridged in from their
-modelling tools**, read-only. `docs/models/` holds the tools' exports; the
-repository never edits them:
-
-| File | Model | Becomes |
-|---|---|---|
-| [docs/models/bms.sysml](docs/models/bms.sysml) | SysML v2 textual notation | 6 `sysml_part` needs, 20 `satisfies` links to the Jama requirements |
-| [docs/models/bms.arxml](docs/models/bms.arxml) | AUTOSAR classic R4.x | 15 `swc` + 15 `port_if` needs, `realizes` links to the architecture |
-
-[tools/import_models.py](tools/import_models.py) reads both and writes
-`docs/models/sysml.json` and `docs/models/autosar.json`, loaded through
-`[[needs.external_needs]]`. Every model element opens the model file at the line
-that defines it. The links come **from the model**, because the model owns them:
-
-- SysML v2 mirrors each requirement by its Jama id as the element short name —
-  `requirement <'JAMA_Rollout_Demo-SYSRQ-4'> packOvercurrent;` — and says which
-  subsystem answers it: `satisfy packOvercurrent by cellProtection;`
-- AUTOSAR carries the trace in a special data group on each component,
-  `<SDG GID="useblocks.Traceability"><SD GID="realizes">ARCH_…</SD></SDG>` —
-  the place the AUTOSAR standard defines for tool-specific data.
-
-```bash
-ubc script import-models --path docs   # re-read both models (no network)
-ubc script trace --path docs           # one requirement through every tool
-```
-
-```
-sysml_v2               architecture               autosar                      sw_requirement              code
-SYSML_CELL_PROTECTION  ARCH_CURRENT_PATH_MONITOR  AR_SWC_CURRENT_PATH_MONITOR  SWREQ_OVERCURRENT_DEBOUNCE  IMPL_OVERCURRENT_DEBOUNCE
-SYSML_CELL_PROTECTION  ARCH_SAFETY_SUPERVISOR     AR_SWC_SAFETY_SUPERVISOR     SWREQ_LIMIT_EVALUATION      IMPL_LIMIT_EVALUATION
-```
-
-**What this is and is not.** Neither ubConnect nor Sphinx-Needs has a SysML v2 or
-an AUTOSAR connector today. The importer is the *pattern*: any model exported as
-structured text becomes needs in ~100 lines, and from then on it takes part in
-everything the graph does — the trace above, the review gate,
-ubTrace. The ARXML reader is complete for what it reads. The SysML v2 reader
-handles the subset of the textual notation this model uses and names any line it
-cannot place; a production bridge reads the model through the SysML v2 API.
-
-A SysML part's `satisfies` does **not** close the deliberate cell-balancing gap:
-the coverage rule counts incoming `satisfies` from `arch` only, so the system model
-can cover a requirement the software architecture has not reached yet.
 
 ## Streams
 

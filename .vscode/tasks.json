@@ -12,14 +12,6 @@
     "version": "2.0.0",
     "tasks": [
         {
-            "label": "Jama: acquire the system requirements",
-            "detail": "ubc script sync-jama — keeps the current mode",
-            "type": "shell",
-            "command": "ubc script sync-jama --path docs",
-            "problemMatcher": [],
-            "group": { "kind": "build", "isDefault": true }
-        },
-        {
             "label": "Jama: acquire as RST (round trip)",
             "detail": "ubc script sync-jama:rst",
             "type": "shell",
@@ -31,41 +23,6 @@
             "detail": "ubc script sync-jama:external",
             "type": "shell",
             "command": "ubc script sync-jama:external --path docs",
-            "problemMatcher": []
-        },
-        {
-            "label": "Reviews: show the gaps",
-            "detail": "ubc agent gaps — stale reviews after a change upstream",
-            "type": "shell",
-            "command": "ubc agent gaps -p docs",
-            "problemMatcher": []
-        },
-        {
-            "label": "Reviews: verdict check",
-            "detail": "ubc agent verdict-check — which reviews are outdated",
-            "type": "shell",
-            "command": "ubc agent verdict-check -p docs",
-            "problemMatcher": []
-        },
-        {
-            "label": "Models: re-import SysML v2 and AUTOSAR",
-            "detail": "ubc script import-models — no network",
-            "type": "shell",
-            "command": "ubc script import-models --path docs",
-            "problemMatcher": []
-        },
-        {
-            "label": "Trace: one requirement through every tool",
-            "detail": "ubc script trace — Jama, SysML v2, Git, AUTOSAR, code",
-            "type": "shell",
-            "command": "ubc script trace --path docs",
-            "problemMatcher": []
-        },
-        {
-            "label": "Graph: check",
-            "detail": "ubc check docs",
-            "type": "shell",
-            "command": "ubc check docs",
             "problemMatcher": []
         },
         {

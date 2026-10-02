@@ -64,10 +64,9 @@ MD_DIRECTIVE = re.compile(r"^\s*(?:`{3,}|:{3,})\{(?P<type>[a-z_]+)\}")
 RST_ID = re.compile(r"^\s*:id:\s*(?P<id>[A-Z][A-Z0-9_]*|JAMA_[A-Za-z0-9_-]+)\s*$")
 
 #: Needs that are not authored in any source file at all: the requirements when
-#: `tools/sync_alm.py` runs in external mode, and the SysML v2 / AUTOSAR model
-#: elements from `tools/import_models.py`. They are loaded through
+#: `tools/sync_alm.py` runs in external mode. They are loaded through
 #: `[[needs.external_needs]]`, so their ids and types are read from the JSON.
-EXTERNAL_SOURCES = ("alm/external.json", "models/sysml.json", "models/autosar.json")
+EXTERNAL_SOURCES = ("alm/external.json",)
 
 #: The one-line codelinks marker grammar shared by both `[codelinks.projects]`
 #: blocks: `# @<title>, <ID>, [<PARENT_ID>, ...]`, optionally followed by an explicit
