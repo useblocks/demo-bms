@@ -23,14 +23,6 @@ __pycache__/
 # Per-variant needs export written by `ubc script needs:lfp` — build output.
 /needs.lfp.json
 
-# Jama credentials for `ubc script sync-jama` — the OAuth client id and secret
-# the ALM sync authenticates with. A SECRET: it never belongs in the repository,
-# in a need, or in an issue. `.env.example` records the variable names so a new
-# clone knows what to fill in, and is committed because it holds no secret.
-#
-# NOT anchored with a leading `/`: the sync looks for the file in `docs/` (the
-# ubc project root, where `ubproject.toml` and therefore `ubc script`'s working
-# directory are) as well as at the repository root, so BOTH have to be ignored.
-# An anchored `/.env` silently leaves `docs/.env` committable.
+# Jama credentials for `ubc script sync-jama`
 .env
 !.env.example

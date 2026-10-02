@@ -29,12 +29,9 @@ optional:  risk ──mitigates──> req        decision ──affects──> 
            test_result ──results_for──> test
 ```
 
-One of these levels is **not authored in this repository**, and that is the
-point of the Connectivity-as-Code showcase:
-
-| Level | Master | Arrives as |
-|---|---|---|
-| `req` — system requirements | Jama Connect, project 59 | acquired by `ubc script sync-jama` |
+The system requirements (`req`) are **not authored in this repository**. They
+live in Jama and are pulled in with ubConnect — see
+[README_UBCONNECT.md](README_UBCONNECT.md).
 
 Both lower arms hang off `swreq`, not off `arch`: the software requirement is the
 last level that states testable behaviour, so it is the level code realises and
@@ -62,7 +59,7 @@ project — see [docs/arms/implementation.rst](docs/arms/implementation.rst) and
 ```
 docs/                     the ubCode project AND the Sphinx source directory
   ubproject.toml          ontology, workflow, codelinks — the needs configuration
-  ubconnect.toml          the Jama connection (ubConnect), read only by the sync
+  ubconnect.toml          the Jama connection — see README_UBCONNECT.md
   conf.py                 Sphinx reads ubproject.toml; nothing is declared twice
   specs/                  the needs, one directory per stream (RST and Markdown)
   arms/                   the two `.. src-trace::` pages that materialise src/ and tests/
@@ -110,200 +107,6 @@ output lands in `docs/_build/`). And `-p docs` is not just convenience for
 `review-brief` and `verdict-submit`: they print and resolve `verdicts_dir`
 relative to `-p`, and the review skills reuse that path.
 
-## The system requirements live in Jama
-
-The top of the V is **not authored in this repository**. The 20 system
-requirements are owned by the Jama Connect project
-[Rollout_Demo](https://useblocks-partner.jamacloud.com/perspective.req#/projects/59/)
-and acquired from there by [tools/sync_alm.py](tools/sync_alm.py). Everything
-below them — architecture, software requirements, code, tests — is authored here
-and links up into the acquired set.
-
-```
-Jama project 59 ──from-jama──> docs/_build/alm/needs.json   (raw, thrown away)
-                                          │
-                              tools/sync_alm.py  (harden + render)
-                                          │
-              ┌───────────────────────────┴───────────────────────────┐
-          mode rst                                              mode external
-  docs/specs/_global/alm_requirements.rst                docs/alm/external.json
-       20 real `.. req::` blocks                       [[needs.external_needs]]
-       ordinary local needs                            read-only by construction
-                          ▲                                        ▲
-                          └──── arch satisfies · risk mitigates ────┘
-```
-
-**Exactly one of the two exists at a time.** Switching modes writes one and
-deletes the other, and rewrites the `sync-jama` region of
-[docs/ubproject.toml](docs/ubproject.toml) so only the live source is configured
-— two sources for the same need ids would collide, and a configured source whose
-file is missing is a warning this project treats as fatal.
-
-```bash
-ubc script sync-jama            # acquire, KEEPING the mode the tree is in
-ubc script sync-jama:rst        # acquire as RST   — round trip — and SWITCH
-ubc script sync-jama:external   # acquire as JSON  — read-only  — and SWITCH
-```
-
-`sync-jama` and `sync-jama:rst` do the same thing while the tree is already in
-rst mode. They differ only when it is not: the bare form keeps the current mode,
-the suffixed forms force one.
-
-There is no offline path. `from-jama`'s raw export lands under `_build/`
-(gitignored) and is deleted once hardened, so acquiring means reaching Jama.
-
-Credentials are the Jama OAuth client id and secret. They live in `docs/.env`,
-which is gitignored; [docs/.env.example](docs/.env.example) records the two
-variable names:
-
-```bash
-cp docs/.env.example docs/.env && $EDITOR docs/.env
-ubc script sync-jama --path docs        # that is all — the sync reads the file
-```
-
-**No `source` needed.** `ubc script` does not read `.env` files and neither does
-ubConnect, so `tools/sync_alm.py` reads it itself and the child process inherits
-it. It looks in `docs/.env`, then `.env` at the repository root, then wherever
-`ALM_ENV_FILE` points; a variable already exported in the shell always wins, so a
-CI secret is never clobbered by a stale local file.
-
-`docs/` rather than the repository root because that is the ubc project root —
-where `ubproject.toml` lives and where `ubc script` runs.
-
-A normal build never needs any of this: the acquired artefact is committed, so a
-clone with no credentials still builds, it just cannot re-acquire.
-
-`ALM_OFFLINE=1` in front of any of the four skips the network — `ubc script`
-forwards no arguments of its own, so that is how a mode switch happens on a
-laptop with no Jama reachable.
-
-### The demo: delete the system level, get it back
-
-```bash
-ubc script reset --path docs       # arm it: roll back, delete, clear caches
-ubc check docs                     # 35 errors, 67 warnings — everything dangles
-ubc script sync-jama --path docs   # re-acquire from Jama
-ubc check docs                     # No errors found — byte-identical
-```
-
-That is the whole claim of Connectivity-as-Code in one command: **the local copy
-is disposable, the ALM is not.**
-
-Because the acquired artefact is normalised — `tools/sync_alm.py` strips the
-timestamp `from-jama` stamps on every run and sorts the keys — a sync that
-changed nothing produces an **empty** `git diff`. So when the diff is not empty,
-something really did move in Jama. That is the change notification the ALM never
-sent.
-
-### Resetting between runs
-
-[tools/reset_demo.py](tools/reset_demo.py), wired as a script, puts the tree back
-to the starting position:
-
-```bash
-ubc script reset:dry --path docs   # print the plan, change nothing
-ubc script reset --path docs       # do it (asks first)
-ALM_RESET_YES=1 ubc script reset --path docs   # ...without the prompt
-```
-
-1. `git reset --hard HEAD` — a requirement someone edited live, a link someone
-   broke, a staged experiment: all rolled back.
-2. deletes the acquired artefact, so `sync-jama` has something to do.
-3. clears `.ub_cache`, `_build`, `__pycache__` and the gitignored `needs.json`
-   outputs, so the first `ubc check` of the demo is a real one.
-
-**It discards uncommitted work.** It prints what it is about to destroy and asks
-before doing it. Three things it deliberately leaves alone:
-
-| Left alone | Why |
-|---|---|
-| `docs/alm/crosswalk.json` | the only file the sync cannot rebuild — it holds what Jama does not model |
-| `.venv/`, `.env`, untracked files | the cache list is an explicit allowlist, never `git clean -fdx` |
-| Jama itself | a local reset cannot undo an edit made in the ALM — change it back in the Jama UI |
-
-### Stale reviews: a change in Jama flags what it touched
-
-Nothing extra to configure. ubCode keeps a fingerprint of each reviewed need
-**and its parents** in the review verdict (`docs/.pharaoh/verdicts/`). When a
-requirement changes in Jama and the sync brings the new text in, the review of
-that requirement and of each architecture element that satisfies it becomes
-**stale**:
-
-```bash
-ubc agent gaps -p docs            # review gaps: the requirement + its children
-ubc agent verdict-check -p docs   # the same needs, listed as "outdated"
-```
-
-Measured with `JAMA_Rollout_Demo-SYSRQ-4` changed from 350 A to 300 A in Jama:
-`review` gaps for `JAMA_Rollout_Demo-SYSRQ-4`, `ARCH_CURRENT_PATH_MONITOR` and
-`ARCH_SAFETY_SUPERVISOR`. Change the architecture text to match (350 → 300) and
-the cascade goes one level down: `SWREQ_OVERCURRENT_DEBOUNCE` becomes stale too.
-In VS Code the Pharaoh **Gaps** view shows the same list, and *Run Quality
-Analysis* on a child explains it on the `parent_fit` axis.
-
-Only words count. Jama re-wraps a rich-text description into one line; that
-alone makes no review stale. Clear a stale review with a new review, not by hand.
-
-### The nightly sync
-
-[.github/workflows/sync-jama.yml](.github/workflows/sync-jama.yml) runs the sync
-at 02:30 UTC on weekdays. An unchanged Jama gives an empty diff and the job ends;
-a change becomes a pull request `sync/jama` whose description carries the diff
-and the review gate. Nothing lands on main unreviewed, and
-the merge is what `ubtrace.yml` then publishes to ubTrace.
-
-It skips with a notice — not a red run — until these repository secrets exist:
-`JAMA_USERNAME`, `JAMA_PASSWORD`, `UBCONNECT_LICENSE_KEY`, `UBCONNECT_LICENSE_USER`,
-`UBCODE_LICENSE_KEY`, `UBCODE_LICENSE_USER`. Add `SYNC_BOT_TOKEN` (a PAT or GitHub
-App token) if the graph gates should run on the bot's pull request: GitHub does
-not trigger workflows from a pull request opened with the default token.
-
-**Not yet run in CI.** The workflow is validated locally (YAML, `bash -n`, and the
-pull-request description rendered against a simulated Jama change); its first real
-run needs the secrets above.
-
-### The two modes
-
-Same 20 requirements, same Jama project, two different things in the repository.
-
-|  | `rst` | `external` |
-|---|---|---|
-| The one file | `docs/specs/_global/alm_requirements.rst` | `docs/alm/external.json` |
-| Lands as | `.. req::` blocks in a generated RST page | nothing — loaded from JSON |
-| Need kind | ordinary local needs | external needs, read-only by construction |
-| Editable locally | yes, the file is normal RST | **no**, there is no local text at all |
-| A reference to one opens | the page in this project | the item in Jama |
-| Round trip back to Jama | possible | not possible |
-| `ubc` resolves the links | yes | yes — verified with `ubc query cypher` |
-
-The `[[needs.external_needs]]` entry exists only in `external` mode — the sync
-writes it into the marked `sync-jama` region of
-[docs/ubproject.toml](docs/ubproject.toml) and removes it again on the way back.
-
-Pick `rst` when the requirements are still moving and someone may want to propose
-a change from the repository side. Pick `external` when the ALM is the baseline
-and local drift must be impossible.
-
-### What the ALM cannot carry
-
-Three things the migration had to solve, all of them normal for an ALM bridge:
-
-| Problem | Where it is solved |
-|---|---|
-| Jama mints the id (`Rollout_Demo-SYSRQ-4`) and it is read-only there | ids are Jama's, prefixed `JAMA_`; the pre-migration name survives as `:legacy_id:` |
-| Jama returns picklists as numbers (`status: 292`) | `[jama_status_labels]` in `docs/ubconnect.toml` |
-| Jama models no streams and no user stories | re-attached from `docs/alm/crosswalk.json`, keyed on the stable `globalId` |
-
-Requirements flow **down only**. There is deliberately no `[ubconnect.to_jama]`
-block anywhere in this repository, so a back-flow is not merely discouraged, it
-is unconfigured — the one-time migration that seeded the Jama project ran from a
-throw-away config outside this repository.
-
-The acquired artefact is committed, so a normal build never needs Jama to be
-reachable; only the sync talks to it, and **its diff is the change notification
-Jama never sent**. Run the sync nightly or on merge requests, never per build —
-the Jama REST API degrades under continuous sync load.
-
 ## Streams
 
 One directory per root user story. Four are decomposed all the way to code and
@@ -345,13 +148,6 @@ And it is **in the graph as a need**, not only in a CLI's exit code — see
 [Workflow gaps, from the structural gate](#workflow-gaps-from-the-structural-gate).
 
 ## Setup
-
-**In VS Code**, the whole ALM loop is in the command palette — `Tasks: Run Task`
-lists acquiring from Jama in either mode, the review gaps and the verdict check,
-the model import, the cross-tool trace and the showcase reset
-([.vscode/tasks.json](.vscode/tasks.json)). Stale reviews appear in the
-Pharaoh **Gaps** view.
-
 
 The Python side is managed by [uv](https://docs.astral.sh/uv/), so the
 environment is reproducible: [.python-version](.python-version) pins the
@@ -402,17 +198,6 @@ them fail on purpose — see [Two tests are red, on purpose](#two-tests-are-red-
 
 ```bash
 uv run pytest -q     # 2 failed, 50 passed
-```
-
-The system level is acquired from Jama rather than authored — see
-[The system requirements live in Jama](#the-system-requirements-live-in-jama):
-
-```bash
-ubc script reset --path docs              # arm the showcase (asks first)
-ubc script reset:dry --path docs          # ...print the plan, change nothing
-ubc script sync-jama --path docs          # acquire, keeping the current mode
-ubc script sync-jama:rst --path docs      # ...as RST, the complete round trip
-ubc script sync-jama:external --path docs # ...as read-only JSON
 ```
 
 Both imported artefacts are refreshed the same way — capture a snapshot, then turn
@@ -838,16 +623,6 @@ pack in [docs/quality/](docs/quality/) — `requirement.toml` (used by both `req
 `swreq`), `arch.toml`, `feat.toml`, `decision.toml` — and every verdict under
 `docs/.pharaoh/verdicts/` was produced by an independent reviewer context scoring
 those axes, then stamped by `ubc agent verdict-submit`.
-
-**Carried over, not re-reviewed, when the requirements moved to Jama.** The 20
-requirement verdicts were recorded against the `REQ_*` ids, and the 15
-architecture verdicts against links to them; the migration changed both ids, so
-the gate reported 20 missing and 15 outdated. Their axes and summaries were
-re-submitted unchanged through `ubc agent verdict-submit`, which re-stamps the
-fingerprints — justified because the reviewed title and text of all 20
-requirements is byte-identical before and after the round trip through Jama
-(checked against the pre-migration commit). The `agent` / `model` provenance is
-the original reviewer's.
 
 Two consequences worth knowing before you demo:
 
