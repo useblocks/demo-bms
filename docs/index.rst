@@ -72,7 +72,6 @@ project was authored.
    :caption: Cross-cutting
 
    specs/_global/alm_requirements
-   specs/_global/models
    specs/_global/decisions
    specs/_global/risks
    specs/_global/test_results

@@ -1,3 +1,4 @@
 {
-    "ubcode.cli.terminalIntegration": true
+    "ubcode.cli.terminalIntegration": true,
+    "ubcode.views.pinnedProject": "${workspaceFolder}/docs/ubproject.toml"
 }
