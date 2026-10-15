@@ -190,7 +190,7 @@ ubtrace_project = "rollout-demo-bms"
 ubtrace_version = "main"
 
 ubtrace_theme_options = {
-    "repo_url": "https://github.com/useblocks/rollout-demo-bms",
+    "repo_url": "https://github.com/useblocks/demo-bms",
     # The sources sit one level down from the repository root.
     "edit_uri": "edit/main/docs/",
     "view_source_uri": "blob/main/docs/",

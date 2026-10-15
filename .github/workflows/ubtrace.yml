@@ -88,51 +88,19 @@ jobs:
         with:
           ref: ${{ github.event.inputs.ref || github.ref }}
 
-      - name: Require a ubCode license
-        # ubc is COMMERCIAL software and this repository is PRIVATE, so the free
-        # open-source mode does not apply: ubCode grants that only to projects under
-        # an OSI licence in a publicly reachable Git repo, and it probes the remote
-        # to decide. Unlicensed, ubc caps indexing at 5 files and 100 needs; this
-        # project has 22 and 194, so every gate below fails with
-        # "exceeds maximum without license".
-        #
-        # This preflight exists because that failure names the wrong culprit. The
-        # action's own `ubc --version` check passes unlicensed, so without this step
-        # the job would install cleanly and then die inside `ubc check` with a
-        # message about file counts — nothing pointing at a missing repository
-        # secret. Fail here instead, naming the secrets.
-        #
-        # BOTH are needed: useblocks licence keys are user-based, so the key without
-        # the e-mail it was issued to does not activate.
-        # https://ubcode.useblocks.com/usage/ublicense.html
-        env:
-          UBCODE_LICENSE_KEY: ${{ secrets.UBCODE_LICENSE_KEY }}
-          UBCODE_LICENSE_USER: ${{ secrets.UBCODE_LICENSE_USER }}
-        run: |
-          missing=""
-          [ -n "${UBCODE_LICENSE_KEY:-}" ]  || missing="$missing UBCODE_LICENSE_KEY"
-          [ -n "${UBCODE_LICENSE_USER:-}" ] || missing="$missing UBCODE_LICENSE_USER"
-          if [ -n "$missing" ]; then
-            echo "::error::Missing repository secret(s):$missing — the ubc graph gates cannot run without a ubCode license. Add them under Settings > Secrets and variables > Actions, or contact support@useblocks.com for a key."
-            exit 1
-          fi
-          echo "license secrets present"
-
       - name: Install ubc
         # Pinned to the current `main` commit, not to the `0.1` tag: that tag is two
         # commits behind and predates the version bump, and the action publishes no
         # moving major tag to follow. A composite action is plain YAML executed in
         # this job, so pinning the exact SHA is the only way to know what runs.
         #
-        # The action exports the two inputs as UBCODE_LICENSE_KEY / UBCODE_LICENSE_USER
-        # for every later step in the job, which is how the gates below are licensed.
-        # Note the runner is ephemeral, so ubc's 3-day licence cache is always cold
-        # and each run performs one online activation request.
+        # No licence credentials are passed: this repository is public and
+        # MIT-licensed, so ubc runs in its free open-source mode — it probes the
+        # remote to decide. The runner is ephemeral, so ubc's licence cache is always
+        # cold and each run performs one online licence check.
         uses: useblocks/ubc-action@393f60bb24e9988cd62f2044e4e200ad253395a7 # main, 2026-03-25
         with:
           version: ${{ env.UBC_VERSION }}
-          license-key: ${{ secrets.UBCODE_LICENSE_KEY }}
-          license-user: ${{ secrets.UBCODE_LICENSE_USER }}
 
       - name: Set up Python
         # Only for the two importers, which are standard-library-only by design.
@@ -374,15 +342,12 @@ jobs:
       - name: Install ubc
         # A SECOND install of the same pinned action. Jobs do not share a filesystem,
         # so the ubc the graph gates installed is on another runner and this one
-        # starts bare. No license preflight here: `needs: graph-gates` means that job
-        # has already proved both secrets are present and failed loudly naming them if
-        # not. The cost is one extra online activation per run — the runner is
-        # ephemeral, so ubc's 3-day licence cache is always cold.
+        # starts bare. No licence credentials are passed, for the same reason as the
+        # graph-gates job: this public, MIT-licensed repository runs ubc's free
+        # open-source mode.
         uses: useblocks/ubc-action@393f60bb24e9988cd62f2044e4e200ad253395a7 # main, 2026-03-25
         with:
           version: ${{ env.UBC_VERSION }}
-          license-key: ${{ secrets.UBCODE_LICENSE_KEY }}
-          license-user: ${{ secrets.UBCODE_LICENSE_USER }}
 
       - name: Build the specification PDF
         id: pdf

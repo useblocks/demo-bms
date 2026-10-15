@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 5
 requires-python = ">=3.13"
 
 [[package]]
@@ -219,6 +219,44 @@ sdist = { url = "https://files.pythonhosted.org/packages/37/6a/354d8e640b5f90996
 wheels = [
     { url = "https://files.pythonhosted.org/packages/78/53/12ceba92ce55851a3d34123b2774a32689f745ce4c0c9bebca1a2a07e266/comment_parser-1.2.5-py3-none-any.whl", hash = "sha256:fb3dee8f351ebd1cfc22d3f19dabf93a4f7d4c9ea13b2092242de086a4449d9e", size = 13222, upload-time = "2026-03-16T03:30:00.77Z" },
 ]
+
+[[package]]
+name = "demo-bms"
+version = "0.1.0"
+source = { virtual = "." }
+
+[package.optional-dependencies]
+ubtrace = [
+    { name = "beautifulsoup4" },
+    { name = "furo" },
+    { name = "myst-parser" },
+    { name = "sphinx" },
+    { name = "sphinx-codelinks" },
+    { name = "sphinx-needs" },
+    { name = "sphinxcontrib-mermaid" },
+    { name = "ubt-sphinx" },
+]
+
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "beautifulsoup4", marker = "extra == 'ubtrace'" },
+    { name = "furo", marker = "extra == 'ubtrace'", specifier = ">=2024.8" },
+    { name = "myst-parser", marker = "extra == 'ubtrace'", specifier = ">=4.0" },
+    { name = "sphinx", marker = "extra == 'ubtrace'", specifier = ">=8.0,<9" },
+    { name = "sphinx-codelinks", marker = "extra == 'ubtrace'", specifier = ">=1.2" },
+    { name = "sphinx-needs", marker = "extra == 'ubtrace'", specifier = ">=8.3,<9" },
+    { name = "sphinxcontrib-mermaid", marker = "extra == 'ubtrace'", specifier = ">=1.0" },
+    { name = "ubt-sphinx", marker = "extra == 'ubtrace'", specifier = "==0.8.1" },
+]
+provides-extras = ["ubtrace"]
+
+[package.metadata.requires-dev]
+dev = [{ name = "pytest", specifier = ">=8.4.2" }]
 
 [[package]]
 name = "docutils"
@@ -755,44 +793,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/ce/56/e6f61718d1c36e646aabe552ad1f8f77744a4c57524eaa782b5b44eba220/rjsmin-1.2.5-cp314-cp314t-musllinux_1_2_i686.whl", hash = "sha256:1e3ab93a51d7581ba0a3b6a383df2929b86d9d55f9516764678f9b4e409826e8", size = 34682, upload-time = "2025-10-12T10:51:22.755Z" },
     { url = "https://files.pythonhosted.org/packages/00/f3/37a4672ddb1307eb57d9b54ba89a48f483a04a63cac4e1471fdb4cba76e6/rjsmin-1.2.5-cp314-cp314t-musllinux_1_2_x86_64.whl", hash = "sha256:47dad1732a2c4779bdc76d5b3183fdf2ec27838f31071fa9dfcc79483d3480e2", size = 34161, upload-time = "2025-10-12T10:51:23.761Z" },
 ]
-
-[[package]]
-name = "rollout-demo-bms"
-version = "0.1.0"
-source = { virtual = "." }
-
-[package.optional-dependencies]
-ubtrace = [
-    { name = "beautifulsoup4" },
-    { name = "furo" },
-    { name = "myst-parser" },
-    { name = "sphinx" },
-    { name = "sphinx-codelinks" },
-    { name = "sphinx-needs" },
-    { name = "sphinxcontrib-mermaid" },
-    { name = "ubt-sphinx" },
-]
-
-[package.dev-dependencies]
-dev = [
-    { name = "pytest" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "beautifulsoup4", marker = "extra == 'ubtrace'" },
-    { name = "furo", marker = "extra == 'ubtrace'", specifier = ">=2024.8" },
-    { name = "myst-parser", marker = "extra == 'ubtrace'", specifier = ">=4.0" },
-    { name = "sphinx", marker = "extra == 'ubtrace'", specifier = ">=8.0,<9" },
-    { name = "sphinx-codelinks", marker = "extra == 'ubtrace'", specifier = ">=1.2" },
-    { name = "sphinx-needs", marker = "extra == 'ubtrace'", specifier = ">=8.3,<9" },
-    { name = "sphinxcontrib-mermaid", marker = "extra == 'ubtrace'", specifier = ">=1.0" },
-    { name = "ubt-sphinx", marker = "extra == 'ubtrace'", specifier = "==0.8.1" },
-]
-provides-extras = ["ubtrace"]
-
-[package.metadata.requires-dev]
-dev = [{ name = "pytest", specifier = ">=8.4.2" }]
 
 [[package]]
 name = "roman-numerals"
