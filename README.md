@@ -257,7 +257,7 @@ through an RST one.
 
 ## Traceability, as a page
 
-[docs/traceability.rst](docs/traceability.rst) is the aggregate view of the graph, and
+[docs/specs/_global/traceability.rst](docs/specs/_global/traceability.rst) is the aggregate view of the graph, and
 every line of it is **derived** — nothing on it is hand-maintained, so it cannot
 drift from the specs the way a hand-drawn matrix does:
 
@@ -570,7 +570,7 @@ Once a gap is a need, it shows up everywhere the graph does — and it is **red*
 (`#EF4444`, the strongest colour in the ontology) in all of them:
 
 - as a red node hanging off its requirement in the `needflow` diagrams on
-  [docs/traceability.rst](docs/traceability.rst);
+  [docs/specs/_global/traceability.rst](docs/specs/_global/traceability.rst);
 - in the `gaps` column of every level table on the same page;
 - as a red-barred need on its own page, and on the incoming-links list of the need
   it is about;

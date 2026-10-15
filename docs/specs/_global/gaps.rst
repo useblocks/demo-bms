@@ -19,7 +19,7 @@ Workflow Gaps
 Each need below carries ``gap_for`` down to the need the gate attributed it
 to, so the gap shows up as a red node beside that need in every ``needflow``
 diagram and as a non-empty ``gaps`` cell in every level table on
-:doc:`/traceability`. Ask the engine what to do about one with
+:doc:`/specs/_global/traceability`. Ask the engine what to do about one with
 ``ubc agent next --id <NEED_ID>``.
 
 .. gap:: REQ_CELL_BALANCING_WINDOW — nothing links back to it with satisfies
