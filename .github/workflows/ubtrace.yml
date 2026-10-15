@@ -226,12 +226,27 @@ jobs:
         with:
           python-version-file: ".python-version"
 
+      - name: Install graphviz
+        # `dot` renders the per-stream needflow diagrams on traceability.rst
+        # (flow_engine = "graphviz" in ubproject.toml). NOT optional: conf.py
+        # fails the build when `dot` is missing, because a traceability page with
+        # no diagrams is worse than a loud failure.
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes graphviz
+          dot -V
+
       - name: Install PlantUML
         # PlantUML renders the three `.. needuml::` component diagrams under
         # specs/*/architecture.rst. A pinned release jar rather than the apt
         # package, which lags years behind. Java comes preinstalled on
-        # ubuntu-latest. Like graphviz below this is NOT optional: conf.py
+        # ubuntu-latest. Like graphviz above this is NOT optional: conf.py
         # fails the build when `plantuml` is missing.
+        #
+        # Runs AFTER the graphviz step: PlantUML lays out every diagram type but
+        # sequence diagrams with `dot`, and `plantuml -version` exits non-zero
+        # when it cannot find it — so the version check also proves the two are
+        # wired up.
         env:
           PLANTUML_VERSION: "1.2026.8"
         run: |
@@ -242,16 +257,6 @@ jobs:
             | sudo tee /usr/local/bin/plantuml > /dev/null
           sudo chmod +x /usr/local/bin/plantuml
           plantuml -version
-
-      - name: Install graphviz
-        # `dot` renders the per-stream needflow diagrams on traceability.rst
-        # (flow_engine = "graphviz" in ubproject.toml). NOT optional: conf.py
-        # fails the build when `dot` is missing, because a traceability page with
-        # no diagrams is worse than a loud failure.
-        run: |
-          sudo apt-get update
-          sudo apt-get install --yes graphviz
-          dot -V
 
       - name: Install Python dependencies
         run: uv sync --extra ubtrace
