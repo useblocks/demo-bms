@@ -22,6 +22,13 @@
 # to sphinx-build as `-D ubtrace_version=`). Set UBTRACE_ORG and UBTRACE_PROJECT
 # only to re-target an already-built artefact at a different project.
 #
+# Set UBTRACE_GIT_BRANCH, UBTRACE_GIT_COMMIT and UBTRACE_GIT_PULL_REQUEST to
+# record which source state produced the build. ubTrace stores them as metadata
+# beside the version (NOT part of the version id) and exposes them through
+#   GET /v1/artifacts/organizations/<org>/projects/<project>/versions-with-dimensions
+# as a `git` object per version. All three are optional; CI fills them from the
+# GitHub context, a local run that sets none records nothing.
+#
 # For a self-hosted instance, point UBTRACE_URL at its API instead:
 #   export UBTRACE_URL=http://ubtrace-api.local/api
 
@@ -69,8 +76,49 @@ if [[ -z "$(ls -A "${BUILD_DIR}")" ]]; then
   exit 1
 fi
 
+# --- Git provenance (optional) ------------------------------------------------
+# Which source state produced this build. `ubt_sphinx` cannot know it -- a Sphinx
+# build has no idea which branch or commit it came from -- so the CALLER states
+# it and it rides to the ingest endpoint as query parameters (#2052). Every value
+# is OPTIONAL, and each is OMITTED rather than sent empty when its variable is
+# unset: ubTrace reads an empty parameter as "not supplied" either way, so
+# omitting it says the same thing more plainly and keeps the logged URL honest
+# about what was recorded.
+#
+# The values are percent-encoded because a branch name may legally contain `&`,
+# `#`, `=` or `+`, any of which would otherwise split, truncate or mis-decode the
+# query string. Commit hashes and pull-request numbers cannot, but encoding them
+# costs nothing and keeps one rule for all three.
+urlencode() {
+  # Percent-encode every byte outside RFC 3986's unreserved set. `LC_ALL=C` makes
+  # bash index the string one BYTE at a time, so a multi-byte branch name encodes
+  # correctly instead of being read as one wide character.
+  local LC_ALL=C
+  local string="$1" encoded="" i char
+  for (( i = 0; i < ${#string}; i++ )); do
+    char="${string:i:1}"
+    case "${char}" in
+      [a-zA-Z0-9.~_-]) encoded+="${char}" ;;
+      *) encoded+="$(printf '%%%02X' "'${char}")" ;;
+    esac
+  done
+  printf '%s' "${encoded}"
+}
+
+INGEST_QUERY="overwrite=true"
+if [[ -n "${UBTRACE_GIT_BRANCH:-}" ]]; then
+  INGEST_QUERY+="&gitBranch=$(urlencode "${UBTRACE_GIT_BRANCH}")"
+fi
+if [[ -n "${UBTRACE_GIT_COMMIT:-}" ]]; then
+  INGEST_QUERY+="&gitCommit=$(urlencode "${UBTRACE_GIT_COMMIT}")"
+fi
+if [[ -n "${UBTRACE_GIT_PULL_REQUEST:-}" ]]; then
+  INGEST_QUERY+="&gitPullRequest=$(urlencode "${UBTRACE_GIT_PULL_REQUEST}")"
+fi
+INGEST_URL="${UBTRACE_URL}/v1/ingest/${UBTRACE_ORG}/${UBTRACE_PROJECT}/${UBTRACE_VERSION}?${INGEST_QUERY}"
+
 echo "Publishing ${BUILD_DIR}"
-echo "  -> ${UBTRACE_URL}/v1/ingest/${UBTRACE_ORG}/${UBTRACE_PROJECT}/${UBTRACE_VERSION}"
+echo "  -> ${INGEST_URL}"
 
 ARCHIVE="$(mktemp -t ubtrace-build-XXXXXX.tar.gz)"
 trap 'rm -f "${ARCHIVE}"' EXIT
@@ -87,7 +135,7 @@ http_code=$(curl --fail-with-body --show-error \
   -w '%{http_code}' -o "${RESPONSE_BODY}" \
   -H "Authorization: Bearer ${UBTRACE_INGEST_TOKEN}" \
   -F "file=@${ARCHIVE}" \
-  "${UBTRACE_URL}/v1/ingest/${UBTRACE_ORG}/${UBTRACE_PROJECT}/${UBTRACE_VERSION}?overwrite=true") \
+  "${INGEST_URL}") \
   || curl_exit=$?
 
 echo "ubTrace HTTP ${http_code}"

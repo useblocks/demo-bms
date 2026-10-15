@@ -336,6 +336,20 @@ jobs:
           echo "publish=$publish" >> "$GITHUB_OUTPUT"
           echo "retention=$retention" >> "$GITHUB_OUTPUT"
           echo "pdf_name=bms-specs-${ref//\//-}" >> "$GITHUB_OUTPUT"
+          # Git provenance for the upload (ubTrace #2052): the source branch and
+          # commit this build came from, recorded as metadata BESIDE the version
+          # (it never enters the version id). A release tag is not a branch, so
+          # `git_branch` stays empty there and the commit alone pins the source
+          # state; the `release` flag above catches a workflow_dispatch of a tag
+          # too, which `github.ref_type` would misreport as a branch. The commit
+          # is read from the CHECKED-OUT tree, not `GITHUB_SHA`, so a dispatch of
+          # an old tag records that tag's commit rather than the dispatching ref's.
+          git_branch=""
+          if [[ "$release" == false ]]; then
+            git_branch="$ref"
+          fi
+          echo "git_branch=$git_branch" >> "$GITHUB_OUTPUT"
+          echo "git_commit=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
         env:
           INPUT_REF: ${{ github.event.inputs.ref }}
 
@@ -436,6 +450,16 @@ jobs:
         env:
           UBTRACE_INGEST_TOKEN: ${{ secrets.UBTRACE_INGEST_TOKEN }}
           UBTRACE_VERSION: ${{ steps.vars.outputs.version }}
+          # Git provenance, recorded against the published version as metadata
+          # (see the `Compute UBTRACE_VERSION` step for how the branch and commit
+          # are resolved).
+          UBTRACE_GIT_BRANCH: ${{ steps.vars.outputs.git_branch }}
+          UBTRACE_GIT_COMMIT: ${{ steps.vars.outputs.git_commit }}
+          # Empty for every upload this workflow makes: it never publishes a pull
+          # request (this step's own `if:` excludes them), so there is no PR number
+          # to record. Wired here so that publishing PR previews later records one
+          # without touching this step again.
+          UBTRACE_GIT_PULL_REQUEST: ${{ github.event.pull_request.number }}
         run: |
           set -euo pipefail
           for build_root in _build/ubtrace/*/; do

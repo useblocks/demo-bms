@@ -331,6 +331,18 @@ declaring a second copy of the three values: it publishes whatever the build
 produced, and refuses rather than guessing if the build tree holds more than one
 version (`UBTRACE_VERSION` picks one, which is how CI publishes a tag).
 
+A published version also carries **git provenance** — the branch and commit the
+build came from — which ubTrace stores as metadata *beside* the version, never
+inside its id, and returns through
+`GET /v1/artifacts/organizations/{org}/projects/{project}/versions-with-dimensions`
+as a `git` object per version. `ubt_sphinx` cannot know it (a Sphinx build has no
+idea which branch produced it), so [upload_ubtrace.sh](upload_ubtrace.sh) reads
+`UBTRACE_GIT_BRANCH`, `UBTRACE_GIT_COMMIT` and `UBTRACE_GIT_PULL_REQUEST` and
+passes them as query parameters; an unset variable is omitted rather than sent
+empty. CI fills them from the GitHub context — branch and commit, with a release
+tag recording the commit only, since a tag is not a branch — and a local run that
+sets none records nothing, exactly as before.
+
 [.github/workflows/ubtrace.yml](.github/workflows/ubtrace.yml) does all of this
 on every push to `main` (publishing as `main`) and on every `v*.*.*` tag
 (publishing under the tag name, alongside `main`). A pull request builds the
