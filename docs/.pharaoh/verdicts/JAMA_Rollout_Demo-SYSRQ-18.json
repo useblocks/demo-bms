@@ -29,7 +29,7 @@
   "criteria": "requirement",
   "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
   "model": "claude-opus-5[1m]",
-  "need": "REQ_HEATING_REQUEST",
+  "need": "JAMA_Rollout_Demo-SYSRQ-18",
   "reviewed_fingerprint": "e6e835a654e98f4c10f671a9f4296fa2530d48556d1293f4d463838970f911c6",
   "schema": 2,
   "summary": "Mirror image of the cooling request, equally complete: both thresholds quantified and the request observable. No axis-level defect found."

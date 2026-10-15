@@ -28,7 +28,7 @@
   "criteria_fingerprint": "48337dfa0b294b1882460a938500fa11eb3e8fd873d5cd9afa31ff1f7923f377",
   "model": "claude-opus-5[1m]",
   "need": "ARCH_SOC_STORE",
-  "reviewed_fingerprint": "af07871e47ed5d54f42eaf46b114b6fcb81b7bdeefe87bbc7cd01c0cab550a45",
+  "reviewed_fingerprint": "35140c5f4eb5253cd778dacf277833fda7e88c3fb80f7fe96247c9b7c0ce434e",
   "schema": 2,
   "summary": "A well-chosen persistence mechanism - two alternating slots, monotonic counter, checksum, and a stated slot-selection rule. What is missing is the link between the 60 s periodic write and the parent's 2 % bound: charge moved between the last periodic write and an unexpected power loss is unaccounted for."
 }

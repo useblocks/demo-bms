@@ -30,7 +30,7 @@
   "criteria": "requirement",
   "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
   "model": "claude-opus-5[1m]",
-  "need": "REQ_SOC_UPDATE_PERIOD",
+  "need": "JAMA_Rollout_Demo-SYSRQ-12",
   "reviewed_fingerprint": "cb7a88f9d6201141c48150716595bca5d1074eb8b4c2c66a51e5b0b846b722dc",
   "schema": 2,
   "summary": "Tight, well-quantified timing requirement that even states its own violation criterion; the only gap is the undefined 'awake' state that scopes the obligation."

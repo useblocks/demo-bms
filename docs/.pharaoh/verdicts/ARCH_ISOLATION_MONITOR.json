@@ -27,7 +27,7 @@
   "criteria_fingerprint": "48337dfa0b294b1882460a938500fa11eb3e8fd873d5cd9afa31ff1f7923f377",
   "model": "claude-fable-5-1",
   "need": "ARCH_ISOLATION_MONITOR",
-  "reviewed_fingerprint": "a14ccdebf5dc2b117471f57179a08eb872fd2b05a8ced553f226a57e7a366878",
+  "reviewed_fingerprint": "271856d759ffc65ad9dcc23f656db0f1ff7fc45aa26927d3892727f83b450c42",
   "schema": 2,
   "summary": "Well-bounded single element; only the cycle period is missing."
 }

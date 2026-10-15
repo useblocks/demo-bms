@@ -34,7 +34,7 @@ Elements
 .. arch:: Cell Measurement Acquisition
    :id: ARCH_CELL_MEASUREMENT_ACQ
    :status: draft
-   :satisfies: REQ_CELL_VOLTAGE_LIMITS, REQ_CELL_OVERTEMPERATURE, REQ_MEASUREMENT_PLAUSIBILITY
+   :satisfies: JAMA_Rollout_Demo-SYSRQ-3, JAMA_Rollout_Demo-SYSRQ-5, JAMA_Rollout_Demo-SYSRQ-7
 
    The Cell Measurement Acquisition element owns the cyclic readout of all cell
    voltages and cell temperatures from the daisy-chained analogue front-end
@@ -49,7 +49,7 @@ Elements
 .. arch:: Pack Current Path Monitor
    :id: ARCH_CURRENT_PATH_MONITOR
    :status: draft
-   :satisfies: REQ_PACK_OVERCURRENT
+   :satisfies: JAMA_Rollout_Demo-SYSRQ-4
 
    The Pack Current Path Monitor element owns the acquisition of the pack current
    from the shunt amplifier, sampled at 1 ms and reported with a signed sign
@@ -61,7 +61,7 @@ Elements
 .. arch:: Cell Protection Safety Supervisor
    :id: ARCH_SAFETY_SUPERVISOR
    :status: draft
-   :satisfies: REQ_CELL_VOLTAGE_LIMITS, REQ_PACK_OVERCURRENT, REQ_CELL_OVERTEMPERATURE, REQ_FAULT_LATCH
+   :satisfies: JAMA_Rollout_Demo-SYSRQ-3, JAMA_Rollout_Demo-SYSRQ-4, JAMA_Rollout_Demo-SYSRQ-5, JAMA_Rollout_Demo-SYSRQ-8
 
    The Cell Protection Safety Supervisor element is the single decision point of
    this stream. It evaluates every validated measurement against a static limit
@@ -75,7 +75,7 @@ Elements
 .. arch:: High-Voltage Contactor Actuator
    :id: ARCH_CONTACTOR_ACTUATOR
    :status: draft
-   :satisfies: REQ_FAULT_REACTION_TIME, REQ_FAULT_LATCH
+   :satisfies: JAMA_Rollout_Demo-SYSRQ-6, JAMA_Rollout_Demo-SYSRQ-8
 
    The High-Voltage Contactor Actuator element owns the two contactor coil
    drivers and drives them as a dual-channel low-side pair, so that de-energising
@@ -88,7 +88,7 @@ Elements
 .. arch:: Cell Protection Fault Memory
    :id: ARCH_FAULT_MEMORY
    :status: draft
-   :satisfies: REQ_FAULT_RECORD
+   :satisfies: JAMA_Rollout_Demo-SYSRQ-9
 
    The Cell Protection Fault Memory element owns a fixed-size ring of 64 fault
    records in non-volatile memory. Each record is a fixed 16-byte layout carrying

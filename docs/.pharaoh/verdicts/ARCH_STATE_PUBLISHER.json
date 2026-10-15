@@ -28,7 +28,7 @@
   "criteria_fingerprint": "48337dfa0b294b1882460a938500fa11eb3e8fd873d5cd9afa31ff1f7923f377",
   "model": "claude-opus-5[1m]",
   "need": "ARCH_STATE_PUBLISHER",
-  "reviewed_fingerprint": "6db5abcbfdb54e86b8d32b98929c69f86ee559b5bce1cd9d8feefa119e788c91",
+  "reviewed_fingerprint": "6bb2e328ad27409b06066b358a799f57244206cfe25727721475eacf9241cbb5",
   "schema": 2,
   "summary": "The decoupling decision and the hold-last-value rule are exactly the right design content for a periodic publisher, and the ownership split against the validity monitor is clean. But the parent's tolerance is a number (100 ms +/- 10 ms, violated at 110 ms) and the element only says '100 ms cycle' - nothing bounds the jitter."
 }

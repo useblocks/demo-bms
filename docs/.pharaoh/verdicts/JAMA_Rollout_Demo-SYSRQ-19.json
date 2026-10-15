@@ -31,7 +31,7 @@
   "criteria": "requirement",
   "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
   "model": "claude-opus-5[1m]",
-  "need": "REQ_POWER_DERATING",
+  "need": "JAMA_Rollout_Demo-SYSRQ-19",
   "reviewed_fingerprint": "3fd8911c13249a60db93a294c84429a5584075b0506620eb7fb90190a2893e1d",
   "schema": 2,
   "summary": "Right idea and the correct anchor points, but 'the full permitted value' is never quantified, no tolerance is given for the linear characteristic, and behaviour outside the 55-60 C band is unstated."

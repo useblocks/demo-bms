@@ -22,21 +22,21 @@ diagram and as a non-empty ``gaps`` cell in every level table on
 :doc:`/traceability`. Ask the engine what to do about one with
 ``ubc agent next --id <NEED_ID>``.
 
-.. gap:: REQ_CELL_BALANCING_WINDOW — nothing links back to it with satisfies
-   :id: GAP_REQ_CELL_BALANCING_WINDOW_NO_SATISFIES_BACK
-   :gap_for: REQ_CELL_BALANCING_WINDOW
+.. gap:: JAMA_Rollout_Demo-SYSRQ-2 — nothing links back to it with satisfies
+   :id: GAP_JAMA_ROLLOUT_DEMO_SYSRQ_2_NO_SATISFIES_BACK
+   :gap_for: JAMA_Rollout_Demo-SYSRQ-2
    :gap_category: trace_backward
    :gap_link: satisfies
    :gap_shortfall: 0 of 1
-   :gap_need_id: REQ_CELL_BALANCING_WINDOW
+   :gap_need_id: JAMA_Rollout_Demo-SYSRQ-2
    :gap_need_type: req
    :style: red_bar
 
-   ``REQ_CELL_BALANCING_WINDOW`` (req) fails the ``trace_backward`` gate: nothing links
+   ``JAMA_Rollout_Demo-SYSRQ-2`` (req) fails the ``trace_backward`` gate: nothing links
    back to it with satisfies.
 
    It carries **0 of 1** of the ``satisfies`` links that gate requires.
 
-   Resolve it with ``ubc agent next --id REQ_CELL_BALANCING_WINDOW``, which names the
+   Resolve it with ``ubc agent next --id JAMA_Rollout_Demo-SYSRQ-2``, which names the
    stage that owes the missing artefact, then refresh this page from a new ``ubc agent
    gaps`` snapshot.

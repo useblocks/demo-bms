@@ -31,7 +31,7 @@
   "criteria": "requirement",
   "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
   "model": "claude-opus-5[1m]",
-  "need": "REQ_SOC_REST_CORRECTION",
+  "need": "JAMA_Rollout_Demo-SYSRQ-13",
   "reviewed_fingerprint": "103d9f09ffae5494f634082c534bcb84fef51b6e1c3adb0519e19c354da4627a",
   "schema": 2,
   "summary": "Clear rest-detection condition, but the correction's source quantity and mapping are unspecified, and the unbounded replacement conflicts with REQ_SOC_PERSISTENCE's 2 % post-power-cycle bound."

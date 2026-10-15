@@ -30,7 +30,7 @@
   "criteria": "requirement",
   "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
   "model": "claude-fable-5-1",
-  "need": "REQ_CELL_VOLTAGE_LIMITS",
+  "need": "JAMA_Rollout_Demo-SYSRQ-3",
   "reviewed_fingerprint": "23f1f3a6aabad3666f56dac61365048401fe3c9552bbf99883851c02d02d62dc",
   "schema": 2,
   "summary": "The 150 % formulation keeps one obligation across chemistries; its cost is that the source text no longer states the numbers, which the body should compensate for."

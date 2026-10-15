@@ -26,7 +26,7 @@
   "criteria_fingerprint": "48337dfa0b294b1882460a938500fa11eb3e8fd873d5cd9afa31ff1f7923f377",
   "model": "claude-opus-5[1m]",
   "need": "ARCH_CONTACTOR_ACTUATOR",
-  "reviewed_fingerprint": "dce60acf1e1a7ac483cf41a12c37b408e3c3b20e8e08755568d305966c32f6fd",
+  "reviewed_fingerprint": "6edc1147d67e241396c65f7aab33c45c034e169cb420c6c583ccf7f0014ce565",
   "schema": 2,
   "summary": "Crisp actuator element. It names the concrete drive topology, takes an explicit slice of the 50 ms reaction budget and explicitly allocates the remainder, and enforces the latch without duplicating the supervisor's state machine."
 }

@@ -4,7 +4,7 @@ Risks
 .. risk:: A single overheating cell propagates into a pack-wide thermal runaway
    :id: RISK_THERMAL_RUNAWAY_PROPAGATION
    :status: draft
-   :mitigates: REQ_CELL_OVERTEMPERATURE, REQ_FAULT_REACTION_TIME
+   :mitigates: JAMA_Rollout_Demo-SYSRQ-5, JAMA_Rollout_Demo-SYSRQ-6
 
    **Cause**: an internal short in one cell raises its temperature far faster
    than the surrounding cells, and the energy it releases heats its neighbours
@@ -26,7 +26,7 @@ Risks
 .. risk:: A welded or stuck contactor leaves the pack connected after a protection fault
    :id: RISK_STUCK_CONTACTOR
    :status: draft
-   :mitigates: REQ_FAULT_LATCH
+   :mitigates: JAMA_Rollout_Demo-SYSRQ-8
 
    **Cause**: repeated interruption of high current welds a contactor's contacts,
    or a coil driver output fails in the energised state.
@@ -47,7 +47,7 @@ Risks
 .. risk:: A slowly drifting cell sensor stays inside the plausibility band
    :id: RISK_SENSOR_DRIFT_UNDETECTED
    :status: draft
-   :mitigates: REQ_MEASUREMENT_PLAUSIBILITY
+   :mitigates: JAMA_Rollout_Demo-SYSRQ-7
 
    **Cause**: an ageing analogue front-end channel drifts by less than the 250 mV
    plausibility window, so every individual reading looks plausible against its
@@ -69,7 +69,7 @@ Risks
 .. risk:: An overestimated state of charge strands the vehicle
    :id: RISK_SOC_OVERESTIMATE_STRANDING
    :status: draft
-   :mitigates: REQ_SOC_ACCURACY, REQ_SOC_INVALID_FLAG
+   :mitigates: JAMA_Rollout_Demo-SYSRQ-11, JAMA_Rollout_Demo-SYSRQ-16
 
    **Cause**: accumulated counting drift with no rest period long enough to take
    an open-circuit-voltage anchor, or a lost current signal during a long drive.
@@ -90,7 +90,7 @@ Risks
 .. risk:: Loss of coolant flow is invisible to the battery management system
    :id: RISK_COOLANT_LOSS
    :status: draft
-   :mitigates: REQ_THERMAL_ACTUATOR_FAILSAFE
+   :mitigates: JAMA_Rollout_Demo-SYSRQ-21
 
    **Cause**: a failed pump, an air lock, or a leak means a raised cooling
    request moves no heat, while the request itself is acknowledged normally.

@@ -29,6 +29,10 @@ optional:  risk ──mitigates──> req        decision ──affects──> 
            test_result ──results_for──> test
 ```
 
+The system requirements (`req`) are **not authored in this repository**. They
+live in Jama and are pulled in with ubConnect — see
+[README_UBCONNECT.md](README_UBCONNECT.md).
+
 Both lower arms hang off `swreq`, not off `arch`: the software requirement is the
 last level that states testable behaviour, so it is the level code realises and
 the level a test can assert against.
@@ -54,7 +58,8 @@ project — see [docs/arms/implementation.rst](docs/arms/implementation.rst) and
 
 ```
 docs/                     the ubCode project AND the Sphinx source directory
-  ubproject.toml          ontology, workflow, codelinks — the one configuration
+  ubproject.toml          ontology, workflow, codelinks — the needs configuration
+  ubconnect.toml          the Jama connection — see README_UBCONNECT.md
   conf.py                 Sphinx reads ubproject.toml; nothing is declared twice
   specs/                  the needs, one directory per stream (RST and Markdown)
   arms/                   the two `.. src-trace::` pages that materialise src/ and tests/
@@ -124,7 +129,7 @@ five [risks](docs/specs/_global/risks.rst), five
 
 ### The deliberate gap
 
-[`REQ_CELL_BALANCING_WINDOW`](docs/specs/cell-balancing/requirements.rst) —
+[`JAMA_Rollout_Demo-SYSRQ-2`](docs/specs/_global/alm_requirements.rst) —
 *"the BMS shall reduce the cell voltage spread to 20 mV or less within 8 hours of
 a charge session ending"* — has **no architecture, no software requirements, no
 implementation and no tests** beneath it. On purpose.
@@ -182,11 +187,11 @@ $UBC agent gaps -p docs                        # the trace gate, whole graph
 $UBC agent gaps --scope US_CELL_BALANCING -p docs   # ...narrowed to one stream
 $UBC agent verdict-check -p docs               # the substance gate (reads verdicts)
 
-$UBC agent audit   --id REQ_FAULT_LATCH -p docs          # one need, as data
+$UBC agent audit   --id JAMA_Rollout_Demo-SYSRQ-8 -p docs  # one need, as data
 $UBC agent context --id ARCH_SAFETY_SUPERVISOR --no-code -p docs   # its neighbourhood
-$UBC agent impact  --id REQ_CELL_VOLTAGE_LIMITS -p docs  # what a change reaches
-$UBC agent next    --id REQ_CELL_BALANCING_WINDOW -p docs # the single next action
-$UBC agent prompt  --id REQ_CELL_BALANCING_WINDOW -p docs # ...as an agent briefing
+$UBC agent impact  --id JAMA_Rollout_Demo-SYSRQ-3 -p docs  # what a change reaches
+$UBC agent next    --id JAMA_Rollout_Demo-SYSRQ-2 -p docs  # the single next action
+$UBC agent prompt  --id JAMA_Rollout_Demo-SYSRQ-2 -p docs  # ...as an agent briefing
 ```
 
 The tests are plain pytest, no dependencies beyond the standard library. Two of
@@ -211,7 +216,7 @@ The specification describes more than one product. The pack chemistry is the
 axis: [docs/variants/nmc.json](docs/variants/nmc.json) is the default profile and
 [docs/variants/lfp.json](docs/variants/lfp.json) the alternative, wired through
 `[needs] variant_data_file` in [docs/ubproject.toml](docs/ubproject.toml) and exposed as
-`var.*`. [`REQ_CELL_VOLTAGE_LIMITS`](docs/specs/cell-protection/requirements.rst)
+`var.*`. [`JAMA_Rollout_Demo-SYSRQ-3`](docs/specs/_global/alm_requirements.rst)
 is the one requirement that reads it: its limits are `:variant:` references
 resolved from the profile, its `chemistry` field is injected with
 `<{ var.pack.chemistry }>`, and an `.. if::` block on the same page only
@@ -495,7 +500,7 @@ It answers three questions: what is structurally *missing* from the graph, how m
 system requirements have a full chain down to a test, and of those, how many are
 backed by passing versus failing tests. Right now: **1 open structural gap**,
 **19 / 20** with a chain (95.0 %), and **15 verified vs 4 failing**. Both
-the gap and the requirement with no evidence are `REQ_CELL_BALANCING_WINDOW`, and
+the gap and the requirement with no evidence are `JAMA_Rollout_Demo-SYSRQ-2`, and
 the report shows them as separate facts — the structural half says the rung is
 missing, the evidence half says no outcome reaches it. That is the distinction the
 page exists to draw.
@@ -532,7 +537,7 @@ ORDER BY results, req
 ```
 
 Run it through the `ubc` MCP server (`query_cypher`). The requirement with zero
-results is `REQ_CELL_BALANCING_WINDOW` — the deliberate gap, showing up as an
+results is `JAMA_Rollout_Demo-SYSRQ-2` — the deliberate gap, showing up as an
 absence of evidence rather than as a special case anyone had to write down.
 
 > **One quirk worth knowing before you demo.** `ubc agent audit` does not render
@@ -546,7 +551,7 @@ absence of evidence rather than as a special case anyone had to write down.
 
 `ubc agent gaps` reports every structural hole in the graph as JSON and exits
 non-zero. That is a fine gate and a poor *view*: it tells you
-`REQ_CELL_BALANCING_WINDOW` has no incoming `satisfies` in a terminal, a long way
+`JAMA_Rollout_Demo-SYSRQ-2` has no incoming `satisfies` in a terminal, a long way
 from the requirement page where someone is actually reading.
 
 So the findings are imported back **into** the graph.
@@ -604,7 +609,7 @@ Three things about this arrangement are worth knowing before you demo it:
 3. **A gap disappears by being fixed.** The ids are derived from the need plus the
    gate that reported it, so re-importing an unchanged snapshot rewrites the same
    bytes, and a resolved gap vanishes instead of lingering under a stale id. Give
-   `REQ_CELL_BALANCING_WINDOW` an architecture element, re-snapshot, re-import, and
+   `JAMA_Rollout_Demo-SYSRQ-2` an architecture element, re-snapshot, re-import, and
    [docs/specs/_global/gaps.rst](docs/specs/_global/gaps.rst) becomes an empty page that says
    so.
 

@@ -112,7 +112,11 @@ def collect_spec_links(specs_dir: Path) -> dict[str, list[str]]:
                     parents.setdefault(current_id, []).extend(pending)
                     pending = []
             else:
-                targets = [t.strip() for t in value.split(",") if t.strip()]
+                # A link may carry a sphinx-needs condition, `ID[status=="x"]`,
+                # which is not part of the target id. Strip it, splitting only on
+                # commas outside [...].
+                targets = [CONDITION.sub("", t).strip() for t in split_links(value)]
+                targets = [t for t in targets if t]
                 if current_id is None:
                     pending.extend(targets)  # link listed above the :id: line
                 else:
@@ -120,12 +124,34 @@ def collect_spec_links(specs_dir: Path) -> dict[str, list[str]]:
     return parents
 
 
+CONDITION = re.compile(r"\[.*\]\s*$")
+
+#: The two spellings a system requirement id has in this project: `REQ_` while
+#: it was authored here, `JAMA_` since Jama became its master and
+#: `tools/sync_alm.py` acquires it. The walk stops at either.
+REQUIREMENT_PREFIXES = ("REQ_", "JAMA_")
+
+
+def split_links(value: str) -> list[str]:
+    """Split a link field on the commas that are NOT inside a [condition]."""
+    parts, depth, buf = [], 0, []
+    for char in value:
+        depth += (char == "[") - (char == "]")
+        if char == "," and depth == 0:
+            parts.append("".join(buf))
+            buf = []
+        else:
+            buf.append(char)
+    parts.append("".join(buf))
+    return [p.strip() for p in parts if p.strip()]
+
+
 def resolve_chain_reqs(swreq_ids: list[str], parents: dict[str, list[str]]) -> tuple[str, ...]:
     """Walk `swreq -> arch -> req` and return the requirement ids reached.
 
-    Only ids with the `REQ_` prefix are returned: the walk is bounded by the
-    project's id convention rather than by a hop count, so an extra rung inserted
-    between arch and req would still resolve.
+    Only ids with a requirement prefix are returned (see REQUIREMENT_PREFIXES):
+    the walk is bounded by the project's id convention rather than by a hop
+    count, so an extra rung inserted between arch and req would still resolve.
     """
     reached: set[str] = set()
     seen: set[str] = set()
@@ -135,7 +161,7 @@ def resolve_chain_reqs(swreq_ids: list[str], parents: dict[str, list[str]]) -> t
         if current in seen:
             continue
         seen.add(current)
-        if current.startswith("REQ_"):
+        if current.startswith(REQUIREMENT_PREFIXES):
             reached.add(current)
             continue
         frontier.extend(parents.get(current, []))

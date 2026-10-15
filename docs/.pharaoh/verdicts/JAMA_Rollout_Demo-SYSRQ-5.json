@@ -29,7 +29,7 @@
   "criteria": "requirement",
   "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
   "model": "claude-opus-5[1m]",
-  "need": "REQ_CELL_OVERTEMPERATURE",
+  "need": "JAMA_Rollout_Demo-SYSRQ-5",
   "reviewed_fingerprint": "9066687d2c625f83b9090c69883e813da527c57aa6267e7bc6f1763b17a6398c",
   "schema": 2,
   "summary": "Crisp, testable overtemperature protection requirement; no axis-level defect found. Set-level note: no requirement defines what makes a cell TEMPERATURE measurement valid (the plausibility requirement covers voltages only), so the 'valid' qualifier in the trigger rests on project context."

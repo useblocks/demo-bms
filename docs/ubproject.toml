@@ -11,10 +11,10 @@ version = "0.1.0"
 # `ubc check docs > /dev/null; echo $?`.
 #
 # THE ONE EXEMPTION, and it is deliberately scoped to one need rather than to a
-# diagnostic code. REQ_CELL_BALANCING_WINDOW carries no incoming `satisfies`
+# diagnostic code. JAMA_Rollout_Demo-SYSRQ-2 carries no incoming `satisfies`
 # because the cell-balancing stream has not reached the archs stage — the standing
 # demo gap this project exists to show, reported by `ubc agent gaps` as
-# GAP_REQ_CELL_BALANCING_WINDOW_NO_SATISFIES_BACK and rendered on
+# GAP_JAMA_ROLLOUT_DEMO_SYSRQ_2_NO_SATISFIES_BACK and rendered on
 # traceability.rst. schemas.json's `coverage-req-satisfies-back` re-reports the
 # same fact as a lint warning, which turns that intended demo into red CI.
 #
@@ -55,7 +55,10 @@ ignore = ["build.pdf_diagram_unrendered"]
 
 [[lint.message-ignores]]
 codes = ["needs.schema_network_warning"]
-contains = "REQ_CELL_BALANCING_WINDOW:satisfies (incoming)"
+contains = "JAMA_Rollout_Demo-SYSRQ-2:satisfies (incoming)"
+# The standing demo gap. Its id is Jama's since the requirements moved into the
+# ALM; it was REQ_CELL_BALANCING_WINDOW while it was authored here, and still
+# carries that name as `:legacy_id:`.
 
 # This file is the PROJECT ROOT, and it lives in docs/ on purpose: the source
 # root ubc discovers documents from is the directory holding this file, so with
@@ -103,13 +106,47 @@ pdf = "ubc build pdf -o _build/pdf/bms-specs.pdf"
 report = "ubc report traceability_coverage.html.j2"
 sphinx = "uv run --extra ubtrace sphinx-build -W --keep-going -b html . _build/html"
 
+# Acquire the system-requirement level from Jama. `..` is the repository root:
+# scripts run in the project root, which is docs/. The `:rst` / `:external`
+# variants SWITCH the mode and leave the tree in it; the bare `sync-jama` keeps
+# whichever mode is active. `:offline` re-renders the committed snapshot and
+# touches no network, which is what a demo on a bad conference wifi runs.
+sync-jama = "python3 ../tools/sync_alm.py"
+"sync-jama:rst" = "python3 ../tools/sync_alm.py --mode rst"
+"sync-jama:external" = "python3 ../tools/sync_alm.py --mode external"
+
+# Put the tree back to the showcase starting position: roll every tracked file
+# back to the last commit, delete the Jama-acquired artefacts so the sync has
+# something to do, and clear the caches so the first `ubc check` is a real one.
+#
+# DISCARDS UNCOMMITTED WORK — it asks first, and `ALM_RESET_YES=1` skips the
+# prompt for a rehearsed run. `reset:dry` prints the plan and changes nothing.
+reset = "python3 ../tools/reset_demo.py"
+"reset:dry" = "python3 ../tools/reset_demo.py --dry-run"
+
 # Report templates and the committed evidence snapshots (JUnit, gaps) live in
 # `reports/` beside this file — the `[reports] directory` default — so the whole
 # documentation project, evidence included, is one tree.
 
 [needs]
 id_required = true
-id_regex = "^[A-Z]+_[A-Z][A-Z0-9_]*$"
+
+# Two branches, because this project has two kinds of requirement id.
+#
+#   ^[A-Z]+_[A-Z][A-Z0-9_]*$   every need authored in this repository
+#   ^JAMA_[A-Za-z0-9_-]+$      a requirement owned by Jama, pulled down by
+#                              tools/sync_alm.py. Its id is Jama's documentKey,
+#                              which carries a hyphen and mixed case
+#                              (JAMA_Rollout_Demo-SYSRQ-2). Jama mints the key
+#                              and it is read-only there, so this branch is not
+#                              a relaxation we chose — it is the ALM's shape.
+#
+# This MUST stay in `[needs]` rather than in `[lint.per-file-ignores]`. `ubc`
+# honours a per-file ignore; sphinx-needs does not read one, and it DISCARDS a
+# need whose id fails `needs_id_regex` WITHOUT a warning. The page still builds,
+# the needs are simply not in the graph, and the only symptom is every link to
+# them turning into "unknown outgoing link" somewhere else entirely.
+id_regex = "^[A-Z]+_[A-Z][A-Z0-9_]*$|^JAMA_[A-Za-z0-9_-]+$"
 
 # Render the `needflow` diagrams on `traceability.rst` with the local graphviz
 # `dot` instead of PlantUML: no Java, no jar to vendor, and the graphviz engine
@@ -163,7 +200,7 @@ schema_definitions_from_json = "schemas.json"
 # `variants/nmc.json` is the default profile, `variants/lfp.json` the alternative.
 # Both hold `pack.chemistry`, `pack.cell_v_min` and `pack.cell_v_max`, exposed as
 # `var.*` in field values (`<{ var.pack.chemistry }>`), in filters and in the
-# `:variant:` role that REQ_CELL_VOLTAGE_LIMITS renders its limits with. The
+# `:variant:` role that JAMA_Rollout_Demo-SYSRQ-3 renders its limits with. The
 # voltage values are STRINGS on purpose: they are rendered into prose ("2.50 V"),
 # where a JSON number would print as 2.5.
 #
@@ -380,12 +417,14 @@ schema = { type = "string", pattern = "^$|^[0-9]+ of [0-9]+$" }
 
 # Reuses the project's own `id_regex` as an alternative branch, so a malformed id
 # cannot reach a report template through this field even though it arrives as a
-# plain string rather than a link.
+# plain string rather than a link. The third branch admits an ALM-sourced id:
+# a Jama documentKey carries a hyphen and mixed case (JAMA_Rollout_Demo-SYSRQ-2)
+# and Jama mints it, so this project cannot make it match the first branch.
 [needs.fields.gap_need_id]
 description = "Id of the need the gap is attributed to — the same fact as the `gap_for` link, as a field a report template can read."
 default = ""
 nullable = false
-schema = { type = "string", pattern = "^$|^[A-Z]+_[A-Z][A-Z0-9_]*$" }
+schema = { type = "string", pattern = "^$|^[A-Z]+_[A-Z][A-Z0-9_]*$|^JAMA_[A-Za-z0-9_-]+$" }
 
 # The ten directives declared under `[[needs.types]]` below. Adding a type there
 # means adding it here — the duplication is the price of letting a report group
@@ -432,7 +471,7 @@ schema = { type = "string", enum = ["draft", "review", "approved"] }
 [needs.variants]
 lfp = "var.pack.chemistry == 'LFP'"
 
-# The field the variant data is INJECTED into: REQ_CELL_VOLTAGE_LIMITS carries
+# The field the variant data is INJECTED into: JAMA_Rollout_Demo-SYSRQ-3 carries
 # `:chemistry: <{ var.pack.chemistry }>`. Global like every field, so "" is
 # admissible for the needs that are not chemistry-specific; the enum is the
 # vocabulary, written once here. `parse_variants` is what lets the value be a
@@ -1106,3 +1145,58 @@ parent_fit = 1
 
 [quality.type_configs.decision.required]
 context_present = 1
+
+# --- ALM CONNECTION (Connectivity-as-Code) ---
+# The system-requirement level of this project is NOT authored here. It lives in
+# Jama Connect, is pulled down by `tools/sync_alm.py`, and is rendered into the
+# generated page `specs/_global/alm_requirements.rst`. Everything below `req` —
+# architecture, software requirements, code, tests — is authored in this
+# repository and links UP into the imported set.
+#
+# The ubConnect configuration (Jama URL, project, mapping, status labels) lives
+# in `ubconnect.toml` beside this file. This file keeps only what the needs
+# build itself reads: the generated source region and the ALM metadata fields.
+
+# --- GENERATED: `tools/sync_alm.py` owns everything between these markers ---
+#
+# In `external` mode it writes an `[[needs.external_needs]]` entry here pointing
+# at `alm/external.json`; in `rst` mode it leaves the region EMPTY, because the
+# requirements are then ordinary needs in `specs/_global/alm_requirements.rst`
+# and a second source of the same ids would collide.
+#
+# The region exists because the choice cannot be made anywhere else: a configured
+# source whose file is missing is a warning, and this project builds with -W.
+#
+# Needs loaded through it are read-only BY CONSTRUCTION — no local text exists to
+# edit, and `base_url` + `target_url` send every reference to the item in Jama
+# rather than to a page here.
+# sync-jama:begin
+# sync-jama:end
+
+# --- ALM METADATA FIELDS ---
+# Written onto every imported requirement. Undeclared fields still render but are
+# not indexed, so they are declared here to keep the back-link queryable.
+
+[needs.fields.jama_id]
+description = "Jama internal item id."
+default = ""
+
+[needs.fields.jama_document_key]
+description = "Jama documentKey — the ID shown in the Jama UI (e.g. Rollout_Demo-SYSRQ-4)."
+default = ""
+
+[needs.fields.jama_url]
+description = "Deep link back to the master item in Jama."
+default = ""
+
+[needs.fields.global_id]
+description = "Jama globalId — stable across project copies; the crosswalk key."
+default = ""
+
+[needs.fields.alm_stream]
+description = "Which BMS stream an ALM-sourced requirement belongs to. Re-attached from the crosswalk; Jama does not model streams."
+default = ""
+
+[needs.fields.legacy_id]
+description = "The id the requirement carried while it was still authored in this repository, kept so the migration to Jama stays auditable."
+default = ""

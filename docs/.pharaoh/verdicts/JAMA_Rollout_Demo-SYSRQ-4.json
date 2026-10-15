@@ -29,7 +29,7 @@
   "criteria": "requirement",
   "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
   "model": "claude-opus-5[1m]",
-  "need": "REQ_PACK_OVERCURRENT",
+  "need": "JAMA_Rollout_Demo-SYSRQ-4",
   "reviewed_fingerprint": "5b077788f163b2a9fbf1183632fb0f4ccb945e24daba70c0c6721d0134bbd53c",
   "schema": 2,
   "summary": "Fully quantified overcurrent protection with an explicit debounce and an explicit non-trigger case; no axis-level defect found. Set-level note: only the discharge direction is covered, so charge-direction overcurrent is unaddressed by any requirement in this set."

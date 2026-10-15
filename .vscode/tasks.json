@@ -1,0 +1,37 @@
+{
+    // The ALM loop from the command palette: Ctrl+Shift+P -> "Tasks: Run Task".
+    //
+    // Every task is a `ubc script` defined in docs/ubproject.toml, so the editor,
+    // the terminal and CI all run the same commands. `ubc` is the CLI the ubCode
+    // extension bundles; settings.json puts it on the integrated terminal's PATH.
+    //
+    // Stale reviews are live in the editor too: when a requirement changes in
+    // Jama, ubCode marks the review of that requirement and of each child as
+    // stale — the Pharaoh Gaps view lists them, and "Run Quality Analysis" on a
+    // child shows why (parent fit).
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Jama: acquire as RST (round trip)",
+            "detail": "ubc script sync-jama:rst",
+            "type": "shell",
+            "command": "ubc script sync-jama:rst --path docs",
+            "problemMatcher": []
+        },
+        {
+            "label": "Jama: acquire as external needs (read-only)",
+            "detail": "ubc script sync-jama:external",
+            "type": "shell",
+            "command": "ubc script sync-jama:external --path docs",
+            "problemMatcher": []
+        },
+        {
+            "label": "Showcase: reset",
+            "detail": "ubc script reset — DISCARDS uncommitted work, asks first",
+            "type": "shell",
+            "command": "ubc script reset --path docs",
+            "problemMatcher": [],
+            "presentation": { "focus": true, "panel": "dedicated" }
+        }
+    ]
+}

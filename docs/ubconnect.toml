@@ -1,0 +1,73 @@
+# ubConnect configuration — the ALM connection (Connectivity-as-Code).
+#
+# The system-requirement level of this project is NOT authored here. It lives in
+# Jama Connect, is pulled down by `tools/sync_alm.py`, and is rendered into the
+# generated page `specs/_global/alm_requirements.rst`. Everything below `req` —
+# architecture, software requirements, code, tests — is authored in this
+# repository and links UP into the imported set.
+#
+# This file holds ONLY the connection. The need types, fields and the generated
+# `[[needs.external_needs]]` region the sync writes stay in `ubproject.toml`,
+# because the needs build reads those and never reads this file.
+#
+# There is deliberately NO `[ubconnect.to_jama]` block. Requirements flow DOWN
+# only; a back-flow from here cannot happen by accident because it is not
+# configured. The one-time migration that seeded the Jama project ran from a
+# throw-away config outside this repository.
+#
+#   ubconnect jama check      --config ubconnect.toml   # verify credentials
+#   ubconnect jama list-types --config ubconnect.toml   # discover typeKeys
+#   python3 ../tools/sync_alm.py                        # pull + render
+
+[ubconnect.from_jama]
+url = "https://useblocks-partner.jamacloud.com"
+
+# Jama Cloud API credentials are an OAuth client id + client secret pair, so
+# `username` = client id, `password` = client secret, and oauth must be on. The
+# credentials are NOT stored here — they come from JAMA_USERNAME / JAMA_PASSWORD.
+oauth = true
+
+# Taken from the `/projects/59/` segment of the Jama UI URL.
+project_id = 59
+
+# Where `from-jama` drops its RAW output, relative to this file. `_build/` is
+# gitignored: the raw export is a THROW-AWAY. `tools/sync_alm.py` reads it,
+# hardens it, writes the one artefact the active mode needs, and deletes it.
+#
+# It used to land in `alm/` and be committed, which meant every sync produced
+# three files — the raw export, the external source and the RST page — of which
+# at most one was ever the real thing. One mode, one artefact.
+outdir = "_build/alm"
+
+# Prefix on every imported need id, so an ALM-sourced requirement is recognisable
+# as one wherever it appears: `:satisfies: JAMA_Rollout_Demo-SYSRQ-4` says where
+# to go and edit it. Set here and NOT again on the rendering side.
+id_prefix = "JAMA_"
+
+# `globalId` is the round-trip key: stable across project copies and re-imports,
+# and what `docs/alm/crosswalk.json` is keyed on.
+track_global_id = true
+include_relationships = true
+
+# `documentKey` is the Jama REST name for what the Jama UI labels "ID". It is
+# read-only in Jama — Jama mints it — which is why the requirements carry Jama's
+# identifiers here and their pre-migration ids survive only as `:legacy_id:`.
+[ubconnect.from_jama.mapping]
+id = "documentKey"
+title = "name"
+content = "description"
+status = "status"
+
+# Forced to `req` because `req` is declared in [[needs.types]] in
+# `ubproject.toml`, so the import cannot fail on a Jama item type nobody has
+# mapped yet.
+[ubconnect.from_jama.static_fields]
+type = "req"
+
+# Jama returns picklist fields as numeric option ids, so `status` arrives as
+# `292` rather than `Draft`. `tools/sync_alm.py` resolves them through this table
+# into the vocabulary `[needs.fields.status]` (in `ubproject.toml`)
+# enum-validates. Discover a new id with `GET /rest/v1/picklistoptions/<id>`; an
+# unmapped one is reported by the sync and lower-cased as a fallback.
+[jama_status_labels]
+292 = "draft"

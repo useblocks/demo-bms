@@ -32,7 +32,7 @@
   "criteria": "requirement",
   "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
   "model": "claude-opus-5[1m]",
-  "need": "REQ_CELL_BALANCING_WINDOW",
+  "need": "JAMA_Rollout_Demo-SYSRQ-2",
   "reviewed_fingerprint": "e53623ec8ffb8c11fbb577300347604be3f5793b238b7e1c85eb524ec96505ab",
   "schema": 2,
   "summary": "A single, well-quantified balancing obligation that squarely serves its parent story, but it fixes no entry condition (the spread present when the charge session ends) and no quantified definition of 'at rest', leaves the disturbed-window edge case open, and an unbounded initial spread against an 8-hour deadline pushes against real balancing-current limits."

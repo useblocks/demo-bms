@@ -22,3 +22,7 @@ __pycache__/
 
 # Per-variant needs export written by `ubc script needs:lfp` — build output.
 /needs.lfp.json
+
+# Jama credentials for `ubc script sync-jama`
+.env
+!.env.example

@@ -1,0 +1,182 @@
+{
+  "GID-57924": {
+    "jama_document_key": "Rollout_Demo-SYSRQ-2",
+    "jama_id": 12730,
+    "legacy_id": "REQ_CELL_BALANCING_WINDOW",
+    "stream": "cell-balancing",
+    "traces_to": [
+      "US_CELL_BALANCING"
+    ]
+  },
+  "GID-57925": {
+    "jama_document_key": "Rollout_Demo-SYSRQ-3",
+    "jama_id": 12731,
+    "legacy_id": "REQ_CELL_VOLTAGE_LIMITS",
+    "stream": "cell-protection",
+    "traces_to": [
+      "US_CELL_PROTECTION"
+    ]
+  },
+  "GID-57926": {
+    "jama_document_key": "Rollout_Demo-SYSRQ-4",
+    "jama_id": 12732,
+    "legacy_id": "REQ_PACK_OVERCURRENT",
+    "stream": "cell-protection",
+    "traces_to": [
+      "US_CELL_PROTECTION"
+    ]
+  },
+  "GID-57927": {
+    "jama_document_key": "Rollout_Demo-SYSRQ-5",
+    "jama_id": 12733,
+    "legacy_id": "REQ_CELL_OVERTEMPERATURE",
+    "stream": "cell-protection",
+    "traces_to": [
+      "US_CELL_PROTECTION"
+    ]
+  },
+  "GID-57928": {
+    "jama_document_key": "Rollout_Demo-SYSRQ-6",
+    "jama_id": 12734,
+    "legacy_id": "REQ_FAULT_REACTION_TIME",
+    "stream": "cell-protection",
+    "traces_to": [
+      "US_CELL_PROTECTION"
+    ]
+  },
+  "GID-57929": {
+    "jama_document_key": "Rollout_Demo-SYSRQ-7",
+    "jama_id": 12735,
+    "legacy_id": "REQ_MEASUREMENT_PLAUSIBILITY",
+    "stream": "cell-protection",
+    "traces_to": [
+      "US_CELL_PROTECTION"
+    ]
+  },
+  "GID-57930": {
+    "jama_document_key": "Rollout_Demo-SYSRQ-8",
+    "jama_id": 12736,
+    "legacy_id": "REQ_FAULT_LATCH",
+    "stream": "cell-protection",
+    "traces_to": [
+      "US_CELL_PROTECTION"
+    ]
+  },
+  "GID-57931": {
+    "jama_document_key": "Rollout_Demo-SYSRQ-9",
+    "jama_id": 12737,
+    "legacy_id": "REQ_FAULT_RECORD",
+    "stream": "cell-protection",
+    "traces_to": [
+      "US_CELL_PROTECTION"
+    ]
+  },
+  "GID-57932": {
+    "jama_document_key": "Rollout_Demo-SYSRQ-10",
+    "jama_id": 12738,
+    "legacy_id": "REQ_ISOLATION_FAULT",
+    "stream": "isolation-monitoring",
+    "traces_to": [
+      "US_ISOLATION_MONITORING"
+    ]
+  },
+  "GID-57933": {
+    "jama_document_key": "Rollout_Demo-SYSRQ-11",
+    "jama_id": 12739,
+    "legacy_id": "REQ_SOC_ACCURACY",
+    "stream": "state-estimation",
+    "traces_to": [
+      "US_STATE_ESTIMATION"
+    ]
+  },
+  "GID-57934": {
+    "jama_document_key": "Rollout_Demo-SYSRQ-12",
+    "jama_id": 12740,
+    "legacy_id": "REQ_SOC_UPDATE_PERIOD",
+    "stream": "state-estimation",
+    "traces_to": [
+      "US_STATE_ESTIMATION"
+    ]
+  },
+  "GID-57935": {
+    "jama_document_key": "Rollout_Demo-SYSRQ-13",
+    "jama_id": 12741,
+    "legacy_id": "REQ_SOC_REST_CORRECTION",
+    "stream": "state-estimation",
+    "traces_to": [
+      "US_STATE_ESTIMATION"
+    ]
+  },
+  "GID-57936": {
+    "jama_document_key": "Rollout_Demo-SYSRQ-14",
+    "jama_id": 12742,
+    "legacy_id": "REQ_SOC_PERSISTENCE",
+    "stream": "state-estimation",
+    "traces_to": [
+      "US_STATE_ESTIMATION"
+    ]
+  },
+  "GID-57937": {
+    "jama_document_key": "Rollout_Demo-SYSRQ-15",
+    "jama_id": 12743,
+    "legacy_id": "REQ_SOH_CAPACITY_REPORT",
+    "stream": "state-estimation",
+    "traces_to": [
+      "US_STATE_ESTIMATION"
+    ]
+  },
+  "GID-57938": {
+    "jama_document_key": "Rollout_Demo-SYSRQ-16",
+    "jama_id": 12744,
+    "legacy_id": "REQ_SOC_INVALID_FLAG",
+    "stream": "state-estimation",
+    "traces_to": [
+      "US_STATE_ESTIMATION"
+    ]
+  },
+  "GID-57939": {
+    "jama_document_key": "Rollout_Demo-SYSRQ-17",
+    "jama_id": 12745,
+    "legacy_id": "REQ_COOLING_REQUEST",
+    "stream": "thermal-management",
+    "traces_to": [
+      "US_THERMAL_MANAGEMENT"
+    ]
+  },
+  "GID-57940": {
+    "jama_document_key": "Rollout_Demo-SYSRQ-18",
+    "jama_id": 12746,
+    "legacy_id": "REQ_HEATING_REQUEST",
+    "stream": "thermal-management",
+    "traces_to": [
+      "US_THERMAL_MANAGEMENT"
+    ]
+  },
+  "GID-57941": {
+    "jama_document_key": "Rollout_Demo-SYSRQ-19",
+    "jama_id": 12747,
+    "legacy_id": "REQ_POWER_DERATING",
+    "stream": "thermal-management",
+    "traces_to": [
+      "US_THERMAL_MANAGEMENT"
+    ]
+  },
+  "GID-57942": {
+    "jama_document_key": "Rollout_Demo-SYSRQ-20",
+    "jama_id": 12748,
+    "legacy_id": "REQ_CELL_TEMP_SPREAD",
+    "stream": "thermal-management",
+    "traces_to": [
+      "US_THERMAL_MANAGEMENT"
+    ]
+  },
+  "GID-57943": {
+    "jama_document_key": "Rollout_Demo-SYSRQ-21",
+    "jama_id": 12749,
+    "legacy_id": "REQ_THERMAL_ACTUATOR_FAILSAFE",
+    "stream": "thermal-management",
+    "traces_to": [
+      "US_THERMAL_MANAGEMENT"
+    ]
+  }
+}

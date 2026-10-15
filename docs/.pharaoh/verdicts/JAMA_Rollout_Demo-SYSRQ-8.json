@@ -30,7 +30,7 @@
   "criteria": "requirement",
   "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
   "model": "claude-opus-5[1m]",
-  "need": "REQ_FAULT_LATCH",
+  "need": "JAMA_Rollout_Demo-SYSRQ-8",
   "reviewed_fingerprint": "0b18556a59b866aaec20962de26f7c16dab976bfcda211665dc65d843d3c28cf",
   "schema": 2,
   "summary": "Correctly captures the parent's 'stays disconnected until a technician clears it' promise; the one gap is whether a reset is honoured while a limit is still violated."

@@ -9,7 +9,7 @@ other side of the V (see ``tools/import_test_results.py``).
 
 Why put the gate's output back INTO the graph at all: because a gap is only
 useful where the reader already is. A JSON file says
-``REQ_CELL_BALANCING_WINDOW`` has no incoming ``satisfies``; a ``gap`` need says
+``JAMA_Rollout_Demo-SYSRQ-2`` has no incoming ``satisfies``; a ``gap`` need says
 it on the requirement's own page, in the level tables, in the per-stream
 ``needflow`` diagram, and in the ubTrace export — in red, next to the need it is
 about.
@@ -58,7 +58,15 @@ DEFAULT_OUTPUT = REPO_ROOT / "docs" / "specs" / "_global" / "gaps.rst"
 #: is the same in both, indented in RST and at column 0 in Markdown.
 RST_DIRECTIVE = re.compile(r"^\.\.\s+(?P<type>[a-z_]+)::")
 MD_DIRECTIVE = re.compile(r"^\s*(?:`{3,}|:{3,})\{(?P<type>[a-z_]+)\}")
-RST_ID = re.compile(r"^\s*:id:\s*(?P<id>[A-Z][A-Z0-9_]*)\s*$")
+#: Two id shapes, as in `[needs] id_regex`: this project's own, and the Jama
+#: documentKey an acquired requirement carries (`JAMA_Rollout_Demo-SYSRQ-2`),
+#: which has a hyphen and mixed case because Jama mints it.
+RST_ID = re.compile(r"^\s*:id:\s*(?P<id>[A-Z][A-Z0-9_]*|JAMA_[A-Za-z0-9_-]+)\s*$")
+
+#: Needs that are not authored in any source file at all: the requirements when
+#: `tools/sync_alm.py` runs in external mode. They are loaded through
+#: `[[needs.external_needs]]`, so their ids and types are read from the JSON.
+EXTERNAL_SOURCES = ("alm/external.json",)
 
 #: The one-line codelinks marker grammar shared by both `[codelinks.projects]`
 #: blocks: `# @<title>, <ID>, [<PARENT_ID>, ...]`, optionally followed by an explicit
@@ -154,6 +162,16 @@ def collect_need_types(
             if found is not None and current_type is not None:
                 types[found.group("id")] = current_type
 
+    docs_dir = specs_dir.parent
+    for relative in EXTERNAL_SOURCES:
+        source = docs_dir / relative
+        if not source.is_file():
+            continue
+        snapshot = json.loads(source.read_text(encoding="utf-8"))
+        for version in (snapshot.get("versions") or {}).values():
+            for need_id, need in (version.get("needs") or {}).items():
+                types[need_id] = need.get("type", "")
+
     for code_dir, default_type in code_dirs:
         if not code_dir.is_dir():
             continue
@@ -176,7 +194,13 @@ def _gap_id(need_id: str, category: str, link: str, taken: set[str]) -> str:
     """
     _, suffix_template = CATEGORIES.get(category, FALLBACK)
     suffix = suffix_template.format(LINK=link.upper(), CATEGORY=category.upper())
-    candidate = f"GAP_{need_id}_{suffix}"
+    # The need id is folded into this project's own id grammar. A Jama-owned
+    # requirement id has a hyphen and mixed case (JAMA_Rollout_Demo-SYSRQ-2); a
+    # gap id built from it verbatim fails `[needs] id_regex`, and sphinx-needs
+    # DISCARDS a need whose id fails the regex without a warning — the gap would
+    # vanish from the site while `ubc` still counted it.
+    folded = need_id.upper().replace("-", "_")
+    candidate = f"GAP_{folded}_{suffix}"
     # Defensive only: the (need, category, link) triple is already unique in every
     # report shape seen so far, but a duplicate id would fail the build far from
     # its cause, so disambiguate rather than emit one.

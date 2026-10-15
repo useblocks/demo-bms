@@ -31,7 +31,7 @@
   "criteria": "requirement",
   "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
   "model": "claude-opus-5[1m]",
-  "need": "REQ_FAULT_REACTION_TIME",
+  "need": "JAMA_Rollout_Demo-SYSRQ-6",
   "reviewed_fingerprint": "0b0cebba5b8b6b182eaeccf1bd1d819ec9bab41295830b919f776ac9bd558752",
   "schema": 2,
   "summary": "Cleanly bounded latency with defined start and end points, but 'the sample that first violated a limit' collides with the overcurrent limit's 100 ms debounce, and under one reading the 50 ms budget becomes unsatisfiable."

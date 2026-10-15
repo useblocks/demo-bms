@@ -32,7 +32,7 @@
   "criteria": "requirement",
   "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
   "model": "claude-opus-5[1m]",
-  "need": "REQ_THERMAL_ACTUATOR_FAILSAFE",
+  "need": "JAMA_Rollout_Demo-SYSRQ-21",
   "reviewed_fingerprint": "c555897b589eb7a0ffd3ac72088a129f5549dd7496f7cfdafe9eb8f486d69678",
   "schema": 2,
   "summary": "Sound failsafe intent, but it publishes a second permitted discharge power on the same interface as REQ_POWER_DERATING with no arbitration rule, and neither 'confirmed' nor 'full permitted discharge power' is defined."

@@ -29,7 +29,7 @@
   "criteria_fingerprint": "48337dfa0b294b1882460a938500fa11eb3e8fd873d5cd9afa31ff1f7923f377",
   "model": "claude-opus-5[1m]",
   "need": "ARCH_FAULT_MEMORY",
-  "reviewed_fingerprint": "3de12e3f31c7a414f2a97a497dc837b82eb53ecf0a06f01b1e56e552a2f5d514",
+  "reviewed_fingerprint": "8531c49c7a30a19cc74bd767b6d434770b83a93c476a95376506a54846c5037d",
   "schema": 2,
   "summary": "Record content and the reset handshake are well chosen, but for a non-volatile safety log the storage design is thin: no wrap policy on the 64-entry ring and no integrity mechanism, even though the parent requires the record to still be readable after a power cycle - and the sibling ARCH_SOC_STORE shows the project knows how to do this (two slots plus checksum)."
 }

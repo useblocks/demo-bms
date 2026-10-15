@@ -27,7 +27,7 @@
   "criteria_fingerprint": "48337dfa0b294b1882460a938500fa11eb3e8fd873d5cd9afa31ff1f7923f377",
   "model": "claude-fable-5-1",
   "need": "ARCH_SAFETY_SUPERVISOR",
-  "reviewed_fingerprint": "d77f578067b78e2041e08f50c142abeb4172ec20a83dfe7042f5d540727cb0c5",
+  "reviewed_fingerprint": "06a1681bb2fa2d9e9a7997fbef4095ac848f5e1cf2211fbceb47fbee281e48e5",
   "schema": 2,
   "summary": "Re-reviewed because its parent became variant-resolved: the design still fits, but the static table now needs a sentence on how it follows the chemistry profile."
 }
