@@ -67,15 +67,20 @@ source.
 
 ## Resolve the references you were handed
 
-Your prompt carries the references the engine already extracted. Resolve those,
+Your prompt carries the references the engine already extracted. Resolve only
+the ones it says you may resolve, because their kind is selected for this run,
 and do not go looking for more: re-deriving them from `git log` yourself drops
-the cross-repository ones and the Jira allowlist you cannot see.
+the cross-repository ones and the Jira allowlist you cannot see. A reference
+your prompt lists as context only stays an identifier. Do not look it up.
 
 Each reference carries an `id`, an `origin` naming the rule that matched it,
 and, when the text named one, an `owner` and a `repo`. A reference WITHOUT an
 owner belongs to this repository. A reference WITH one belongs to a different
 repository and must be resolved against it, or you fetch a real but unrelated
-issue that happens to share the number.
+issue that happens to share the number. A reference whose origin is
+`jira-key` is not a GitHub issue and is never passed to `gh`. A Jira key is
+resolved only with a skill that covers Jira, and this skill does not, so report
+it as unresolved.
 
 ```
 gh issue view <id> --json number,title,state,body,labels
@@ -86,7 +91,9 @@ gh issue view <id> --repo <owner>/<repo> --json number,title,state,body
 **A bare `#N` does not say whether it is an issue or a change request.** GitHub
 shares one number space between them, which is why the engine leaves `kind`
 absent rather than guessing. When `kind` is absent, try `gh issue view` first
-and fall back to `gh pr view` on a not-found. When `kind` is present, use it.
+and fall back to `gh pr view` on a not-found, and use what you find only if the
+kind it turns out to be is selected for this run. When `kind` is present, use
+it.
 
 A reference that 404s, or that a token cannot see, is a reference you report as
 unresolved. It is not a reference you fill in from the surrounding commit.

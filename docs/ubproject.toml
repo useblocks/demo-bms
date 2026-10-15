@@ -34,8 +34,7 @@ version = "0.1.0"
 # cannot draw become a labelled placeholder box in the page and a
 # `build.pdf_diagram_unrendered` warning, and `[build.pdf] deny` defaults to
 # "warning", so `ubc build pdf` exits 1 on a project that is perfectly healthy.
-# This project trips it 8 times: the 5 `needflow` diagrams on traceability.rst
-# and the 3 `mermaid` component diagrams under specs/*/architecture.rst.
+# This project trips it 5 times: the 5 `needflow` diagrams on traceability.rst.
 #
 # Silencing the CODE rather than lowering the bar. `[build.pdf] deny = "error"`
 # would also work and is what the CLI suggests first, but it is far too broad —
@@ -49,13 +48,21 @@ version = "0.1.0"
 # emitted only by `ubc build pdf` — `ubc check`, `ubc schema validate` and
 # `ubc agent gaps` were verified byte-identical with and without this line.
 #
-# DELETE THIS ENTRY once the builder typesets needflow and mermaid; the
-# placeholders disappear on their own and the line becomes dead config.
+# DELETE THIS ENTRY once the builder typesets needflow; the placeholders
+# disappear on their own and the line becomes dead config.
 ignore = ["build.pdf_diagram_unrendered"]
 
 [[lint.message-ignores]]
 codes = ["needs.schema_network_warning"]
 contains = "REQ_CELL_BALANCING_WINDOW:satisfies (incoming)"
+
+# The 3 `needuml` component diagrams under specs/*/architecture.rst hit the same
+# limitation under a different code: the PDF builder does not handle the directive
+# at all yet. Scoped to `needuml` so that any OTHER unhandled directive still fails
+# the build. DELETE once the builder typesets needuml.
+[[lint.message-ignores]]
+codes = ["build.pdf_directive_unhandled"]
+contains = "needuml:"
 
 # This file is the PROJECT ROOT, and it lives in docs/ on purpose: the source
 # root ubc discovers documents from is the directory holding this file, so with
@@ -846,12 +853,12 @@ orphan_exempt_types = ["user_story", "req", "arch", "swreq", "gap"]
 # six types that owe one. Revisit if ubc grows a type-scoped lifecycle.
 
 # The diagram SYNTAX the runner authors any diagram in. `format` is the authoring
-# directive injected into the runner prompt ("author it as a `mermaid` directive");
+# directive injected into the runner prompt ("author it as a `needuml` directive");
 # it is project policy, NOT baked into the (generic) skills. `enabled = false`
 # keeps the diagram GATE off — only the authoring format is configured here.
 [workflow.diagram]
 enabled = false
-format = "mermaid"
+format = "needuml"
 
 # The route names `.rst`; the `isolation-monitoring` stream is authored in
 # Markdown and is complete, so no stage ever resolves an authoring route into it.

@@ -49,10 +49,10 @@ for the answer.
 ## Use the briefing and the tools
 
 Your briefing carries one target from `ubc agent reverse plan`'s output (a
-`source_path`, its `last_commit`, its `members`, its `kinds`, its
+`source_path`, its `members`, its `kinds`, its
 `member_kinds` and its `recovered_into`), plus the brief's own `route_path`,
-`known_streams`, `default_status`, `provenance_field`, `authoring` and
-`author_skill`.
+`known_streams`, `produces`, `id_prefix`, `default_status`,
+`provenance_field`, `authoring`, `author_skill` and `author_skill_path`.
 
 **The target you were handed IS the work order. Use it, and do not re-run
 `ubc agent reverse plan` to rebuild it.** A second run sees a different ledger
@@ -75,7 +75,10 @@ list, never for an absent key.
 **`kinds` and `member_kinds` say HOW to read, and they answer at different
 levels.** A kind is a lens: `code` states what the system DOES, `tests` states
 what behavior is EXPECTED of it, `docs` states what was PROMISED, `adrs` states
-WHY a choice was made. `kinds` is every lens present anywhere in the target, so
+WHY a choice was made, and `ci` (a CI workflow) states what the project
+ENFORCES: the jobs that must pass, the platforms and the tool versions, which
+are candidate non-functional requirements.
+`kinds` is every lens present anywhere in the target, so
 on a multi-file unit it tells you the unit holds tests without telling you
 which file is one. `member_kinds` gives each member its own, and that is the one
 to read that file by. Read each member under its own lens, not under the
@@ -94,18 +97,29 @@ the engine expects one.
 
 **You choose the target document. The engine does not.** `route_path` is the
 stage's configured route with its `{stream}` placeholder left in, for example
-`specs/{stream}/requirements.rst`. A stream is a coordinate in the needs graph,
-not a folder, and this recovery is what CREATES it, so there is nothing for the
-engine to look up: deciding which stream a piece of code belongs to is a
-judgment about what that code is FOR, and it is yours. `known_streams` lists
-the slugs this project already uses. Reuse one when the code belongs to it,
-rather than authoring a synonym beside it. A new stream is the right answer
-when none of them covers this code, and an empty `known_streams` means you are
-naming the first one.
+`specs/{stream}/requirements.rst`. A stream is the folder under the route that
+holds one functional area's needs. `{stream}` is left open because this
+recovery is what CREATES the stream, so there is nothing for the engine to look
+up, and naming it is yours.
 
-Put your slug in place of `{stream}` and author at the path that gives. That
-concrete path is the `target_rst` you hand back for recording, and
-`ubc agent reverse record` refuses one that still carries `{stream}`.
+Choose a stream per target, from the functional area that target belongs to,
+which is a judgment about what its code is FOR. Targets about different areas
+go to different streams, and several streams in one run is normal. Never put
+the whole scope under one stream unless every target belongs to the same area.
+The module or topic a target's `source_path` covers is usually its stream, so
+read that path before reaching for anything else. Documents that share one
+folder can still cover different topics, and then they belong to different
+streams.
+
+`known_streams` lists the streams this project already uses. Reuse one when a
+target belongs to it, rather than authoring a synonym beside it. A new stream
+is the right answer when none of them covers a target, and an empty
+`known_streams` means you are naming the first ones.
+
+Put a target's stream in place of `{stream}` and author that target's needs at
+the path that gives. That concrete path is the `target_rst` you hand back for
+recording, and `ubc agent reverse record` refuses one that still carries
+`{stream}`.
 
 **Unless the target carries a `recovered_into`, in which case that is the
 document.** A non-null `recovered_into` means this exact target has been
@@ -137,39 +151,38 @@ it, never trimmed to look like `target_rst`.
 
 If, and only if, you were handed NO target at all, run
 `ubc agent reverse plan <scope> --stage <STAGE_ID> -p <project path>` yourself
-and take one entry of `targets` whole, plus the brief's `route_path`,
-`known_streams`, `default_status`, `provenance_field`, `authoring` and
-`author_skill`. Take that
-entry as it comes, `members` and `recovered_into`
-included. This is the
-fallback for a missing briefing, never a second opinion on one you already
-have.
-For the type this stage produces and its id prefix, run
-`ubc agent next --stage <STAGE_ID> -p <project path>` and read `produces` and
-`route.id_prefix`. Do not guess either.
+and take one entry of `targets` whole, plus the brief's own keys listed
+above. Take that entry as it comes, `members` and `recovered_into` included.
+This is the fallback for a missing briefing, never a second opinion on one you
+already have.
 
-**Read `produces` and `route.id_prefix` from that payload and nothing else.**
-`ubc agent next` answers for FORWARD authoring, so the same payload also
-carries a `skill` naming the stage's forward authoring skill rather than this
-one, and a `gate` demanding the very upward trace link this stage must not
-author. Two keys of that payload are the stage's ontology, which is what you
-came for. Everything else you need about this stage is already on your
-briefing, so read it there.
+**The brief's `produces` and `id_prefix` name the need type you author and the
+prefix its ids start with.** Read them there. `id_prefix` is absent when that
+type declares no prefix, and the project's `id_regex` below is then the whole
+rule for an id. Do not guess either value.
+
+Only when you were handed no brief, or a brief that carries no `produces`, run
+`ubc agent next --stage <STAGE_ID> -p <project path>` and read `produces` and
+`route.id_prefix` from that payload and nothing else. `ubc agent next` answers
+for FORWARD authoring, so the same payload also carries a `skill` naming the
+stage's forward authoring skill rather than this one, and a `gate` demanding
+the very upward trace link this stage must not author. Everything else you need
+about this stage is already on your briefing, so read it there.
 
 Do NOT re-discover the project with `find`, `grep`, or `cat` beyond reading the
 source files your target names and the config reads this skill names below.
 
 ## The project decides the shape, not this skill
 
-Four keys of your briefing carry what varies from one project to the next.
-None of them is written into this skill, and none of them is yours to guess.
+The keys below carry what varies from one project to the next. None of them
+is written into this skill, and none of them is yours to guess.
 
 **`default_status` is the status every need you author opens in.** Write
 `:status: <that value>`. When the key is ABSENT the project declares no
 lifecycle states, and the value is `draft`, which is what a forward authoring
 run is given on such a project. A recovered need opens exactly where a
 hand-authored one opens, because both go through review before anything trusts
-them. What marks a need as machine-recovered is the ledger entry `record`
+them. What marks a need as recovered is the ledger entry `record`
 writes afterwards, never a word in the status field, so do not invent a status
 of your own to mark it and do not carry one over from an example.
 
@@ -185,25 +198,27 @@ none, and do not invent one: an undeclared option is a diagnostic on the
 project's own build. The engine reads the declaration off the project config,
 so the answer is already made by the time you see it.
 
-**`authoring` is the project's own directive for this stage**, and it is where
-"how many" and "what shape" are answered. Follow it. It is written for forward
-authoring, so it can name an input you do not have, such as a use case or a
-stated intent. The shape and the coverage it asks for still hold, and the code
-is your input in place of that stated intent. The key is absent when the
-stage declares no directive, and this skill's own rules are then the whole
-answer.
+**`authoring` is the project's own directive for this stage.** It decides how
+many needs you author, what they must cover and what shape they take. Follow
+it. This skill decides how you work. The directive is written for forward
+authoring, so it can name an input this run does not have, such as a use case
+or a user story. Where it does, the files your target names are that input.
+The key is absent when the stage declares no directive, and this skill's own
+rules are then the whole answer.
 
-**`author_skill` names the skill a forward run at this stage would use.** It is
-a POINTER, not something to run. Do not load it and do not follow it: it is
-written for authoring from stated intent, it forbids reading source files, it
-orders the upward trace link this stage must not author, and it waits for an
-approval nobody may be there to give. It is on your briefing so that a person
-comparing what you recovered against what this project authors by hand knows
-which document to open.
+**`author_skill` names this project's forward-authoring skill for this stage,
+and `author_skill_path` is where it is installed.** Read it for the output
+shape only: it shows what a need of this stage looks like in this project, so
+yours can look the same. Do not run it and do not follow it as instructions. It
+is written for authoring from stated intent, it forbids reading source files,
+it orders the upward trace link this stage must not author, and it waits for an
+approval nobody may be there to give. When the brief names an `author_skill`
+and no `author_skill_path`, it is not installed, so there is no file to read.
+Do not search for it.
 
 ## Check the project's id convention before you mint
 
-`route.id_prefix` is only the fixed lead of a valid id, not the full
+`id_prefix` is only the fixed lead of a valid id, not the full
 pattern a minted id must satisfy. The project's own `id_regex` governs
 what may follow that lead, and none of the `reverse plan`, `next`, or
 `audit` verbs reject an id that violates it: audit even echoes an invalid
@@ -241,9 +256,9 @@ surface.
    members one at a time and apply this to each. A typical 200-500 line file
    yields somewhere between 1 and 5 requirements. Fewer than 1 for a file only
    if that file has no observable behavior at all. Where your briefing's
-   `authoring` directive says something different about how many or about what
-   must be covered, the directive wins: this rule is the default for a project
-   that says nothing.
+   `authoring` directive says how many needs to author, what they must cover
+   or what shape they take, the directive decides it. This rule is the default
+   for a project that says nothing.
 5. **Backticks are for code and protocol tokens only**, never for format
    acronyms, ordinary nouns, or emphasis. A tester would copy-paste a
    backticked string into test code or configuration.
@@ -251,7 +266,7 @@ surface.
 ## Output shape (one directive per requirement)
 
 ```rst
-.. <type>:: <one-sentence shall-clause title>
+.. <type>:: <short title naming what the requirement is about>
    :id: <ID with the reported prefix>
    :status: <the briefing's `default_status`, or `draft` when it carries none>
    :<the briefing's `provenance_field`>: <the source paths you read, comma-separated>
@@ -259,6 +274,11 @@ surface.
    <Requirement body>. Exactly one shall-clause, grounded in observable
    behavior, with no compound "and/or".
 ```
+
+The title is a heading of a few words saying what the requirement is about,
+such as "ADC sample acceptance range", so a reader can tell the needs apart
+in a list. It is not a sentence and does not repeat the body: the shall-clause
+is the body, written once.
 
 Drop the provenance line entirely when the briefing carries no
 `provenance_field`.
@@ -281,8 +301,8 @@ project's ledger afterwards by `record-recovery-ledger`.
 ## Propose before you author
 
 **With an interactive user**, do NOT write any RST yet. Present a short,
-scannable outline first: the id (with the reported prefix) and one-line
-shall-clause title of each requirement you will emit, and the observable
+scannable outline first: the id (with the reported prefix), the short title
+and the shall-clause of each requirement you will emit, and the observable
 behavior each one traces to. Wait for them to approve or adjust, and do not
 author until they confirm.
 

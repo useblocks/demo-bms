@@ -52,28 +52,29 @@ next pass re-authors the same behaviours under fresh ids.
 
 ## Read back what was actually authored
 
-Run `ubc build needs` from inside the project first (change into the project
-directory, `cd <project path>`, then run `ubc build needs .`), so the RST the
-recovery skill just wrote is materialized into the project's `needs.json`.
-`ubc build needs` writes `needs.json` relative to your current working
-directory, not relative to the path argument, so you must run it from the
-project root or the index lands in the wrong place. This one IS a sanctioned
-write inside the repository: `needs.json` is the project's own build output,
-authored where the project keeps it. The refusal further down is about YOUR
-scratch files, not about the project's artefacts.
+Build the needs index first, so the RST the recovery skill just wrote is
+materialized into a `needs.json` you can read. Change into the project
+directory (`cd <project path>`) and run `ubc build needs . -o <tmp>/needs.json`,
+where `<tmp>` is a new temporary directory outside the repository (for example
+from `mktemp -d`). Run it from inside the project because `ubc build needs`
+finds the project by searching upward from `.` for its `ubproject.toml`, so
+from outside the project it finds another project or none. `-o` writes the
+index to `<tmp>` and nowhere else, so the build leaves nothing in the
+repository. Read that same file wherever this skill reads `needs.json`. Remove
+`<tmp>` once the `needs` array below is built.
 
 Then read each authored need back from the graph, never from what you remember
 writing: the graph is the oracle, and the payload is built from what it says.
 
 - **Up to about ten ids**, run `ubc agent audit --id <ID> -p <project path>`
   once per id and read its authoritative `type` and `body`.
-- **Beyond that**, read the `needs.json` you just built, rather than paying one
-  process launch per id. A unit-scale recovery reaches 60 to 80 ids, and one
-  `audit` call each is the wrong shape. This is a sanctioned bulk read-back,
-  not a workaround, and the keys are NOT `audit`'s, which is the part nothing
-  else states: each need sits at `versions[<current_version>].needs[<id>]`,
-  its type is `type` as in `audit`, and its body is `content` where `audit`
-  calls it `body`.
+- **Beyond that**, read `<tmp>/needs.json`, the file you just built, rather
+  than paying one process launch per id. A unit-scale recovery reaches 60 to
+  80 ids, and one `audit` call each is the wrong shape. This is a sanctioned
+  bulk read-back, not a workaround, and the keys are NOT `audit`'s, which is
+  the part nothing else states: each need sits at
+  `versions[<current_version>].needs[<id>]`, its type is `type` as in `audit`,
+  and its body is `content` where `audit` calls it `body`.
 - **If a need has no `content` key**, do not read that as an empty body. The
   key is omitted for an empty body, and a project can drop it from the file
   entirely through its own `[needs]` JSON field settings. Fall back to
@@ -106,7 +107,7 @@ expects:
 - `id`: the need's id, unchanged.
 - `type`: the need's `type`, exactly as the read-back reports it.
 - `body`: the need's body, exactly as the read-back reports it (`body` from
-  `audit`, `content` from `needs.json`).
+  `audit`, `content` from `<tmp>/needs.json`).
 - `source_span` (optional): a two-element `[start, end]` array, a 0-based
   inclusive line range in the SOURCE file the requirement traces to, not the
   RST. Omit the key entirely when you have no real line range to report:
@@ -125,6 +126,7 @@ expects:
   "source_path": "<your target's source_path, unchanged>",
   "target_rst": "<the document you authored into, route_path with {stream} substituted>",
   "members": ["<every file this act covered, only when source_path is a directory>"],
+  "retired": ["<ids this record replaces, only after a split>"],
   "run": {
     "agent": "<the RECOVERING skill's name, not this one>",
     "model": "<your own model id, e.g. claude-opus-4.8>",
@@ -139,7 +141,7 @@ expects:
 `source_path` is your recovery target's own field, carried through
 unchanged: for an extraction-stage emission that is the source file path,
 and for a synthesis-stage emission it is the target's own `source_path`,
-which is a `needs:<cluster-key>` marker rather than a real file, and that is
+which is a `cluster:<cluster-key>` marker rather than a real file, and that is
 expected.
 
 `members` goes with a DIRECTORY `source_path` and with nothing else. A
@@ -151,11 +153,23 @@ earlier pass recovered, and putting them back records them a second time under
 this key.
 
 Omit `members` entirely when `source_path` names a single file, and when it is
-a `needs:` marker. A single file's own path already names the one file it
+a `cluster:` marker. A single file's own path already names the one file it
 covers. A marker names no file at all, and a synthesis target's own `members`
 are lower-need IDS, not source files, so pass that target's `source_path`
 through and leave its `members` behind. `record` refuses all three
 mismatches, so this is not a matter of tidiness.
+
+`retired` goes with a split and with nothing else. `split-recovered-need`
+replaces a recovered need with atoms (`<id>_01`, `<id>_02`, ...), and the
+original id no longer exists. The ledger keeps every id a re-record does not
+mention, so without `retired` the original stays in the shard, resolves
+nowhere, and `ubc agent reverse status` reports the unit's files as
+`orphaned`. For a split, record the atoms under the shard that holds the
+original id: its `source_path` and `members`, verbatim from the shard under
+`.pharaoh/rev-eng/` (the one whose `needs[].id` contains the original), and
+`retired: ["<original id>"]`. The engine drops the retired ids from that shard,
+and warns when one is not in it, which means you picked the wrong shard.
+Omit `retired` for every other recovery.
 
 `target_rst` is the document the recovering skill actually authored into. It
 is NOT copied from the target, because no target carries one: `plan` reports
@@ -178,7 +192,23 @@ through is stored silently and never matches the file again.
 
 `target_rst` must be relative and must stay inside the project directory.
 `record` refuses one that is blank, one that resolves to the project
-directory itself, and one that escapes it. It need not exist yet.
+directory itself, and one that escapes it. It must also name the document the
+recovering skill authored, which is on disk by now, so `record` refuses a
+`target_rst` naming no file in the project `-p` resolved. When it does, the
+document is most likely in another project, for example one whose
+`ubproject.toml` sits below the directory you passed: pass that project's
+directory as `-p` and record again.
+
+`run.sources` lists the evidence kinds the recovery actually drew on. A
+structure recovery reads its module's code or tests, so it lists whichever of
+`code` and `tests` it read. Of `commit_history`, `change_requests` and
+`issues`, list only those selected for this run, which the recovery's prompt
+names. Never list one that is not selected, even when a reference led you to a
+pull request or an issue. Where the prompt also names the file kinds selected
+for this run, list only those of `code`, `tests`, `docs`, `adrs` and `ci`. When
+the prompt says nothing about which kinds are selected, list every kind the
+recovery actually drew on. Evidence kinds belong in `run.sources`, not in a
+target.
 
 `needs` is the key name whatever the recovering skill called its own list.
 `record` reads no synonym for it, and every key the payload carries that is not
@@ -187,10 +217,10 @@ named above is ignored and reported back as a warning.
 ## Write the temp file and call the CLI
 
 Write the `RecoveryResult` JSON to a temp file OUTSIDE the repository (for
-example via `mktemp`), never inside it. The rule is about YOUR OWN scratch
-files: a payload, a note, a script. It does not touch the artefacts the
-project asks for, which is why the `ubc build needs .` above is fine and this
-is not. Then run:
+example via `mktemp`), never inside it. The only file this skill means to leave
+in the repository is the shard `record` writes. Your payload, a note, a script
+and the needs index all stay outside it, which is why the build above writes
+into `<tmp>`. Then run:
 
 ```
 ubc agent reverse record --input <tempfile> -p <project path>

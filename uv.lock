@@ -233,7 +233,7 @@ ubtrace = [
     { name = "sphinx" },
     { name = "sphinx-codelinks" },
     { name = "sphinx-needs" },
-    { name = "sphinxcontrib-mermaid" },
+    { name = "sphinxcontrib-plantuml" },
     { name = "ubt-sphinx" },
 ]
 
@@ -250,7 +250,7 @@ requires-dist = [
     { name = "sphinx", marker = "extra == 'ubtrace'", specifier = ">=8.0,<9" },
     { name = "sphinx-codelinks", marker = "extra == 'ubtrace'", specifier = ">=1.2" },
     { name = "sphinx-needs", marker = "extra == 'ubtrace'", specifier = ">=8.3,<9" },
-    { name = "sphinxcontrib-mermaid", marker = "extra == 'ubtrace'", specifier = ">=1.0" },
+    { name = "sphinxcontrib-plantuml", marker = "extra == 'ubtrace'", specifier = ">=0.30" },
     { name = "ubt-sphinx", marker = "extra == 'ubtrace'", specifier = "==0.8.1" },
 ]
 provides-extras = ["ubtrace"]
@@ -1074,18 +1074,13 @@ wheels = [
 ]
 
 [[package]]
-name = "sphinxcontrib-mermaid"
-version = "2.1.1"
+name = "sphinxcontrib-plantuml"
+version = "0.31"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "jinja2" },
-    { name = "pyyaml" },
     { name = "sphinx" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/8c/87/06537dff20aa57df2d0f2afa87edff4afa85dec6f57f03f7acc24f83ff88/sphinxcontrib_mermaid-2.1.1.tar.gz", hash = "sha256:f8d7f1b2f0ad69b7ebdd5cbf532fb4ee107893b5373bc2d0e9634089c0b2cfee", size = 22353, upload-time = "2026-09-01T16:10:23.671Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/50/6a/5bf2222b8084c7a7bc3ec23d470c91e3e03e82e4ce0bbacaa61f456ce7c1/sphinxcontrib_mermaid-2.1.1-py3-none-any.whl", hash = "sha256:3b9ac1a8e0b5154dec3c0acf9b5c54dd9ba58540e416f20858c300814c25648f", size = 16368, upload-time = "2026-09-01T16:10:22.377Z" },
-]
+sdist = { url = "https://files.pythonhosted.org/packages/08/8f/f26dd61b92176c4cba6b7898ca2875e7dfc29263d8e1b3b63d6acf81434f/sphinxcontrib_plantuml-0.31.tar.gz", hash = "sha256:fd74752f8ea070e641c3f8a402fccfa1d4a4056e0967b56033d2a76282d9f956", size = 15736, upload-time = "2025-09-03T11:11:35.028Z" }
 
 [[package]]
 name = "sphinxcontrib-qthelp"

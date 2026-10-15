@@ -58,7 +58,7 @@ permissions:
 # relying on the default would silently gate this project with a different engine
 # than the one that produced its committed snapshots.
 env:
-  UBC_VERSION: "0.35.0"
+  UBC_VERSION: "0.37.0"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -67,7 +67,7 @@ concurrency:
 jobs:
   # --- THE GRAPH GATES ----------------------------------------------------------
   # Everything here is `ubc` or a stdlib-only importer, so this job needs no uv, no
-  # graphviz and no mermaid — it is the cheap, fast half of the pipeline and it
+  # graphviz and no PlantUML — it is the cheap, fast half of the pipeline and it
   # fails before the expensive build starts.
   #
   # What it is actually defending. This project carries two IMPORTED artefacts,
@@ -226,40 +226,28 @@ jobs:
         with:
           python-version-file: ".python-version"
 
-      - name: Install mermaid-cli, and prove it can render
-        # The three `.. mermaid::` component diagrams are pre-rendered to SVG
-        # when `mmdc` is on PATH (see conf.py) — scripts do not run in the
-        # ubTrace export, so a browser-rendered diagram would be blank there.
-        #
-        # mmdc drives a headless Chromium, which is the fragile part: it broke
-        # the first publish from this workflow with "No usable sandbox!"
-        # (Ubuntu's AppArmor restriction on unprivileged user namespaces), and
-        # under `-W` three failed renders fail the whole build. So this step
-        # RENDERS A PROBE DIAGRAM and, if that does not work, uninstalls mmdc
-        # again — which drops conf.py back to the raw output and keeps the
-        # publish going with three degraded diagrams instead of no artefact.
-        # Never let this step fail the job: the diagrams are a nicety, the
-        # traceability artefact is the point.
-        continue-on-error: true
+      - name: Install PlantUML
+        # PlantUML renders the three `.. needuml::` component diagrams under
+        # specs/*/architecture.rst. A pinned release jar rather than the apt
+        # package, which lags years behind. Java comes preinstalled on
+        # ubuntu-latest. Like graphviz below this is NOT optional: conf.py
+        # fails the build when `plantuml` is missing.
+        env:
+          PLANTUML_VERSION: "1.2026.8"
         run: |
-          set -uo pipefail
-          if ! npm install -g @mermaid-js/mermaid-cli; then
-            echo "::warning::mermaid-cli install failed — diagrams will not be pre-rendered"
-            exit 0
-          fi
-          printf 'flowchart LR\n    A --> B\n' > "$RUNNER_TEMP/probe.mmd"
-          if ! mmdc -p mermaid-puppeteer.json \
-                    -i "$RUNNER_TEMP/probe.mmd" -o "$RUNNER_TEMP/probe.svg"; then
-            echo "::warning::mermaid-cli cannot render on this runner — removing it so the build falls back to raw diagrams"
-            npm uninstall -g @mermaid-js/mermaid-cli
-          fi
+          java -version
+          sudo curl -fsSL -o /usr/local/lib/plantuml.jar \
+            "https://github.com/plantuml/plantuml/releases/download/v${PLANTUML_VERSION}/plantuml-${PLANTUML_VERSION}.jar"
+          printf '#!/bin/sh\nexec java -Djava.awt.headless=true -jar /usr/local/lib/plantuml.jar "$@"\n' \
+            | sudo tee /usr/local/bin/plantuml > /dev/null
+          sudo chmod +x /usr/local/bin/plantuml
+          plantuml -version
 
       - name: Install graphviz
         # `dot` renders the per-stream needflow diagrams on traceability.rst
-        # (flow_engine = "graphviz" in ubproject.toml). Unlike the mermaid step
-        # above this one is NOT optional: conf.py fails the build when `dot` is
-        # missing, because a traceability page with no diagrams is worse than a
-        # loud failure.
+        # (flow_engine = "graphviz" in ubproject.toml). NOT optional: conf.py
+        # fails the build when `dot` is missing, because a traceability page with
+        # no diagrams is worse than a loud failure.
         run: |
           sudo apt-get update
           sudo apt-get install --yes graphviz
@@ -353,7 +341,7 @@ jobs:
         id: pdf
         # `ubc build pdf` runs NO Sphinx and no LaTeX — it typesets the same index
         # `ubc check` and the editor use — so it needs none of the uv / graphviz /
-        # mermaid apparatus installed above, and it cannot be folded into the
+        # PlantUML apparatus installed above, and it cannot be folded into the
         # sphinx-build below. It is ALPHA: the layout and the options may still move
         # between releases, which is another reason it is a run attachment and not
         # something published to team.useblocks.com.
@@ -362,13 +350,13 @@ jobs:
         # this order a sphinx failure still leaves a PDF for the upload to attach.
         #
         # THERE IS NO `--deny` OVERRIDE HERE, deliberately. The builder does not
-        # typeset `needflow` or `mermaid` yet and draws each as a labelled placeholder
-        # box plus a `build.pdf_diagram_unrendered` warning — 8 of them in this
-        # project — which under the default `--deny warning` bar exits 1 on a
-        # perfectly healthy graph. `--deny error` would fix that by retiring the
-        # warning bar altogether; instead docs/ubproject.toml ignores THAT ONE CODE,
-        # so the bar here stays at `warning` and any other build warning still fails
-        # this step. `-w` prints the detail of whatever is left.
+        # typeset `needflow` or `needuml` yet and draws each as a labelled placeholder
+        # box plus a warning — 8 of them in this project — which under the default
+        # `--deny warning` bar exits 1 on a perfectly healthy graph. `--deny error`
+        # would fix that by retiring the warning bar altogether; instead
+        # docs/ubproject.toml ignores exactly those two findings, so the bar here
+        # stays at `warning` and any other build warning still fails this step.
+        # `-w` prints the detail of whatever is left.
         env:
           PDF_NAME: ${{ steps.vars.outputs.pdf_name }}
         run: ubc build pdf docs -w -o "_build/pdf/${PDF_NAME}.pdf"
