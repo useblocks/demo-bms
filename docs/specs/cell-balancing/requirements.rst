@@ -12,6 +12,7 @@ Cell Balancing — Requirements
 .. req:: The battery management system shall reduce the cell voltage spread to 20 mV or less within 8 hours of a charge session ending
    :id: REQ_CELL_BALANCING_WINDOW
    :status: draft
+   :asil: QM
    :traces_to: US_CELL_BALANCING
 
    The battery management system shall bring the difference between the highest

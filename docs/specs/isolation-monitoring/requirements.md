@@ -3,6 +3,7 @@
 ```{req} The battery management system shall report an isolation fault when the isolation resistance falls below 500 Ω per volt of pack voltage
 :id: REQ_ISOLATION_FAULT
 :status: draft
+:asil: B
 :traces_to: US_ISOLATION_MONITORING
 
 The battery management system shall set the isolation fault whenever the

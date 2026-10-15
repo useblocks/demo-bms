@@ -4,6 +4,7 @@ Thermal Management — Requirements
 .. req:: The battery management system shall request coolant flow when the highest cell temperature exceeds 35 °C
    :id: REQ_COOLING_REQUEST
    :status: draft
+   :asil: A
    :traces_to: US_THERMAL_MANAGEMENT
 
    The battery management system shall raise a cooling request on the thermal
@@ -15,6 +16,7 @@ Thermal Management — Requirements
 .. req:: The battery management system shall request pack heating when the lowest cell temperature is below 5 °C
    :id: REQ_HEATING_REQUEST
    :status: draft
+   :asil: QM
    :traces_to: US_THERMAL_MANAGEMENT
 
    The battery management system shall raise a heating request on the thermal
@@ -26,6 +28,7 @@ Thermal Management — Requirements
 .. req:: The battery management system shall reduce the permitted discharge power linearly to zero between 55 °C and 60 °C highest cell temperature
    :id: REQ_POWER_DERATING
    :status: draft
+   :asil: B
    :traces_to: US_THERMAL_MANAGEMENT
 
    The battery management system shall publish a permitted discharge power that
@@ -37,6 +40,7 @@ Thermal Management — Requirements
 .. req:: The battery management system shall report a thermal imbalance warning when the spread between highest and lowest cell temperature exceeds 8 K
    :id: REQ_CELL_TEMP_SPREAD
    :status: draft
+   :asil: QM
    :traces_to: US_THERMAL_MANAGEMENT
 
    The battery management system shall set a thermal imbalance warning on the
@@ -47,6 +51,7 @@ Thermal Management — Requirements
 .. req:: The battery management system shall apply the thermal fallback power limit when the coolant actuator does not confirm a request within 2 seconds
    :id: REQ_THERMAL_ACTUATOR_FAILSAFE
    :status: draft
+   :asil: B
    :traces_to: US_THERMAL_MANAGEMENT
 
    The battery management system shall publish the thermal fallback power limit,

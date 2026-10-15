@@ -21,6 +21,7 @@ NMC build.
 .. req:: The battery management system shall open the high-voltage contactors when any cell voltage leaves the safe window of the pack chemistry
    :id: REQ_CELL_VOLTAGE_LIMITS
    :status: draft
+   :asil: D
    :traces_to: US_CELL_PROTECTION
    :chemistry: <{ var.pack.chemistry }>
 
@@ -33,6 +34,7 @@ NMC build.
 .. req:: The battery management system shall open the high-voltage contactors when the pack discharge current exceeds 350 A for more than 100 ms
    :id: REQ_PACK_OVERCURRENT
    :status: draft
+   :asil: C
    :traces_to: US_CELL_PROTECTION
 
    The battery management system shall command the high-voltage contactors open
@@ -44,6 +46,7 @@ NMC build.
 .. req:: The battery management system shall open the high-voltage contactors when any cell temperature exceeds 60 °C
    :id: REQ_CELL_OVERTEMPERATURE
    :status: draft
+   :asil: C
    :traces_to: US_CELL_PROTECTION
 
    The battery management system shall command the high-voltage contactors open
@@ -54,6 +57,7 @@ NMC build.
 .. req:: The battery management system shall issue the contactor-open command within 50 ms of detecting a cell-protection limit violation
    :id: REQ_FAULT_REACTION_TIME
    :status: draft
+   :asil: D
    :traces_to: US_CELL_PROTECTION
 
    The battery management system shall issue the contactor-open command no later
@@ -64,6 +68,7 @@ NMC build.
 .. req:: The battery management system shall classify a cell voltage measurement as invalid when it deviates from its module median by more than 250 mV
    :id: REQ_MEASUREMENT_PLAUSIBILITY
    :status: draft
+   :asil: C
    :traces_to: US_CELL_PROTECTION
 
    The battery management system shall mark a cell voltage measurement invalid
@@ -75,6 +80,7 @@ NMC build.
 .. req:: The battery management system shall keep the high-voltage contactors open after a cell-protection fault until a diagnostic service reset is received
    :id: REQ_FAULT_LATCH
    :status: draft
+   :asil: C
    :traces_to: US_CELL_PROTECTION
 
    The battery management system shall hold the contactor-open command after a
@@ -86,6 +92,7 @@ NMC build.
 .. req:: The battery management system shall store a fault record naming the cell identifier, the violated limit and the measured value for every cell-protection fault
    :id: REQ_FAULT_RECORD
    :status: draft
+   :asil: QM
    :traces_to: US_CELL_PROTECTION
 
    The battery management system shall write one fault record per cell-protection
