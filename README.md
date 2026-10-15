@@ -172,7 +172,8 @@ The version-matched CLI is what the IDE extension ships; a bare `ubc` on `$PATH`
 may be a different build.
 
 ```bash
-UBC=/home/lrhenisch/.vscode/extensions/useblocks.ubcode-0.31.2-linux-x64/server/cli/ubc
+# The CLI bundled with your ubCode extension — version and platform vary:
+UBC=~/.vscode/extensions/useblocks.ubcode-<version>-<platform>/server/cli/ubc
 
 $UBC check docs                             # parse the sources, report RST problems
 $UBC build needs docs -o needs.json         # compile the graph into needs.json
@@ -335,8 +336,9 @@ on every push to `main` (publishing as `main`) and on every `v*.*.*` tag
 (publishing under the tag name, alongside `main`). A pull request builds the
 artefact but never uploads it, so a change that breaks the export is caught
 before it lands rather than after it publishes. The workflow needs one
-repository secret, `UBTRACE_INGEST_TOKEN`, plus the two ubCode licence secrets
-the graph gates need (below).
+repository secret, `UBTRACE_INGEST_TOKEN`. It needs no ubCode licence secret:
+this repository is public and MIT-licensed, so `ubc` runs in its free
+open-source mode (below).
 
 ### The graph gates run first
 
@@ -362,25 +364,16 @@ is worth most exactly when a gate has failed, which is also when its inputs are
 likely to be missing or half-written, so every unreadable input renders as a note
 instead of an exception.
 
-**It needs a ubCode license.** `ubc` is commercial software and this repository is
-private, so the free open-source mode does not apply — ubCode grants that only to
-projects under an [OSI licence](https://opensource.org/licenses) in a *publicly
-reachable* Git repo, and it probes the remote to decide. Unlicensed, `ubc` caps
-indexing at **5 files and 100 needs**; this project has 26 and 205, so every gate
-fails with `exceeds maximum without license`. Two repository secrets are required,
-and **both** of them — useblocks keys are user-based, so the key does not activate
-without the e-mail it was issued to:
-
-| Secret | Becomes |
-|---|---|
-| `UBCODE_LICENSE_KEY` | `UBCODE_LICENSE_KEY` |
-| `UBCODE_LICENSE_USER` | `UBCODE_LICENSE_USER` |
-
-The first step of the job checks they exist and fails naming them, because the
-error you get otherwise talks about file counts and never mentions a secret. See
-the [licence docs](https://ubcode.useblocks.com/usage/ublicense.html); keys come
-from support@useblocks.com. Note the runner is ephemeral, so ubc's three-day
-licence cache is always cold and every run performs one online activation.
+**No ubCode license is needed.** This repository is public and MIT-licensed, so
+`ubc` runs in its free open-source mode — ubCode grants that to projects under an
+[OSI licence](https://opensource.org/licenses) in a *publicly reachable* Git repo,
+and it probes the remote to decide. Without it, `ubc` caps indexing at **5 files
+and 100 needs**; this project has 26 and 205, so the gates would fail with
+`exceeds maximum without license`. The workflow passes no licence credentials and
+none need to be configured. See the
+[licence docs](https://ubcode.useblocks.com/usage/ublicense.html). Note the runner
+is ephemeral, so ubc's licence cache is always cold and every run performs one
+online licence check.
 
 Three things about it are deliberate:
 
@@ -635,3 +628,7 @@ Two consequences worth knowing before you demo:
 2. **A verdict expires when the need changes.** Edit any requirement body and
    its verdict goes `outdated` — a stale green cannot survive an edit. That is
    the cleanest thing in this repo to demonstrate live.
+
+## License
+
+[MIT](LICENSE) © useblocks GmbH

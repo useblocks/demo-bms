@@ -10,9 +10,11 @@
 # `conftest.py` puts on `sys.path` — nothing is installed into the environment.
 
 [project]
-name = "rollout-demo-bms"
+name = "demo-bms"
 version = "0.1.0"
 description = "Battery management system demo: everything-as-code across a minimized V-model."
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.13"
 dependencies = []
 

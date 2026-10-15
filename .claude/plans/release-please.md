@@ -111,12 +111,13 @@ the merge -> tag -> publish arm can be demoed without deleting the defects.
 ## Blocker: the `ubc` CLI is not distributed publicly
 
 Probed and not found: PyPI, the private `pypi.useblocks.com` index, npm, GitHub
-releases. On this machine it exists only inside the ubCode VS Code extension at
-`/Users/ruby/.vscode/extensions/useblocks.ubcode-<version>-darwin-arm64/server/cli/ubc`
-(see the `local-ubc-cli-path` memory). This is why the Pharaoh gates start advisory.
+releases. On a developer machine it exists inside the ubCode VS Code extension at
+`~/.vscode/extensions/useblocks.ubcode-<version>-<platform>/server/cli/ubc`. This
+is why the Pharaoh gates start advisory.
 
-To make them blocking, CI needs: a fetch source for the binary, and a
-`UBCODE_LICENSE_KEY` secret (`ubc` also accepts `--license-key` / `UBCODE_LICENSE_STAGE`).
+To make them blocking, CI needs a fetch source for the binary (supplied by
+`useblocks/ubc-action`). No licence is needed: this repository is public and
+MIT-licensed, so ubc runs in its free open-source mode.
 
 ## Manual steps (cannot be done from here)
 
@@ -127,8 +128,8 @@ To make them blocking, CI needs: a fetch source for the binary, and a
    (so the release would not publish).
 2. Set the repo to squash-merge only (release-please reads the squash title).
 3. Add branch protection on `main` requiring the `qa` check.
-4. When the full gate should block: supply the `ubc` fetch source and add
-   `UBCODE_LICENSE_KEY`.
+4. When the full gate should block: supply the `ubc` fetch source (the
+   `useblocks/ubc-action` step already does this); no licence secret is needed.
 
 ## When picking this back up
 
