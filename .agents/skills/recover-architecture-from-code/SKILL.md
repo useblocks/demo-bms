@@ -56,12 +56,12 @@ for the answer.
 ## Use the briefing and the tools
 
 You were handed ONE target from `ubc agent reverse plan <scope> --stage
-<STAGE_ID>`: its `source_path`, its `members`, its `last_commit` and its
+<STAGE_ID>`: its `source_path`, its `members` and its
 `recovered_into`, plus the brief's own `route_path`, `known_streams`,
-`default_status`, `provenance_field`, `authoring`, `diagram_format` and
-`author_skill`. If you
-were not handed it, run that command and read the entry whose `source_path`
-names the module you were asked for.
+`produces`, `id_prefix`, `default_status`, `provenance_field`, `authoring`,
+`diagram_format`, `author_skill` and `author_skill_path`. If you were not
+handed it, run that command and read the entry whose `source_path` names the
+module you were asked for.
 
 **`source_path` is `structure:<module path>`, and the path behind the prefix is
 real.** Strip the prefix and read that module: its files, its public interface,
@@ -76,11 +76,15 @@ knows. The file list you can get yourself, by listing the module directory.
 
 **You choose the target document. The engine does not.** `route_path` is the
 stage's configured route with its `{stream}` placeholder left in, for example
-`specs/{stream}/architecture.rst`. Deciding which stream a module belongs to
-is a judgment about what the module is FOR. `known_streams` lists the slugs
-this project already uses, and your `source_path` usually names one outright: a
-module at `src/auth` belongs to `auth`. Put your slug in place of `{stream}`,
-author there, and hand that concrete path back as `target_rst`. `ubc agent
+`specs/{stream}/architecture.rst`. A stream is the folder under the route that
+holds one functional area's needs. Choose one per target, from the functional
+area its module belongs to, which is a judgment about what the module is FOR.
+Targets about different areas go to different streams, and several streams in
+one run is normal. Never put the whole scope under one stream unless every
+target belongs to the same area. `known_streams` lists the streams this project
+already uses, and your `source_path` usually names one outright: a module at
+`src/auth` belongs to `auth`. Put a target's stream in place of `{stream}`,
+author there, and hand that concrete path back as its `target_rst`. `ubc agent
 reverse record` refuses one that still carries `{stream}`.
 
 **Unless the target carries a `recovered_into`, in which case that is the
@@ -91,15 +95,15 @@ Test for `null`, never for an absent key: the engine always serializes it.
 
 ## The project decides the shape, not this skill
 
-Five keys of your briefing carry what varies from one project to the next.
-None of them is written into this skill, and none of them is yours to guess.
+The keys below carry what varies from one project to the next. None of them
+is written into this skill, and none of them is yours to guess.
 
 **`default_status` is the status every element you author opens in.** Write
 `:status: <that value>`. When the key is ABSENT the project declares no
 lifecycle states, and the value is `draft`, which is what a forward authoring
 run is given on such a project. A recovered element opens exactly where a
 hand-authored one opens, because both go through review before anything trusts
-them. What marks it as machine-recovered is the ledger entry `record` writes
+them. What marks it as recovered is the ledger entry `record` writes
 afterwards, never a word in the status field, so do not invent a status of your
 own to mark it and do not carry one over from an example.
 
@@ -128,12 +132,13 @@ declared to hold source paths.
 When the key is ABSENT the project's ontology declares no such field. Write
 none: an undeclared option is a diagnostic on the project's own build.
 
-**`authoring` is the project's own directive for this stage**, and it is the
-first place to look for what an element of this stage has to carry. Follow it.
-It is written for forward authoring, so where it names an input you do not have
-(a stated intent, a set of requirements handed down), the shape and the coverage
-it asks for still hold and the ledger's own module and `members` are your input
-instead. **It is also where a project asks for a diagram**, and it is the only
+**`authoring` is the project's own directive for this stage.** It decides how
+many elements you author, what they must cover and what shape they take. Follow
+it. This skill decides how you work. The directive is written for forward
+authoring, so it can name an input this run does not have, such as a use case
+or a user story. Where it does, your target's module and the requirements
+listed under it are that input. **It is also where a project asks for a
+diagram**, and it is the only
 place that ask is written down: neither this skill nor the forward one carries a
 diagram in its output shape, so a directive asking for one is an instruction to
 author one, not a suggestion. The key is absent when the stage declares no
@@ -147,19 +152,27 @@ the project's docs build has no extension for. Whether the directive asks for a
 diagram is a separate switch from whether the project's diagram GATE is on: if
 the directive asks for one, author it even when the gate is off.
 
-**`author_skill` names the skill a forward run at this stage would use.** It is
-a POINTER, not something to run. Do not load it and do not follow it: it is
-written for authoring from stated intent, it forbids reading source files at
-all, and it waits for an approval nobody may be there to give. It is on your
-briefing so that a person comparing what you recovered against what this project
-authors by hand knows which document to open.
+**`author_skill` names this project's forward-authoring skill for this stage,
+and `author_skill_path` is where it is installed.** Read it for the output
+shape only: it shows what an element of this stage looks like in this project,
+so yours can look the same. Do not run it and do not follow it as instructions.
+It is written for authoring from stated intent, it forbids reading source files
+at all, and it waits for an approval nobody may be there to give. When the brief
+names an `author_skill` and no `author_skill_path`, it is not installed, so
+there is no file to read. Do not search for it.
 
 ## Check the project's id convention before you mint
 
-Read what the project already uses (`ubc agent next --stage <STAGE_ID>` reports
-the stage's type and prefix, and existing needs of that type show the shape).
-Mint ids in that convention. Never invent a second convention beside one that
-already exists.
+**The brief's `produces` and `id_prefix` name the need type you author and the
+prefix its ids start with.** Read them there. `id_prefix` is absent when that
+type declares no prefix. Do not guess either value.
+
+Only when you were handed no brief, or a brief that carries no `produces`, run
+`ubc agent next --stage <STAGE_ID> -p <project path>` and read `produces` and
+`route.id_prefix` from that payload.
+
+Existing needs of that type show the rest of an id's shape. Mint ids in that
+convention. Never invent a second convention beside one that already exists.
 
 ## The link runs FROM your element, and you edit no requirement
 
@@ -260,9 +273,14 @@ codelinks project can actually parse, already filtered by language: write into
 them and into nothing else, because a marker in a file outside that list is a
 comment nothing reads. `code_marker.comment_prefix` is the comment lead for this
 module's language, and the example already carries it. Put the marker at the top
-of the file, above the first definition. Mint each marker's id with
+of the file, but after any line the language requires to come first (a shebang
+`#!`, a Python encoding declaration, and similar). Mint each marker's id with
 `code_marker.id_prefix` and the project's id convention, one id per file, and do
 not reuse an id across files.
+
+Write into no file listed under `code_marker.already_marked`: that file carries
+a marker for this rung already, and a second one mints a second need claiming
+the same code, with nothing in the ledger able to tell them apart.
 
 Then make sure a built `.rst` file names the codelinks project, or the markers
 parse and materialise nothing:
@@ -272,19 +290,25 @@ parse and materialise nothing:
    :project: <code_marker.src_trace_project>
 ```
 
-Author it into the document you are already writing to, once, if it is not
-there yet.
+When `code_marker.src_trace_documents` lists any document, the directive is
+already there and you author none. When it is empty, author exactly one
+directive for the whole run, in the first document you write, and never a
+second one in another document of the same run: a second directive
+materialises every marker of the project again, and every marker need is then
+reported as a duplicate.
 
 **When `code_marker` carries `unwritable`, write no marker and say so.** The
-codelinks project parses one language and this module is not in it, so a
-marker here would be a comment nothing ever reads. The reason names the fix.
-Report the module as unbound in your run report rather than binding it with
-something dead.
+codelinks project parses one language and this module is not in it, or it
+declares no `comment_type` so no comment lead resolves at all, or every file of
+the module carries a marker already. The reason names which one it is and names
+the fix. Report the module with that reason in your run report rather than
+binding it with something dead.
 
 **When the target carries no `code_marker` at all**, the project's lower arm is
-not marker-authored. Write nothing into source. That is not a failure of this
-run, it is a property of the project, and the element you authored is still
-correct without it.
+not marker-authored, or the project turned markers off with
+`[agent.reverse] write_code_markers`. Write nothing into source. That is not a
+failure of this run, it is a property of the project, and the element you
+authored is still correct without it.
 
 This is the one place recovery writes into a source file, and it is bound by
 the same rule as everything else here: propose it first. The outline you

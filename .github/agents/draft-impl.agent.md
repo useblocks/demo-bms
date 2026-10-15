@@ -40,8 +40,8 @@ lists:
 
 - the id (with the reported prefix) and short title of each implementation
   marker you will write,
-- the trace link named in your briefing that each marker carries
-  (`[<PARENT_ID>]`) and which parent it realises,
+- the trace link named in your briefing that each marker carries (the bracketed
+  parent id) and which parent it realises,
 - the source file under the route you will place each marker in, and whether
   the route's trace file already carries the `src-trace` directive or you need
   to author it.
@@ -57,21 +57,21 @@ implement, you author:
 
 1. **The one-line marker in production source.** In a source file under the
    route (e.g. `src/<feature>.py`), write ONE marker line per implementation, in
-   a comment, in this exact shape:
+   a comment, in the exact shape your prompt shows. That shape follows the
+   project's codelinks configuration (its start sequence, field separator and
+   field order), and a marker in any other shape is a comment nothing reads, so
+   write the shape in your prompt, not the one below. The one below is codelinks'
+   DEFAULT grammar, here for what each field means:
 
    ```python
-   # @<short title>, <ID>, [<PARENT_ID>]
+   # @<short title>, <ID>, <type>, [<PARENT_ID>]
    ```
 
    - `<ID>` carries the reported prefix and matches the project's `id_regex`.
-   - the third field is the trace link named in your briefing: a bracketed
-     list of the parent ids this implementation realises (usually one).
-   - the need type is NOT written. It is the LAST field of this project's marker
-     grammar (`[codelinks.projects.*.analyse.oneline_comment_style]` in
-     ubproject.toml) and defaults to the type named in your briefing for this
-     stage, so every marker under the route is that type by construction. Spell
-     it only as an explicit trailing field (`..., [<PARENT_ID>], <type>`) if the
-     briefing ever names a different type.
+   - `<type>` is the type named in your briefing for this stage.
+   - the trace link is the bracketed field named in your briefing (the fourth
+     field in the default grammar): a bracketed list of the parent ids this
+     implementation realises (usually one).
    - put real production code beneath the marker; the marker is what
      materialises the need, the code beneath it is the implementation it
      stands for. Keep it minimal and idiomatic for the target language.
@@ -96,8 +96,8 @@ implement, you author:
   context to author it faithfully, do NOT guess or fabricate.** An
   implementation that realises the wrong parent is worse than none. Author only
   what the briefing grounds.
-- Every marker carries `[<PARENT_ID>]` so the trace link is present and the
-  trace gate closes for the parent it realises.
+- Every marker carries the bracketed trace link, naming its parent id, so the
+  trace link is present and the trace gate closes for the parent it realises.
 - One marker per implementation element; one trace target per coherent unit
   (split distinct responsibilities into separate needs).
 - The `<ID>` carries the reported prefix and matches `id_regex`.

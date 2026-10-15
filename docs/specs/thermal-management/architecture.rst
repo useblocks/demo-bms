@@ -4,24 +4,23 @@ Thermal Management — Architecture
 Component overview
 ------------------
 
-.. mermaid::
+.. needuml::
 
-   flowchart LR
-       AFE[["Cell AFE chain<br/>(hardware)"]]
-       PUMP[["Coolant pump / heater<br/>(hardware)"]]
-       BUS[["Vehicle bus<br/>(external)"]]
+   rectangle "Cell AFE chain\n(hardware)" as AFE <<external>>
+   rectangle "Coolant pump / heater\n(hardware)" as PUMP <<external>>
+   rectangle "Vehicle bus\n(external)" as BUS <<external>>
 
-       EVAL["ARCH_THERMAL_STATE_EVALUATOR<br/>Thermal State Evaluator"]
-       AIF["ARCH_COOLANT_ACTUATOR_IF<br/>Coolant Actuator Interface"]
-       PLC["ARCH_POWER_LIMIT_CALCULATOR<br/>Thermal Power Limit Calculator"]
+   {{flow("ARCH_THERMAL_STATE_EVALUATOR")}}
+   {{flow("ARCH_COOLANT_ACTUATOR_IF")}}
+   {{flow("ARCH_POWER_LIMIT_CALCULATOR")}}
 
-       AFE -- "cell temperatures" --> EVAL
-       EVAL -- "cool / heat request" --> AIF
-       EVAL -- "highest cell temperature" --> PLC
-       AIF -- "confirmation timeout" --> PLC
-       AIF --> PUMP
-       EVAL -- "imbalance warning" --> BUS
-       PLC -- "permitted discharge power" --> BUS
+   AFE --> ARCH_THERMAL_STATE_EVALUATOR : cell temperatures
+   ARCH_THERMAL_STATE_EVALUATOR --> ARCH_COOLANT_ACTUATOR_IF : cool / heat request
+   ARCH_THERMAL_STATE_EVALUATOR --> ARCH_POWER_LIMIT_CALCULATOR : highest cell temperature
+   ARCH_COOLANT_ACTUATOR_IF --> ARCH_POWER_LIMIT_CALCULATOR : confirmation timeout
+   ARCH_COOLANT_ACTUATOR_IF --> PUMP
+   ARCH_THERMAL_STATE_EVALUATOR --> BUS : imbalance warning
+   ARCH_POWER_LIMIT_CALCULATOR --> BUS : permitted discharge power
 
 Elements
 --------

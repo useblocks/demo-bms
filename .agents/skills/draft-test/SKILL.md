@@ -40,8 +40,8 @@ outline lists:
 
 - the id (with the reported prefix) and short title of each test marker you
   will write,
-- the trace link named in your briefing that each marker carries
-  (`[<PARENT_ID>]`) and which parent it covers,
+- the trace link named in your briefing that each marker carries (the bracketed
+  parent id) and which parent it covers,
 - the test file under the route you will place each marker in, and whether the
   route's trace file already carries the `src-trace` directive or you need to
   author it.
@@ -57,21 +57,21 @@ verify, you author:
 
 1. **The one-line marker in test source.** In a test source file under the
    route (e.g. `tests/test_<feature>.py`), write ONE marker line per test, in a
-   comment, in this exact shape:
+   comment, in the exact shape your prompt shows. That shape follows the
+   project's codelinks configuration (its start sequence, field separator and
+   field order), and a marker in any other shape is a comment nothing reads, so
+   write the shape in your prompt, not the one below. The one below is codelinks'
+   DEFAULT grammar, here for what each field means:
 
    ```python
-   # @<short title>, <ID>, [<PARENT_ID>]
+   # @<short title>, <ID>, <type>, [<PARENT_ID>]
    ```
 
    - `<ID>` carries the reported prefix and matches the project's `id_regex`.
-   - the third field is the trace link named in your briefing: a bracketed
-     list of the parent ids this test covers (usually one).
-   - the need type is NOT written. It is the LAST field of this project's marker
-     grammar (`[codelinks.projects.*.analyse.oneline_comment_style]` in
-     ubproject.toml) and defaults to the type named in your briefing for this
-     stage, so every marker under the route is that type by construction. Spell
-     it only as an explicit trailing field (`..., [<PARENT_ID>], <type>`) if the
-     briefing ever names a different type.
+   - `<type>` is the type named in your briefing for this stage.
+   - the trace link is the bracketed field named in your briefing (the fourth
+     field in the default grammar): a bracketed list of the parent ids this test
+     covers (usually one).
    - put real test code beneath the marker if you have it; the marker is what
      materialises the need.
 
@@ -94,8 +94,8 @@ verify, you author:
 - **If you cannot decide which parent a test covers, or lack the context to
   author it faithfully, do NOT guess or fabricate.** A test that covers the
   wrong parent is worse than none. Author only what the briefing grounds.
-- Every marker carries `[<PARENT_ID>]` so the trace link is present and the
-  trace gate closes for the parent it covers.
+- Every marker carries the bracketed trace link, naming its parent id, so the
+  trace link is present and the trace gate closes for the parent it covers.
 - One marker per test case; one trace target per coherent test (split distinct
   responsibilities into separate needs).
 - The `<ID>` carries the reported prefix and matches `id_regex`.

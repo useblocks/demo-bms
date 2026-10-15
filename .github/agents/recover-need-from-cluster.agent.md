@@ -14,7 +14,8 @@ needs that both are grounded in. You do not cluster the lower needs yourself:
 the engine already grouped them deterministically before handing you the
 cluster.
 
-**How MANY needs to author is your judgement, and the engine takes as many as
+**How MANY needs to author is the project's `authoring` directive's call when it
+states one, and your judgement when it does not. The engine takes as many as
 you record.** Usually a cluster is one thing and the answer is one need. When
 the cluster plainly holds several separate capabilities, author one need PER
 capability instead of one need restating all of them: a single need covering
@@ -67,30 +68,35 @@ for the answer.
 Your briefing carries one target from `ubc agent reverse plan`'s output (its
 `members`, the precomputed cluster of lower-need ids, and its
 `recovered_into`), plus the brief's own `route_path`, `known_streams`,
-`default_status`, `authoring` and `author_skill`. If you were not handed this already, run
+`produces`, `id_prefix`, `default_status`, `authoring`, `author_skill` and
+`author_skill_path`. If you were not handed this already, run
 `ubc agent reverse plan <scope> --stage <STAGE_ID> --source <LOWER_ID> ...`
 (repeat `--source` once per lower-need id) and read the one entry in
 `targets` whose `members` match.
 
 **You choose the target document. The engine does not.** `route_path` is the
 stage's configured route with its `{stream}` placeholder left in, for example
-`specs/{stream}/overview.rst`. A stream is a coordinate in the needs graph,
-not a folder, and deciding which one a cluster belongs to is a judgment about
-what the clustered needs are FOR. `known_streams` lists the slugs this project
-already uses.
+`specs/{stream}/overview.rst`. A stream is the folder under the route that
+holds one functional area's needs. Choose one per target, from the functional
+area its cluster belongs to, which is a judgment about what the clustered needs
+are FOR. Targets about different areas go to different streams, and several
+streams in one run is normal. Never put the whole scope under one stream unless
+every target belongs to the same area. `known_streams` lists the streams this
+project already uses. Reuse one when a target belongs to it, rather than
+authoring a synonym beside it.
 
-**Read your own target's `source_path` first.** It is `needs:<module>`, minted
+**Read your own target's `source_path` first.** It is `cluster:<module>`, minted
 from the module its members were recovered from, so it usually names the stream
-outright: a cluster keyed `needs:auth` belongs to `auth`. Two keys do not answer
-it. `needs:unscoped` means the ledger could not place those ids at all, and a
-nested key such as `needs:needs:auth` is an upper rung over a lower cluster, so
+outright: a cluster keyed `cluster:auth` belongs to `auth`. Two keys do not answer
+it. `cluster:unscoped` means the ledger could not place those ids at all, and a
+nested key such as `cluster:cluster:auth` is an upper rung over a lower cluster, so
 read the innermost segment (`auth`). When the key does not settle it, `audit`
 reports each member's own `source.path`, and a cluster whose members already
 live under one stream almost always belongs to it.
 
-Put your slug in place of `{stream}`, author at the path that gives, and hand
-that concrete path back as `target_rst`. `ubc agent reverse record` refuses one
-that still carries `{stream}`.
+Put a target's stream in place of `{stream}`, author at the path that gives,
+and hand that concrete path back as its `target_rst`.
+`ubc agent reverse record` refuses one that still carries `{stream}`.
 
 **Unless the target carries a `recovered_into`, in which case that is the
 document.** A cluster key is stable, so a non-null `recovered_into` means this
@@ -107,47 +113,56 @@ that cannot be authored into, which the brief reports under `unusable_targets`.
 The action is the same either way. Test for `null`, never for an absent key: the
 engine always serializes it.
 
-For the type this stage produces and its id prefix, run
+**The brief's `produces` and `id_prefix` name the need type you author and the
+prefix its ids start with.** Read them there. `id_prefix` is absent when that
+type declares no prefix, and the project's `id_regex` below is then the whole
+rule for an id. Do not guess either value.
+
+Only when you were handed no brief, or a brief that carries no `produces`, run
 `ubc agent next --stage <STAGE_ID> -p <project path>` and read `produces` and
 `route.id_prefix`, and read nothing else out of that payload for THIS stage.
 `ubc agent next` answers for FORWARD authoring, so the same payload also
 carries a `skill` naming the stage's forward authoring skill rather than this
 one. Everything else you need about this stage is already on your briefing, so
-read it there. Its `gate` is the one key you do read from a payload other than
-your own for this work: run `next` again for a MEMBER's stage
-to get that stage's `gate.link` and `gate.up_type`, which is the up-link field
-the member's own directive must carry. Follow this skill wherever the rest of
-either payload disagrees with it.
+read it there.
+
+`ubc agent next` has one more use here, for a MEMBER's stage rather than your
+own: run it with `--stage` set to that stage to get its `gate.link` and
+`gate.up_type`, which is the up-link field the member's own directive must
+carry. Follow this skill wherever the rest of that payload disagrees with it.
 
 ## The project decides the shape, not this skill
 
-Three keys of your briefing carry what varies from one project to the next.
-None of them is written into this skill, and none of them is yours to guess.
+The keys below carry what varies from one project to the next. None of them
+is written into this skill, and none of them is yours to guess.
 
 **`default_status` is the status every need you author opens in.** Write
 `:status: <that value>`. When the key is ABSENT the project declares no
 lifecycle states, and the value is `draft`, which is what a forward authoring
 run is given on such a project. A synthesized need opens exactly where a
 hand-authored one opens, because both go through review before anything trusts
-them. What marks it as machine-recovered is the ledger entry `record` writes
+them. What marks it as recovered is the ledger entry `record` writes
 afterwards, never a word in the status field, so do not invent a status of your
 own to mark it and do not carry one over from an example. This is about the
 needs YOU author. A member's own `:status:` is left exactly as `audit` reports
 it, the same as every other field of its directive except its up-link.
 
-**`authoring` is the project's own directive for this stage**, and it is where
-"how many" and "what shape" are answered. Follow it. It is written for forward
-authoring, so where it names an input you do not have, the shape and the
-coverage it asks for still hold and the cluster is your input instead. The key
-is absent when the stage declares no directive, and this skill's own rules are
-then the whole answer.
+**`authoring` is the project's own directive for this stage.** It decides how
+many needs you author, what they must cover and what shape they take. Follow
+it. This skill decides how you work. The directive is written for forward
+authoring, so it can name an input this run does not have, such as a use case
+or a user story. Where it does, your target's cluster of recovered needs is
+that input. The key is absent when the stage declares no directive, and this
+skill's own rules are then the whole answer.
 
-**`author_skill` names the skill a forward run at this stage would use.** It is
-a POINTER, not something to run. Do not load it and do not follow it: it is
-written for authoring from stated intent, it forbids the member reads this stage
-depends on, and it waits for an approval nobody may be there to give. It is on
-your briefing so that a person comparing what you synthesized against what this
-project authors by hand knows which document to open.
+**`author_skill` names this project's forward-authoring skill for this stage,
+and `author_skill_path` is where it is installed.** Read it for the output
+shape only: it shows what a need of this stage looks like in this project, so
+yours can look the same. Do not run it and do not follow it as instructions. It
+is written for authoring from stated intent, it forbids the member reads this
+stage depends on, and it waits for an approval nobody may be there to give.
+When the brief names an `author_skill` and no `author_skill_path`, it is not
+installed, so there is no file to read. Do not search for it.
 
 For each member id, run
 `ubc agent audit --id <ID> -p <project path>` to read its `type`, `title`,
@@ -162,7 +177,7 @@ are about to change.
 
 ## Check the project's id convention before you mint
 
-`route.id_prefix` is only the fixed lead of a valid id, not the full
+`id_prefix` is only the fixed lead of a valid id, not the full
 pattern the synthesized need's id must satisfy. The project's own
 `id_regex` governs what may follow that lead, and none of the
 `reverse plan`, `next`, or `audit` verbs reject an id that violates
@@ -188,19 +203,31 @@ messages that touched this brief's targets, and each carries an `id`, an
 ones and the project-key allowlist you cannot see. An empty list is the
 ordinary answer for a repository whose commits name nothing.
 
+**Resolve a reference only when its kind is selected for this run.** Your
+prompt names the selected evidence kinds, and a run with none selected resolves
+nothing. `commit_history` means the commit messages behind your targets. The
+pull requests and issues they name are `change_requests` and `issues`, which
+are separate kinds. So a pull request or merge request is resolved only when
+`change_requests` is selected, an issue only when `issues` is selected, and a
+reference whose kind the text does not say only when one of the two is. Every
+other reference is context only: keep it as an identifier and do not look it
+up.
+
 Run `ubc agent reverse sources <scope> -p <project path>` (the `scope` is your
 briefing's own) to see which intent kinds are available: `commit_history`,
 `change_requests`, `issues`. Each available row names its `provider`, and for
 the two forge kinds that provider is an installed SKILL rather than the
-engine. Hand `intent_refs` to the skill the row names and use what it resolves.
-A row that reports unavailable has a `detail` saying why, and that detail is
-usually the fix.
+engine. Resolve a selected kind with the skill its row names, and hand that
+skill only the references you may resolve. Use the forge CLI only for a
+selected kind no installed skill claims. A Jira key (its `origin` is
+`jira-key`) is resolved only with a skill that covers Jira, never with a forge
+skill or a forge CLI. A row that reports unavailable has a `detail` saying why,
+and that detail is usually the fix.
 
-That is the whole of the intent gathering this skill does. Do not shell out to
-a forge CLI yourself, and do not walk the git history: the cluster you were
-handed is a set of lower-need ids, not files, so there is no path to run a log
-against. Where none of it produces text, use only what your driving tool
-already placed in your prompt.
+That is the whole of the intent gathering this skill does. Do not walk the git
+history: the cluster you were handed is a set of lower-need ids, not files, so
+there is no path to run a log against. Where none of it produces text, use only
+what your driving tool already placed in your prompt.
 
 ## Grounded synthesis
 
@@ -256,11 +283,11 @@ traverse and persist" is four verbs and four.
 Report both numbers, `0` included: how many pairs you merged, and how many needs
 you split. Counting is what makes the check happen.
 
-Where your briefing's `authoring` directive says something different about how
-many, the directive wins: it is the project speaking about its own graph, and
-this test is the default for a project that says nothing. The test still decides
-WHERE a split falls, because a directive states a policy and never which two
-behaviours belong together.
+Where your briefing's `authoring` directive says how many needs to author, what
+they must cover or what shape they take, the directive decides it. It is the
+project speaking about its own graph, and this test is the default for a project
+that says nothing. The test still decides WHERE a split falls, because a
+directive states a policy and never which two behaviours belong together.
 
 ## Output shape
 
@@ -272,10 +299,24 @@ than one:
 .. <type>:: <short_title>
    :id: <ID with the reported prefix>
    :status: <the briefing's `default_status`, or `draft` when it carries none>
+   :<the briefing's `provenance_field`>: <the values already recorded on the members, comma-separated>
 
    <Synthesized capability statement, grounded in the cluster and, where
    available, the qualifying intent signal.>
 ```
+
+**`provenance_field` names the field that records where a need came from.**
+When the key is present, write that field with the values already recorded on
+the needs `members` lists, comma-separated, deduplicated, in the order the
+members are listed. Read each value off the member's own directive at the
+`source.path` `audit` reported, the same file the up-link edit step opens.
+This stage reads no source file itself, so it never builds a path the way the
+extraction and structure rungs do. When no member carries the field, write
+nothing.
+
+When the key is ABSENT the project's ontology declares no such field. Write
+none, and do not invent one: an undeclared option is a diagnostic on the
+project's own build.
 
 It carries NO down-link to the members. A higher need never points down at
 the needs it summarizes: it only ever appears as the target of their

@@ -34,8 +34,7 @@ version = "0.1.0"
 # cannot draw become a labelled placeholder box in the page and a
 # `build.pdf_diagram_unrendered` warning, and `[build.pdf] deny` defaults to
 # "warning", so `ubc build pdf` exits 1 on a project that is perfectly healthy.
-# This project trips it 8 times: the 5 `needflow` diagrams on traceability.rst
-# and the 3 `mermaid` component diagrams under specs/*/architecture.rst.
+# This project trips it 5 times: the 5 `needflow` diagrams on traceability.rst.
 #
 # Silencing the CODE rather than lowering the bar. `[build.pdf] deny = "error"`
 # would also work and is what the CLI suggests first, but it is far too broad —
@@ -49,13 +48,21 @@ version = "0.1.0"
 # emitted only by `ubc build pdf` — `ubc check`, `ubc schema validate` and
 # `ubc agent gaps` were verified byte-identical with and without this line.
 #
-# DELETE THIS ENTRY once the builder typesets needflow and mermaid; the
-# placeholders disappear on their own and the line becomes dead config.
+# DELETE THIS ENTRY once the builder typesets needflow; the placeholders
+# disappear on their own and the line becomes dead config.
 ignore = ["build.pdf_diagram_unrendered"]
 
 [[lint.message-ignores]]
 codes = ["needs.schema_network_warning"]
 contains = "REQ_CELL_BALANCING_WINDOW:satisfies (incoming)"
+
+# The 3 `needuml` component diagrams under specs/*/architecture.rst hit the same
+# limitation under a different code: the PDF builder does not handle the directive
+# at all yet. Scoped to `needuml` so that any OTHER unhandled directive still fails
+# the build. DELETE once the builder typesets needuml.
+[[lint.message-ignores]]
+codes = ["build.pdf_directive_unhandled"]
+contains = "needuml:"
 
 # This file is the PROJECT ROOT, and it lives in docs/ on purpose: the source
 # root ubc discovers documents from is the directory holding this file, so with
@@ -101,6 +108,9 @@ html = "ubc build html --deny none -o _build/ubc-html"
 # on this project is ignored by name under [lint], so the bar stays at "warning".
 pdf = "ubc build pdf -o _build/pdf/bms-specs.pdf"
 report = "ubc report traceability_coverage.html.j2"
+# The release gate: new structural gaps and missing, failing or outdated AI review
+# verdicts fail it; the gaps in `.pharaoh/gap-baseline.json` are accepted debt.
+release-check = "ubc agent release-check --with-verdicts --baseline .pharaoh/gap-baseline.json"
 sphinx = "uv run --extra ubtrace sphinx-build -W --keep-going -b html . _build/html"
 
 # Report templates and the committed evidence snapshots (JUnit, gaps) live in
@@ -185,8 +195,8 @@ schema_definitions_from_json = "schemas.json"
 # the IDE re-indexes on save and the cell-protection page reads 3.65 V, and every
 # command and the Sphinx build follow. The `-c` override above and the
 # `variant-diff` / `needs:lfp` scripts switch one command at a time instead.
-# variant_data_file = "variants/nmc.json"
-variant_data_file = "variants/lfp.json"
+variant_data_file = "variants/nmc.json"
+# variant_data_file = "variants/lfp.json"
 
 # --- ubTRACE VARIANTS ---
 # The variants published to ubTrace, one build each. ubTrace shows the variants of
@@ -426,6 +436,14 @@ schema = { type = "string", enum = [
 [needs.fields.status]
 description = "Lifecycle state of an authored spec need: draft -> review -> approved."
 schema = { type = "string", enum = ["draft", "review", "approved"] }
+
+# Automotive Safety Integrity Level (ISO 26262) of a requirement. The VALUE is
+# constrained here, for every need that carries one; `field-req-asil` in
+# schemas.json REQUIRES one on each `req`. The values are fictional, like the
+# rest of this project: plausible for a BMS, not the result of a hazard analysis.
+[needs.fields.asil]
+description = "Automotive Safety Integrity Level (ISO 26262): QM or A to D."
+schema = { type = "string", enum = ["QM", "A", "B", "C", "D"] }
 
 # Named variant expressions, usable as `<<lfp: <value>, <fallback>>>` in any
 # field that sets `parse_variants = true`.
@@ -699,9 +717,9 @@ outgoing = "gap_for"
 set_local_url = true
 
 # The implementation-arm project. `get_oneline_needs = true` materialises an `impl`
-# need from each one-line marker in the production source; `get_need_id_refs` and
-# `get_rst` stay off because this project's job is authoring `impl` needs, not
-# back-attaching ref URLs or extracting RST blocks.
+# need from each one-line marker in the production source; `get_need_id_refs` stays
+# off because this project's job is authoring `impl` needs, not back-attaching ref
+# URLs. (`get_rst` is gone: ubc 0.37 no longer reads it and warns when it is set.)
 [codelinks.projects.code.source_discover]
 src_dir = "../src"
 comment_type = "python"
@@ -709,7 +727,6 @@ comment_type = "python"
 [codelinks.projects.code.analyse]
 get_oneline_needs = true
 get_need_id_refs = false
-get_rst = false
 
 # The one-line marker grammar: `# @<title>, <IMPL_ID>, [<SWREQ_ID>]`. The third
 # field is NAMED `implements` (a `list[str]` link) so the materialised `impl` need
@@ -742,7 +759,6 @@ comment_type = "python"
 [codelinks.projects.tests.analyse]
 get_oneline_needs = true
 get_need_id_refs = false
-get_rst = false
 
 # The one-line marker grammar: `# @<title>, <TEST_ID>, [<SWREQ_ID>]`. The third
 # field is NAMED `verifies` (a `list[str]` link) so the materialised `test` need
@@ -837,12 +853,12 @@ orphan_exempt_types = ["user_story", "req", "arch", "swreq", "gap"]
 # six types that owe one. Revisit if ubc grows a type-scoped lifecycle.
 
 # The diagram SYNTAX the runner authors any diagram in. `format` is the authoring
-# directive injected into the runner prompt ("author it as a `mermaid` directive");
+# directive injected into the runner prompt ("author it as a `needuml` directive");
 # it is project policy, NOT baked into the (generic) skills. `enabled = false`
 # keeps the diagram GATE off — only the authoring format is configured here.
 [workflow.diagram]
 enabled = false
-format = "mermaid"
+format = "needuml"
 
 # The route names `.rst`; the `isolation-monitoring` stream is authored in
 # Markdown and is complete, so no stage ever resolves an authoring route into it.

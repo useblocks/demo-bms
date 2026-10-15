@@ -4,33 +4,39 @@ State Estimation — Architecture
 Component overview
 ------------------
 
-.. mermaid::
+.. needuml::
 
-   flowchart LR
-       SHUNT[["Pack current shunt<br/>(hardware)"]]
-       AFE[["Cell AFE chain<br/>(hardware)"]]
-       NVM[["Non-volatile memory<br/>(hardware)"]]
-       BUS[["Vehicle bus<br/>(external)"]]
+   left to right direction
+   hide stereotype
+   skinparam rectangle<<external>> {
+     BackgroundColor #F3F4F6
+     BorderStyle dashed
+   }
 
-       CC["ARCH_COULOMB_COUNTER<br/>Coulomb Counter"]
-       OCV["ARCH_OCV_CORRECTOR<br/>Open-Circuit-Voltage Corrector"]
-       STORE["ARCH_SOC_STORE<br/>State-of-Charge Store"]
-       SOH["ARCH_SOH_TRACKER<br/>Capacity Fade Tracker"]
-       VAL["ARCH_ESTIMATION_VALIDITY_MONITOR<br/>Estimation Validity Monitor"]
-       PUB["ARCH_STATE_PUBLISHER<br/>Battery State Publisher"]
+   rectangle "Pack current shunt\n(hardware)" as SHUNT <<external>>
+   rectangle "Cell AFE chain\n(hardware)" as AFE <<external>>
+   rectangle "Non-volatile memory\n(hardware)" as NVM <<external>>
+   rectangle "Vehicle bus\n(external)" as BUS <<external>>
 
-       SHUNT --> CC
-       SHUNT --> VAL
-       AFE --> OCV
-       CC -- "counted charge" --> OCV
-       OCV -- "corrected SOC" --> PUB
-       OCV -- "rest-point SOC" --> SOH
-       CC -- "throughput window" --> SOH
-       STORE <-- "restore / persist SOC" --> OCV
-       STORE <--> NVM
-       VAL -- "validity flag" --> PUB
-       SOH -- "remaining capacity" --> PUB
-       PUB --> BUS
+   {{flow("ARCH_COULOMB_COUNTER")}}
+   {{flow("ARCH_OCV_CORRECTOR")}}
+   {{flow("ARCH_SOC_STORE")}}
+   {{flow("ARCH_SOH_TRACKER")}}
+   {{flow("ARCH_ESTIMATION_VALIDITY_MONITOR")}}
+   {{flow("ARCH_STATE_PUBLISHER")}}
+
+   SHUNT --> ARCH_COULOMB_COUNTER
+   SHUNT --> ARCH_ESTIMATION_VALIDITY_MONITOR
+   AFE --> ARCH_OCV_CORRECTOR
+   ARCH_COULOMB_COUNTER --> ARCH_OCV_CORRECTOR : counted charge
+   ARCH_OCV_CORRECTOR --> ARCH_STATE_PUBLISHER : corrected SOC
+   ARCH_OCV_CORRECTOR --> ARCH_SOH_TRACKER : rest-point SOC
+   ARCH_COULOMB_COUNTER --> ARCH_SOH_TRACKER : throughput window
+   ARCH_SOC_STORE <--> ARCH_OCV_CORRECTOR : restore / persist SOC
+   ARCH_SOC_STORE <--> NVM
+   ARCH_ESTIMATION_VALIDITY_MONITOR --> ARCH_STATE_PUBLISHER : validity flag
+   ARCH_SOH_TRACKER --> ARCH_STATE_PUBLISHER : remaining capacity
+   ARCH_STATE_PUBLISHER --> BUS
 
 Elements
 --------

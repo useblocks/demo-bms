@@ -157,14 +157,38 @@ emitted and add a note to your report that it needs manual correction.
 - One obligation per directive, same discipline as any freshly-authored
   requirement.
 - This skill never invokes `ubc agent reverse record`. Hand your emitted
-  atoms to `record-recovery-ledger` once you are done.
+  atoms to `record-recovery-ledger` once you are done, together with the
+  ledger details in "Hand the atoms to the ledger" below.
+
+## Hand the atoms to the ledger
+
+The original id is still in the ledger shard that recorded it, and the atoms
+belong in THAT shard, not in a new one. Find it before you hand off: read the
+files under `.pharaoh/rev-eng/` (`**/*.json`, in the repository root's
+`.pharaoh`, found from `<project path>`) and take the one whose `needs[].id`
+list contains the original id. Give `record-recovery-ledger`:
+
+- the atoms as its `needs`,
+- that shard's `source.path` as `source_path` and its `source.members`
+  (the `path` of each member) as `members`, both verbatim, and
+- `retired: ["<original id>"]`, which drops the original from the shard.
+  Without it the shard keeps an id that no longer resolves, and
+  `ubc agent reverse status` reports the unit's files as `orphaned`.
+
+If no shard holds the original id, the need was never recorded: hand the atoms
+over with no `retired` and say so in your report.
 
 ## Confirm
 
 After replacing the block, change into the project directory
-(`cd <project path>`) and run `ubc build needs .`, then run
-`ubc agent gaps -p <project path>`, to confirm the build is still clean
-and the up-link trace edges still resolve for every atom. `ubc build
-needs` writes `needs.json` relative to your current working directory,
-not relative to the path argument, so run it from the project root or
-the index lands in the wrong place.
+(`cd <project path>`) and run `ubc build needs . -o <tmp>/needs.json`,
+where `<tmp>` is a new temporary directory outside the repository (for
+example from `mktemp -d`). Then run `ubc agent gaps -p <project path>`,
+to confirm the build is still clean and the up-link trace edges still
+resolve for every atom. `gaps` exits 1 whenever any gap exists anywhere in
+the project, which is normal partway through a recovery, so do not read the
+exit code: check only the entries for the atoms themselves. Run the build from inside the project because
+`ubc build needs` finds the project by searching upward from `.` for its
+`ubproject.toml`. `-o` writes the index to `<tmp>` and nowhere else, so
+the build leaves nothing in the repository. Remove `<tmp>` once both
+commands are done.

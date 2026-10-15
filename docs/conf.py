@@ -45,7 +45,7 @@ extensions = [
     "myst_parser",  # the Markdown-authored stream, specs/isolation-monitoring/
     "sphinx_needs",
     "sphinx_codelinks",  # materialises the one-line markers in src/ and tests/
-    "sphinxcontrib.mermaid",  # the `.. mermaid::` component diagrams
+    "sphinxcontrib.plantuml",  # renders the `.. needuml::` component diagrams
     "ubt_sphinx",  # the `ubtrace` builder
 ]
 
@@ -136,30 +136,18 @@ needs_show_link_title = False
 # before its swreqs is a publish nobody can rely on.
 suppress_warnings = ["sn_schema_warning.network_contains_too_few"]
 
-# -- Mermaid --------------------------------------------------------------------
-# The default "raw" output emits a <div> that the browser renders with
-# mermaid.js. Scripts do NOT run in the ubTrace export, so a raw diagram is
-# blank there. When the mermaid CLI (`mmdc`, from @mermaid-js/mermaid-cli) is on
-# PATH, pre-render to SVG instead so the diagrams survive the export; without it
-# the build still succeeds and only the three component diagrams degrade.
-mermaid_output_format = "svg" if shutil.which("mmdc") else "raw"
-
-# `mmdc` drives a headless Chromium through puppeteer, whose sandbox needs
-# unprivileged user namespaces. Ubuntu 23.10+ (so ubuntu-latest on GitHub
-# Actions) restricts those via AppArmor, and Chromium then aborts with "No
-# usable sandbox!" — three failed renders, three warnings, and under `-W` a
-# failed publish. mermaid-puppeteer.json passes `--no-sandbox` to make the
-# render work in that environment; the only content it renders is the three
-# diagrams in this repository's own sources.
-mermaid_params = [
-    "-p",
-    os.path.join(os.path.dirname(__file__), "mermaid-puppeteer.json"),
-]
+# -- PlantUML -------------------------------------------------------------------
+# The `needuml` component diagrams under specs/*/architecture.rst go through
+# PlantUML. `svg_img` emits a plain <img>, which is what survives the ubTrace
+# export (scripts do not run there, and the viewer resolves <img> assets only);
+# the cost is that the need links inside the SVG are not clickable.
+plantuml_output_format = "svg_img"
 
 # -- Diagrams -------------------------------------------------------------------
 # `traceability.rst` renders the per-stream chains as `needflow` diagrams
-# through graphviz (`flow_engine` in ubproject.toml). Without `dot` on PATH
-# sphinx-needs cannot produce them, so fail here with something readable
+# through graphviz (`flow_engine` in ubproject.toml), and the architecture pages
+# render their component diagrams through PlantUML. Without the executables on
+# PATH sphinx-needs cannot produce them, so fail here with something readable
 # instead of at the first directive.
 if shutil.which("dot") is None:
     raise RuntimeError(
@@ -167,6 +155,13 @@ if shutil.which("dot") is None:
         "traceability.rst are rendered with it (see flow_engine in "
         "ubproject.toml). Install graphviz (macOS: 'brew install graphviz', "
         "Debian/Ubuntu: 'apt-get install graphviz') and retry."
+    )
+if shutil.which("plantuml") is None:
+    raise RuntimeError(
+        "'plantuml' executable not found on PATH. The needuml component diagrams "
+        "under specs/*/architecture.rst are rendered with it. Install PlantUML "
+        "(macOS: 'brew install plantuml', Debian/Ubuntu: 'apt-get install "
+        "plantuml') and retry."
     )
 
 # -- HTML -----------------------------------------------------------------------

@@ -12,12 +12,6 @@ listed in V-model order per stream, so the export reads top-down the way the
 project was authored.
 
 .. toctree::
-   :maxdepth: 1
-   :caption: The graph
-
-   traceability
-
-.. toctree::
    :maxdepth: 2
    :caption: Cell protection
 
@@ -71,6 +65,7 @@ project was authored.
    :maxdepth: 2
    :caption: Cross-cutting
 
+   specs/_global/traceability
    specs/_global/decisions
    specs/_global/risks
    specs/_global/test_results

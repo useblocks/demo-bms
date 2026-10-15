@@ -257,7 +257,7 @@ through an RST one.
 
 ## Traceability, as a page
 
-[docs/traceability.rst](docs/traceability.rst) is the aggregate view of the graph, and
+[docs/specs/_global/traceability.rst](docs/specs/_global/traceability.rst) is the aggregate view of the graph, and
 every line of it is **derived** — nothing on it is hand-maintained, so it cannot
 drift from the specs the way a hand-drawn matrix does:
 
@@ -279,7 +279,7 @@ drift from the specs the way a hand-drawn matrix does:
   *`ubc agent gaps` agrees, and here is which obligation*.
 
 The diagrams are rendered by **graphviz** (`flow_engine = "graphviz"` in
-[docs/ubproject.toml](docs/ubproject.toml)), not PlantUML: no Java, no vendored jar, and
+[docs/ubproject.toml](docs/ubproject.toml)), not PlantUML, because
 the graphviz engine emits a PNG plus an HTML image map — a plain `<img>` with
 clickable nodes. That is what survives the ubTrace export, where scripts do not
 run and the viewer resolves `<img>` assets only. `dot` must therefore be on
@@ -411,23 +411,17 @@ generated RST → published artefact` was only gated from the second arrow onwar
 until `ubc` could run on the runner, nothing in CI could tell whether the
 committed snapshot still described reality.
 
-One detail worth knowing: **scripts do not run in the ubTrace export**, so the
-three `.. mermaid::` component diagrams cannot be rendered by the browser there.
-When the mermaid CLI (`mmdc`) is on `PATH`, [docs/conf.py](docs/conf.py) pre-renders them
-to SVG images instead, and the workflow installs it for exactly that reason.
+One detail worth knowiOne detail worth knowing: **scripts do not run in the ubTrace export**, so the
+three `.. needuml::` component diagrams under `docs/specs/*/architecture.rst`
+are rendered by PlantUML at build time and embedded as plain SVG `<img>` tags
+(`plantuml_output_format = "svg_img"` in [docs/conf.py](docs/conf.py)). Each architecture
+element is drawn with `{{flow("ARCH_…")}}`, so its title, id and colour come from
+the need itself and cannot drift from the spec. The price of `<img>` is that the
+need links inside the SVG are not clickable. `plantuml` (and therefore Java) must
+be on `PATH`; [docs/conf.py](docs/conf.py) fails the build with an explicit message when
+it is not, and the workflow installs a pinned release jar.
 
-That renderer drives a headless Chromium, which is the one fragile part of the
-build: on Ubuntu 23.10+ (so on `ubuntu-latest`) Chromium's sandbox needs
-unprivileged user namespaces that AppArmor restricts, and it aborts with "No
-usable sandbox!". [docs/mermaid-puppeteer.json](docs/mermaid-puppeteer.json) passes
-`--no-sandbox` to get past that — it only ever renders this repository's own
-three diagrams. As a second line of defence the workflow *renders a probe
-diagram* after installing `mmdc` and uninstalls it again if that fails, which
-drops [docs/conf.py](docs/conf.py) back to the raw output: three degraded diagrams and a
-published artefact, rather than a failed publish. The diagrams are a nicety; the
-traceability artefact is the point.
-
-## Test results, from a static XML report
+a static XML report
 
 The suite is **not re-run on every build.**
 [docs/reports/junit/testresults.xml](docs/reports/junit/testresults.xml) is a committed
@@ -588,7 +582,7 @@ Once a gap is a need, it shows up everywhere the graph does — and it is **red*
 (`#EF4444`, the strongest colour in the ontology) in all of them:
 
 - as a red node hanging off its requirement in the `needflow` diagrams on
-  [docs/traceability.rst](docs/traceability.rst);
+  [docs/specs/_global/traceability.rst](docs/specs/_global/traceability.rst);
 - in the `gaps` column of every level table on the same page;
 - as a red-barred need on its own page, and on the incoming-links list of the need
   it is about;

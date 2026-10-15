@@ -531,6 +531,18 @@
           "required": ["status"]
         }
       }
+    },
+    {
+      "id": "field-req-asil",
+      "severity": "warning",
+      "message": "Each requirement states its ASIL (QM or A to D). PRESENCE only -- the VALUE is constrained by `[needs.fields.asil]` in ubproject.toml. Warning, not violation: a new requirement is often written before its safety classification is known.",
+      "select": {
+        "properties": { "type": { "const": "req" } },
+        "required": ["type"]
+      },
+      "validate": {
+        "local": { "required": ["asil"] }
+      }
     }
   ]
 }

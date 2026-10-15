@@ -41,8 +41,8 @@ to produce and what shape they take for this project).
 Do NOT write any RST yet. First present a short, scannable outline of what you
 plan to author and ask the user to approve or adjust it. The outline lists:
 
-- the id (with the reported prefix) and one-line shall-clause title of each
-  requirement you will create,
+- the id (with the reported prefix), the short title and the shall-clause of
+  each requirement you will create,
 - the trace link named in your briefing that each requirement draws up to its
   parent, and which parent it points at,
 - the key content decisions, above all how you split any compound obligation
@@ -55,7 +55,7 @@ you agreed, then leave the independent review to the separate review step.
 ## Output shape (one directive per requirement)
 
 ```rst
-.. <type>:: <one-sentence shall-clause title>
+.. <type>:: <short title naming what the requirement is about>
    :id: <ID with the reported prefix>
    :status: <the status you were told to open this need in>
    :<trace-link>: <PARENT_ID>
@@ -63,6 +63,11 @@ you agreed, then leave the independent review to the separate review step.
    <Requirement body>. The body states exactly one obligation in a single
    shall-clause, grounded in observable behaviour, with no compound "and/or".
 ```
+
+The title is a heading of a few words saying what the requirement is about,
+such as "ADC sample acceptance range", so a reader can tell the needs apart
+in a list. It is not a sentence and does not repeat the body: the shall-clause
+is the body, written once.
 
 `<type>` is the type named in your briefing for this stage; `<trace-link>` is
 the trace link field named in your briefing.

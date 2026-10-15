@@ -21,9 +21,6 @@
         // and the review criteria in `quality/*.toml`.
         "tamasfe.even-better-toml",
 
-        // Mermaid preview for the architecture diagrams in README.md.
-        "bierner.markdown-mermaid",
-
         // Workflow authoring for .github/workflows/ubtrace.yml.
         "github.vscode-github-actions",
 

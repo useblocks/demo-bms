@@ -4,29 +4,35 @@ Cell Protection — Architecture
 Component overview
 ------------------
 
-.. mermaid::
+.. needuml::
 
-   flowchart LR
-       AFE[["Cell AFE chain<br/>(hardware)"]]
-       SHUNT[["Pack current shunt<br/>(hardware)"]]
-       CTR[["HV contactors<br/>(hardware)"]]
-       DIAG[["Diagnostic tester<br/>(external)"]]
+   left to right direction
+   hide stereotype
+   skinparam rectangle<<external>> {
+     BackgroundColor #F3F4F6
+     BorderStyle dashed
+   }
 
-       ACQ["ARCH_CELL_MEASUREMENT_ACQ<br/>Cell Measurement Acquisition"]
-       CUR["ARCH_CURRENT_PATH_MONITOR<br/>Pack Current Path Monitor"]
-       SUP["ARCH_SAFETY_SUPERVISOR<br/>Cell Protection Safety Supervisor"]
-       ACT["ARCH_CONTACTOR_ACTUATOR<br/>HV Contactor Actuator"]
-       MEM["ARCH_FAULT_MEMORY<br/>Cell Protection Fault Memory"]
+   rectangle "Cell AFE chain\n(hardware)" as AFE <<external>>
+   rectangle "Pack current shunt\n(hardware)" as SHUNT <<external>>
+   rectangle "HV contactors\n(hardware)" as CTR <<external>>
+   rectangle "Diagnostic tester\n(external)" as DIAG <<external>>
 
-       AFE --> ACQ
-       SHUNT --> CUR
-       ACQ -- "validated cell U/T samples" --> SUP
-       CUR -- "filtered pack current" --> SUP
-       SUP -- "open command + latch state" --> ACT
-       SUP -- "fault record" --> MEM
-       ACT --> CTR
-       MEM <-- "read / service reset" --> DIAG
-       DIAG -- "service reset" --> SUP
+   {{flow("ARCH_CELL_MEASUREMENT_ACQ")}}
+   {{flow("ARCH_CURRENT_PATH_MONITOR")}}
+   {{flow("ARCH_SAFETY_SUPERVISOR")}}
+   {{flow("ARCH_CONTACTOR_ACTUATOR")}}
+   {{flow("ARCH_FAULT_MEMORY")}}
+
+   AFE --> ARCH_CELL_MEASUREMENT_ACQ
+   SHUNT --> ARCH_CURRENT_PATH_MONITOR
+   ARCH_CELL_MEASUREMENT_ACQ --> ARCH_SAFETY_SUPERVISOR : validated cell U/T samples
+   ARCH_CURRENT_PATH_MONITOR --> ARCH_SAFETY_SUPERVISOR : filtered pack current
+   ARCH_SAFETY_SUPERVISOR --> ARCH_CONTACTOR_ACTUATOR : open command + latch state
+   ARCH_SAFETY_SUPERVISOR --> ARCH_FAULT_MEMORY : fault record
+   ARCH_CONTACTOR_ACTUATOR --> CTR
+   ARCH_FAULT_MEMORY <--> DIAG : read / service reset
+   DIAG --> ARCH_SAFETY_SUPERVISOR : service reset
 
 Elements
 --------
