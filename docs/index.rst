@@ -1,10 +1,12 @@
 BMS — Battery Management System
 ===============================
 
-Everything-as-code across a minimized V-model: four streams, each decomposed
+Everything-as-code across a minimized V-model: five streams, each decomposed
 from user stories down to software requirements, with the implementation and
 verification arms hanging off the software requirements as real needs
-materialised from one-line markers in the source.
+materialised from one-line markers in the source. Above the streams sits a layer
+this project does not own — the customer's system requirements, imported from a
+DOORS export — that every user story traces up into.
 
 This page is the toctree for the Sphinx / ubTrace export only — ``ubc`` indexes
 the same ``specs/**`` sources directly and needs no entry point. The stages are
@@ -16,6 +18,12 @@ project was authored.
    :caption: The graph
 
    traceability
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Customer requirements (external)
+
+   specs/_external/system_requirements
 
 .. toctree::
    :maxdepth: 2

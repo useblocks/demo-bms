@@ -145,6 +145,7 @@
       ]
     },
 
+    "type-sys_req": { "properties": { "type": { "const": "sys_req" } } },
     "type-user_story": { "properties": { "type": { "const": "user_story" } } },
     "type-req": { "properties": { "type": { "const": "req" } } },
     "type-arch": { "properties": { "type": { "const": "arch" } } },
@@ -160,6 +161,13 @@
   },
 
   "schemas": [
+    {
+      "id": "id-prefix-sys_req",
+      "severity": "violation",
+      "message": "DECLARED: [[needs.types]] gives sys_req the prefix SYS_. The suffix is the DOORS Absolute Number, so unlike every other type here the id ends in DIGITS -- see the `id_regex` note in ubproject.toml for why the customer's numbering is carried through rather than restyled.",
+      "select": { "$ref": "#/$defs/type-sys_req" },
+      "validate": { "local": { "properties": { "id": { "pattern": "^SYS_[0-9]+$" } } } }
+    },
     {
       "id": "id-prefix-user_story",
       "severity": "violation",
@@ -231,6 +239,20 @@
       "validate": { "local": { "properties": { "id": { "pattern": "^GAP_" } } } }
     },
 
+    {
+      "id": "trace-user_story-covers",
+      "severity": "violation",
+      "message": "DECLARED (stage `user_stories`, trace link=covers min=1 up=sys_req): a user_story's covers link must be non-empty and must land on a sys_req. OBSERVED 4/5. DELIBERATELY OMITS `required`, unlike the four sibling trace-* rules, and that is the one place this file does not mirror its declared edge: PRESENCE is gated by the `[workflow]` trace edge instead, which reports US_CELL_BALANCING as a `trace_forward` gap through `ubc agent gaps` and makes `ubc agent next` recommend the mapping. Asserting it here as well would fail the need with `local_required`, and the only way past that under `sphinx-build -W` is suppressing `sn_schema_error.local_required` in conf.py -- which would blind the build to EVERY required-property rule (the other four trace edges, status-present-on-spec-needs and both field-* rules). One intended gap is not worth that. SHAPE is still gated here, so a covers link that is empty or points at the wrong type is a violation as usual.",
+      "select": { "$ref": "#/$defs/type-user_story" },
+      "validate": {
+        "local": {
+          "properties": { "covers": { "minItems": 1 } }
+        },
+        "network": {
+          "covers": { "items": { "local": { "$ref": "#/$defs/type-sys_req" } } }
+        }
+      }
+    },
     {
       "id": "trace-req-traces_to",
       "severity": "violation",
@@ -365,6 +387,20 @@
     },
 
     {
+      "id": "coverage-sys_req-covers-back",
+      "severity": "warning",
+      "message": "DECLARED (stage `user_stories`, direction=both): every imported sys_req must be covered by at least one user_story. This is the MAPPING BACKLOG -- an imported customer requirement no story has claimed. OBSERVED 15/22: SYS_1041 and SYS_1042 belong to the deliberately open cell-balancing stream, and SYS_1061..SYS_1065 (OTA update, secure boot, UDS diagnostics, end-of-line calibration, event recording) are vehicle-integration capabilities this project has not taken on at all. BACKWARD, so `warning`, not `violation` -- see the FORWARD IS A VIOLATION, BACKWARD IS A WARNING note in $defs._readme.",
+      "select": { "$ref": "#/$defs/type-sys_req" },
+      "validate": {
+        "network_back": {
+          "covers": {
+            "contains": { "local": { "$ref": "#/$defs/type-user_story" } },
+            "minContains": 1
+          }
+        }
+      }
+    },
+    {
       "id": "coverage-user_story-traces_to-back",
       "severity": "warning",
       "message": "DECLARED (stage `reqs`, direction=both): every user_story must be decomposed into at least one req. OBSERVED 4/4, fan-in 1..7. BACKWARD, so `warning`, not `violation`: this is owed by a later stage and is unmet by construction while that stage is pending -- see the FORWARD IS A VIOLATION, BACKWARD IS A WARNING note in $defs._readme.",
@@ -484,7 +520,7 @@
     {
       "id": "field-gap-category",
       "severity": "warning",
-      "message": "WARNING, NOT VIOLATION, ON PURPOSE. These are the seven categories the 0.34 engine emits, per CATEGORIES in tools/import_gaps.py -- but that importer renders an UNKNOWN category generically rather than rejecting it, because `ubc agent` is alpha and \"a gate finding must never be dropped because this table has not caught up with the engine\". A violation here would invert that: a newer engine emitting an eighth category would fail the build instead of reporting the gap. At `warning` the drift is surfaced -- go add the new category to CATEGORIES and to this list -- while the finding still lands. This is also why `[needs.fields.gap_category]` in ubproject.toml carries no global enum.",
+      "message": "WARNING, NOT VIOLATION, ON PURPOSE. These are the eight categories the 0.35 engine emits, per CATEGORIES in tools/import_gaps.py -- but that importer renders an UNKNOWN category generically rather than rejecting it, because `ubc agent` is alpha and \"a gate finding must never be dropped because this table has not caught up with the engine\". A violation here would invert that: a newer engine emitting a ninth category would fail the build instead of reporting the gap. At `warning` the drift is surfaced -- go add the new category to CATEGORIES and to this list -- while the finding still lands. This is also why `[needs.fields.gap_category]` in ubproject.toml carries no global enum.",
       "select": { "properties": { "type": { "const": "gap" } } },
       "validate": {
         "local": {
@@ -497,7 +533,8 @@
                 "status_disallowed",
                 "status_undeclared",
                 "needs_clarification",
-                "code_trace"
+                "code_trace",
+                "review"
               ]
             }
           }

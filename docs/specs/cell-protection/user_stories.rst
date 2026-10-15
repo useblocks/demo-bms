@@ -4,6 +4,7 @@ Cell Protection — User Stories
 .. user_story:: Disconnect the high-voltage battery before any cell can be damaged
    :id: US_CELL_PROTECTION
    :status: draft
+   :covers: SYS_1011, SYS_1012, SYS_1013, SYS_1014, SYS_1015, SYS_1016
 
    As a vehicle safety engineer, I want the battery pack to remove itself from
    the high-voltage circuit as soon as any cell leaves its safe voltage, current

@@ -1,0 +1,54 @@
+# ubConnect import of the OEM system-requirement export from IBM DOORS.
+#
+# Regenerate `needs.json` with:
+#
+#     ubconnect csv from-csv -c import.toml
+#
+# `needs.json` is COMMITTED and is loaded DIRECTLY into the graph by
+# `[[needs.external_needs]]` in ../../ubproject.toml. There is no generation step
+# in between: the export IS the need source, which is what makes the imported
+# layer read-only by construction rather than by convention.
+
+[ubconnect.from_csv]
+csv_path = "bms_sysreqs_v1.csv"
+outdir = "."
+id_prefix = "SYS_"                  # "Absolute Number" 1011 -> SYS_1011
+delimiter = ","
+encoding = "utf-8"
+
+# No link configuration on purpose. A `sys_req` is the TOP of the graph and
+# points at nothing; the `covers` link that maps this layer onto the project is
+# authored on the `user_story` side, pointing UP.
+
+[ubconnect.from_csv.static_fields]
+# The export carries no column naming the need type, so every row takes this
+# one. `[mapping] type` still defaults to the column name "type"; because the
+# export has no such column the converter falls back here without warning.
+# ("Object Type" sanitises to `object_type` and does NOT collide.)
+type = "sys_req"
+
+[ubconnect.from_csv.mapping]
+id = "Absolute Number"
+title = "Object Heading"
+content = "Object Text"
+
+# DELIBERATELY NO `status` MAPPING, and the export column is named "DOORS
+# Status" rather than "Status" for the same reason.
+#
+# `status` in this project is a LIFECYCLE state with a closed vocabulary
+# (draft / review / approved, in `[needs.fields.status]`). The customer's status
+# is their lifecycle, not ours, and an external need is not in our lifecycle at
+# all — the same reasoning that leaves `impl`, `test`, `test_result` and `gap`
+# without one. Carrying "Approved" into the `status` field would fail the enum
+# on every imported need.
+#
+# The column name matters because unmapped columns are lowercased with spaces
+# turned into underscores: "Status" would sanitise to `status`, collide with the
+# core field, and be DROPPED with a warning. "DOORS Status" sanitises to
+# `doors_status`, which is a plain declared field carrying the customer's value
+# verbatim, with no vocabulary of ours imposed on it.
+
+# Every remaining column is carried through the same way: Module -> module,
+# Object Identifier -> object_identifier, Object Type -> object_type,
+# ASIL -> asil, Verification Method -> verification_method,
+# Rationale -> rationale.

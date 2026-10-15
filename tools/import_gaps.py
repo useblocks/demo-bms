@@ -20,9 +20,13 @@ to plus the gate that reported it, so re-importing an unchanged report rewrites
 the same file byte for byte and a fixed gap disappears rather than lingering
 under a fresh id.
 
-A record naming a need that does not exist in the sources is a hard error, not a
-silent drop: that means the snapshot is stale, and a stale gap would author a
-dangling ``gap_for`` link that fails the Sphinx build under ``-W``.
+A record naming a need that is in no source is a hard error, not a silent drop:
+that means the snapshot is stale, and a stale gap would author a dangling
+``gap_for`` link that fails the Sphinx build under ``-W``. "Source" is every way
+a need reaches the graph — the directives under ``specs/``, the codelinks markers
+under ``src/`` and ``tests/``, and the external JSON exports that
+``[[needs.external_needs]]`` projects in, which is how the customer's ``sys_req``
+layer arrives.
 
 Usage::
 
@@ -38,6 +42,7 @@ import json
 import re
 import sys
 import textwrap
+import tomllib
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -49,6 +54,9 @@ DEFAULT_SPECS_DIR = REPO_ROOT / "docs" / "specs"
 #: where `type` is the LAST field with a default so no marker has to spell it.
 DEFAULT_CODE_DIRS = ((REPO_ROOT / "src", "impl"), (REPO_ROOT / "tests", "test"))
 DEFAULT_OUTPUT = REPO_ROOT / "docs" / "specs" / "_global" / "gaps.rst"
+#: The ubc project config. Read for its `[[needs.external_needs]]` sources, which
+#: name the only needs that exist in no file this script would otherwise open.
+DEFAULT_UBPROJECT = REPO_ROOT / "docs" / "ubproject.toml"
 
 #: Directive line and `:id:` field as they appear in the spec sources. Parsed
 #: from source rather than from `needs.json` so the import never depends on a
@@ -75,10 +83,10 @@ MARKER = re.compile(
 #: that keeps two gaps on the same need apart. `{link}` is substituted where the
 #: gate names a link; the two trace categories are the only ones that do.
 #:
-#: The categories are the ones the 0.34 engine emits (`trace_forward`,
+#: The categories are the ones the 0.35 engine emits (`trace_forward`,
 #: `trace_backward`, `orphan`, `status_disallowed`, `status_undeclared`,
-#: `needs_clarification`, `code_trace`). `ubc agent` is alpha and says so — its
-#: JSON shapes may still change — so an UNKNOWN category is rendered generically
+#: `needs_clarification`, `code_trace`, `review`). `ubc agent` is alpha and says
+#: so — its JSON shapes may still change — so an UNKNOWN category is rendered generically
 #: rather than rejected: a gate finding must never be dropped because this table
 #: has not caught up with the engine.
 #:
@@ -94,8 +102,22 @@ CATEGORIES: dict[str, tuple[str, str]] = {
     "status_undeclared": ("its status is not declared in the lifecycle", "STATUS_UNDECLARED"),
     "needs_clarification": ("it still carries a NEEDS CLARIFICATION marker", "NEEDS_CLARIFICATION"),
     "code_trace": ("it has no code trace", "CODE_TRACE"),
+    # The substance gate, not a trace gate: it reports a need whose review verdict
+    # under `.pharaoh/verdicts/` is missing, failing, or fingerprinted against an
+    # earlier wording. The record still carries a `link` — the gate names ITSELF
+    # there, "review", which is why `[needs.fields.gap_link]` admits a word that is
+    # no link option.
+    "review": ("its review verdict does not cover the need as it now reads", "REVIEW"),
 }
 FALLBACK = ("the {category} gate is not satisfied", "{CATEGORY}")
+
+#: How the `have`/`need` counts are read aloud, where "links" is wrong. Only the
+#: substance gate counts something other than links; everything else falls through
+#: to the default.
+SHORTFALLS: dict[str, str] = {
+    "review": "It has **{shortfall}** of the current review verdicts that gate requires.",
+}
+DEFAULT_SHORTFALL = "It carries **{shortfall}** of the ``{link}`` links that gate requires."
 
 
 @dataclass(frozen=True)
@@ -162,6 +184,51 @@ def collect_need_types(
                 marker = MARKER.match(line)
                 if marker is not None:
                     types[marker.group("id")] = marker.group("type") or default_type
+
+    return types
+
+
+def collect_external_need_types(ubproject: Path) -> dict[str, str]:
+    """Return `need id -> type` for every need projected in from an external export.
+
+    The customer's ``sys_req`` layer is owned in their DOORS instance and reaches
+    the graph through ``[[needs.external_needs]]`` in the ubc project config, not
+    through a directive under ``specs/``, so a gap attributed to one resolves
+    only here. The config is read for the export paths rather than the paths
+    being hardcoded, so adding a second external source needs no change here.
+
+    The export itself is read exactly as ``ubconnect`` writes it: a version map
+    keyed by ``current_version``, with a flat ``needs`` map as the older, single-
+    version fallback.
+    """
+    if not ubproject.is_file():
+        # Not an error: `--specs-dir` may point at a tree with no project config
+        # beside it, and a project with no external layer is the normal case.
+        return {}
+
+    config = tomllib.loads(ubproject.read_text())
+    types: dict[str, str] = {}
+
+    for source in config.get("needs", {}).get("external_needs", []) or []:
+        json_path = source.get("json_path")
+        if not json_path:
+            # A `json_url` source is fetched during the build and cannot be read
+            # here. Skip it silently; a gap naming one of its needs still fails
+            # below, which is the honest outcome.
+            continue
+        export = Path(json_path)
+        if not export.is_absolute():
+            # `json_path` is relative to the config, which is `docs/`, not the repo root.
+            export = ubproject.parent / export
+        if not export.is_file():
+            print(f"warning: external needs export not found: {_display(export)}", file=sys.stderr)
+            continue
+        document = json.loads(export.read_text())
+        versions = document.get("versions") or {}
+        version = document.get("current_version") or ""
+        needs = (versions.get(version) or {}).get("needs") or document.get("needs") or {}
+        for need_id, need in needs.items():
+            types[str(need_id)] = str(need.get("type", "") or "")
 
     return types
 
@@ -327,7 +394,9 @@ def render(gaps: list[Gap], by_category: dict[str, int], report: Path) -> str:
             )
         if gap.shortfall:
             lines += _body(
-                f"It carries **{gap.shortfall}** of the ``{gap.link}`` links that gate requires."
+                SHORTFALLS.get(gap.category, DEFAULT_SHORTFALL).format(
+                    shortfall=gap.shortfall, link=gap.link
+                )
             )
         lines += _body(
             f"Resolve it with ``ubc agent next --id {gap.need_id}``, which names the stage "
@@ -348,6 +417,12 @@ def main() -> int:
         dest="code_dirs",
         metavar="TYPE=PATH",
         help="a codelinks tree and the need type its markers default to, e.g. impl=src",
+    )
+    parser.add_argument(
+        "--ubproject",
+        type=Path,
+        default=DEFAULT_UBPROJECT,
+        help="the ubc project config, read for its `[[needs.external_needs]]` exports",
     )
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument(
@@ -380,7 +455,10 @@ def main() -> int:
         )
     else:
         code_dirs = DEFAULT_CODE_DIRS
-    types = collect_need_types(args.specs_dir, code_dirs)
+    # External first: a need authored in this repository is the source of truth
+    # for its own type, so the authored sources overwrite rather than the reverse.
+    types = collect_external_need_types(args.ubproject)
+    types.update(collect_need_types(args.specs_dir, code_dirs))
     gaps, unmapped = join(report["gaps"], types)
 
     if unmapped:
@@ -391,8 +469,10 @@ def main() -> int:
         for need_id in unmapped:
             print(f"  {need_id}", file=sys.stderr)
         print(
-            f"hint: the snapshot is stale. Re-run `ubc agent gaps > {_display(args.report)}` "
-            "and retry.",
+            f"hint: either the snapshot is stale — re-run "
+            f"`ubc agent gaps -p docs > {_display(args.report)}` and retry — or the need "
+            f"is an external one and {_display(args.ubproject)} does not project its "
+            "export in with `[[needs.external_needs]]`.",
             file=sys.stderr,
         )
         return 1
