@@ -904,6 +904,12 @@ comment_type = "python"
 [codelinks.projects.tests.analyse]
 get_oneline_needs = true
 get_need_id_refs = false
+# A test need may also be written as a MULTI-LINE block in a comment, with a body
+# in its own markup: `# @need[md] test: <title>`, its `:id:` and `:verifies:`
+# option lines, a blank comment line, the body, `# @endneed`. The two tests of
+# tests/isolation_monitoring/test_monitor.py are written that way; every other
+# test keeps its one-line marker, and both forms live side by side.
+get_multiline_needs = true
 
 # The one-line marker grammar: `# @<title>, <TEST_ID>, [<SWREQ_ID>]`. The third
 # field is NAMED `verifies` (a `list[str]` link) so the materialised `test` need

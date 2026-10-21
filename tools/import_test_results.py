@@ -45,6 +45,13 @@ MARKER = re.compile(
     r"^\s*#\s*@(?P<title>[^,]+),\s*(?P<id>TEST_[A-Z][A-Z0-9_]*),\s*"
     r"\[(?P<verifies>[^\]]*)\](?:\s*,\s*test)?\s*$"
 )
+#: The multi-line form switched on for the same project (`get_multiline_needs`):
+#: `# @need[<markup>] test: <title>`, then `# :id: <TEST_ID>` and
+#: `# :verifies: <SWREQ_ID>` option lines, a body, and `# @endneed`. A block binds to
+#: the first ``def test_*`` line beneath it, as a marker does.
+BLOCK_OPEN = re.compile(r"^\s*#\s*@need(?:\[[A-Za-z0-9_-]+\])?\s+test:\s*(?P<title>.*?)\s*$")
+BLOCK_OPTION = re.compile(r"^\s*#\s*:(?P<key>id|verifies):\s+(?P<value>.+?)\s*$")
+BLOCK_CLOSE = re.compile(r"^\s*#\s*@endneed\s*$")
 DEF_LINE = re.compile(r"^\s*def\s+(?P<name>test_[A-Za-z0-9_]+)\s*\(")
 
 #: JUnit child element -> the outcome word recorded on the need. JUnit spells the
@@ -78,26 +85,39 @@ class Outcome:
 def collect_test_needs(tests_dir: Path) -> dict[tuple[str, str], TestNeed]:
     """Rebuild the (module, function) -> `test` need map from the test sources.
 
-    A marker binds to the FIRST ``def test_*`` line beneath it, which is exactly
-    the rule the codelinks parser applies, so the two never disagree.
+    A marker, or a multi-line block, binds to the FIRST ``def test_*`` line beneath
+    it, which is exactly the rule the codelinks parser applies, so the two never
+    disagree.
     """
     found: dict[tuple[str, str], TestNeed] = {}
     for source in sorted(tests_dir.rglob("test_*.py")):
         rel = source.relative_to(REPO_ROOT)
         module = ".".join(rel.with_suffix("").parts)
-        pending: re.Match[str] | None = None
+        pending: dict[str, str] | None = None
+        block: dict[str, str] | None = None
         for line in source.read_text().splitlines():
+            if block is not None:
+                option = BLOCK_OPTION.match(line)
+                if option is not None:
+                    block.setdefault(option.group("key"), option.group("value"))
+                elif BLOCK_CLOSE.match(line):
+                    pending, block = block, None
+                continue
+            opened = BLOCK_OPEN.match(line)
+            if opened is not None:
+                block = {"title": opened.group("title")}
+                continue
             marker = MARKER.match(line)
             if marker is not None:
-                pending = marker
+                pending = marker.groupdict()
                 continue
             definition = DEF_LINE.match(line)
             if definition is not None and pending is not None:
                 function = definition.group("name")
                 found[(module, function)] = TestNeed(
-                    need_id=pending.group("id"),
-                    title=pending.group("title").strip(),
-                    verifies=pending.group("verifies").strip(),
+                    need_id=pending["id"],
+                    title=pending["title"].strip(),
+                    verifies=pending.get("verifies", "").strip(),
                     module=module,
                     function=function,
                     path=str(rel),
