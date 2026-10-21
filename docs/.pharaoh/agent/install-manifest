@@ -1,19 +1,19 @@
 {
   "schema_version": 1,
   "profile_id": "vmodel",
-  "profile_version": "21",
+  "profile_version": "22",
   "entries": [
     {
       "path": ".claude/skills/drive-workflow/SKILL.md",
-      "baseline": "9ab960651b64a5887b7b1c6c7b77d853bdd50b3685ddce10c8a14258689f7230"
+      "baseline": "c4d176c3172af0d875e3809c33c45f8bb5df244095fe9d405b5f0c4b628385c1"
     },
     {
       "path": ".github/agents/drive-workflow.agent.md",
-      "baseline": "9ab960651b64a5887b7b1c6c7b77d853bdd50b3685ddce10c8a14258689f7230"
+      "baseline": "c4d176c3172af0d875e3809c33c45f8bb5df244095fe9d405b5f0c4b628385c1"
     },
     {
       "path": ".agents/skills/drive-workflow/SKILL.md",
-      "baseline": "9ab960651b64a5887b7b1c6c7b77d853bdd50b3685ddce10c8a14258689f7230"
+      "baseline": "c4d176c3172af0d875e3809c33c45f8bb5df244095fe9d405b5f0c4b628385c1"
     },
     {
       "path": ".claude/skills/draft-requirement/SKILL.md",
@@ -77,15 +77,15 @@
     },
     {
       "path": ".claude/skills/change-request/SKILL.md",
-      "baseline": "ab409e2c5b590b964328c3f6993318344a375e30d2d35238ad0873ae8ad1b1a9"
+      "baseline": "d44e450722d09037f97c35e4e24add07c66af08ff2503ad51a5d796415724947"
     },
     {
       "path": ".github/agents/change-request.agent.md",
-      "baseline": "ab409e2c5b590b964328c3f6993318344a375e30d2d35238ad0873ae8ad1b1a9"
+      "baseline": "d44e450722d09037f97c35e4e24add07c66af08ff2503ad51a5d796415724947"
     },
     {
       "path": ".agents/skills/change-request/SKILL.md",
-      "baseline": "ab409e2c5b590b964328c3f6993318344a375e30d2d35238ad0873ae8ad1b1a9"
+      "baseline": "d44e450722d09037f97c35e4e24add07c66af08ff2503ad51a5d796415724947"
     },
     {
       "path": ".claude/skills/pharaoh-onboard/SKILL.md",
@@ -149,7 +149,7 @@
     },
     {
       "path": ".claude/commands/ubc-agent-next.md",
-      "baseline": "9030ab7d0913aaf4dda5a21ebf9888408dcde23b12b14509d940ff89ab7e4081"
+      "baseline": "76572b62cfa21f1196473a0832337ef194e337dbceff77b87be671bdc40c03e2"
     },
     {
       "path": ".github/agents/workflow-author.agent.md",
@@ -242,6 +242,30 @@
     {
       "path": ".agents/skills/resolve-github-intent/SKILL.md",
       "baseline": "2f223338c54c848ddeeab473f38c1e336c0eed21cfacab91745c7d0d5b8b34df"
+    },
+    {
+      "path": ".claude/skills/change-request-assess/SKILL.md",
+      "baseline": "753409557879b17913e1f903e28acc6acc6b6fa942187064f84cacbc6b9a7f80"
+    },
+    {
+      "path": ".github/agents/change-request-assess.agent.md",
+      "baseline": "753409557879b17913e1f903e28acc6acc6b6fa942187064f84cacbc6b9a7f80"
+    },
+    {
+      "path": ".agents/skills/change-request-assess/SKILL.md",
+      "baseline": "753409557879b17913e1f903e28acc6acc6b6fa942187064f84cacbc6b9a7f80"
+    },
+    {
+      "path": ".claude/skills/drive-change/SKILL.md",
+      "baseline": "ad5705a3428b6b6d17668e84a5bf4d20d9de7ac89b7f409e29159040ad57dd27"
+    },
+    {
+      "path": ".github/agents/drive-change.agent.md",
+      "baseline": "ad5705a3428b6b6d17668e84a5bf4d20d9de7ac89b7f409e29159040ad57dd27"
+    },
+    {
+      "path": ".agents/skills/drive-change/SKILL.md",
+      "baseline": "ad5705a3428b6b6d17668e84a5bf4d20d9de7ac89b7f409e29159040ad57dd27"
     }
   ],
   "project_dir": ""
