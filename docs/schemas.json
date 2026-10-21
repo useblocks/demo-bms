@@ -74,29 +74,17 @@
         "NO SEVERITY IN THIS FILE DEPENDS ON IT -- see the note above for why every",
         "backward rule is a warning regardless of how complete coverage happens to be.",
         "",
-        "THIS FILE vs ubproject.toml. A field is GLOBAL in ubCode: declared once,",
-        "present on every type, left at its `default` on the types that do not use it.",
-        "So a `schema` on `[needs.fields.<name>]` states what is true of the field",
-        "EVERYWHERE -- which for the imported fields means \"\" must be admissible, since",
-        "that is what the ~190 needs outside the owning type carry. Narrowing a field on",
-        "the one type that owns it is THIS file's job, keyed by `select`.",
-        "",
-        "A VOCABULARY IS WRITTEN EXACTLY ONCE, and the trick that keeps it that way is",
-        "worth knowing before adding a rule. A global enum has to admit \"\", so it reads",
-        "`\"\" | <the valid values>`; excluding \"\" on the owning type therefore yields the",
-        "valid values with no second copy of the list. So the per-type rule says",
-        "`minLength: 1`, NOT the enum again:",
-        "  outcome         field: \"\" | passed | failed | error | skipped",
-        "                  here:  minLength 1  ->  exactly those four on test_result",
-        "  test_run_label  field: \"\" | the non-ISO timestamp form",
-        "                  here:  minLength 1  ->  a real timestamp on test_result",
-        "  status          field: draft | review | approved",
-        "                  here:  WHICH TYPES OWE ONE -- the six authored types",
-        "  gap_category    field: nothing (see field-gap-category for why)",
-        "                  here:  the eight categories, at `warning`",
-        "If you find yourself pasting an enum from ubproject.toml into this file, stop:",
-        "the answer is almost always `minLength: 1`. Put a constraint here only when it",
-        "is type-specific; if it holds for every need, it belongs on the field.",
+        "THIS FILE vs ubproject.toml. A field is declared ON THE NEED TYPE THAT OWNS",
+        "IT in ubproject.toml (`[needs.types.<type>.fields.<name>]`): its vocabulary,",
+        "its pattern and whether it is required (`nullable = false`) are the type's",
+        "own, and on every other type the field is null. So a per-type vocabulary or",
+        "a populated-by-the-importer check is a DECLARATION there, not a rule here.",
+        "What stays here is what a need type's entry cannot say:",
+        "  gap_category    a vocabulary at `warning` severity (a declared enum is a",
+        "                  violation, and an entry has no severity)",
+        "  asil on req     presence at `warning` severity (`nullable = false` would",
+        "                  drop a req without one rather than report it)",
+        "Put a constraint here only when no declaration can carry it.",
         "",
         "WHICH CONSTRUCT DOES WHAT -- each check is written once, in the one place that",
         "can express it, with no overlap between them:",
@@ -472,26 +460,9 @@
     },
 
     {
-      "id": "field-test_result-run-evidence",
-      "severity": "violation",
-      "message": "OBSERVED 50/50 non-empty: tools/import_test_results.py stamps outcome, runtime_s, test_run_label and chain_reqs on every generated result. Fields are global in ubCode and default to \"\", so this checks they were actually POPULATED, not merely present -- an empty one means the importer half-wrote the need. NOTE THAT NON-EMPTY IS ALL THIS RULE HAS TO SAY, even for the two fields that have a vocabulary: `[needs.fields]` already admits exactly `\"\" | <the valid values>` for both, so excluding \"\" here yields the valid values without this file restating them. outcome becomes exactly `passed | failed | error | skipped`, and test_run_label exactly the non-ISO timestamp form. Writing the enum out again would be a second copy to keep in sync, and the vocabulary belongs on the field because it holds for every need, not just this type.",
-      "select": { "properties": { "type": { "const": "test_result" } } },
-      "validate": {
-        "local": {
-          "properties": {
-            "outcome": { "minLength": 1 },
-            "runtime_s": { "minLength": 1 },
-            "test_run_label": { "minLength": 1 },
-            "chain_reqs": { "minLength": 1 }
-          },
-          "required": ["outcome", "runtime_s", "test_run_label", "chain_reqs"]
-        }
-      }
-    },
-    {
       "id": "field-gap-category",
       "severity": "warning",
-      "message": "WARNING, NOT VIOLATION, ON PURPOSE. These are the seven categories the 0.34 engine emits, plus `change_incomplete` from `ubc agent change`, per CATEGORIES in tools/import_gaps.py -- but that importer renders an UNKNOWN category generically rather than rejecting it, because `ubc agent` is alpha and \"a gate finding must never be dropped because this table has not caught up with the engine\". A violation here would invert that: a newer engine emitting a category not listed here would fail the build instead of reporting the gap. At `warning` the drift is surfaced -- go add the new category to CATEGORIES and to this list -- while the finding still lands. This is also why `[needs.fields.gap_category]` in ubproject.toml carries no global enum.",
+      "message": "WARNING, NOT VIOLATION, ON PURPOSE. These are the seven categories the 0.34 engine emits, plus `change_incomplete` from `ubc agent change`, per CATEGORIES in tools/import_gaps.py -- but that importer renders an UNKNOWN category generically rather than rejecting it, because `ubc agent` is alpha and \"a gate finding must never be dropped because this table has not caught up with the engine\". A violation here would invert that: a newer engine emitting a category not listed here would fail the build instead of reporting the gap. At `warning` the drift is surfaced -- go add the new category to CATEGORIES and to this list -- while the finding still lands. This is also why `gap`'s declaration of gap_category in ubproject.toml (`[needs.types.gap.fields.gap_category]`) carries no enum: a declared enum is a violation, and a need type's entry has no severity.",
       "select": { "properties": { "type": { "const": "gap" } } },
       "validate": {
         "local": {
@@ -513,37 +484,9 @@
       }
     },
     {
-      "id": "field-gap-attribution",
-      "severity": "violation",
-      "message": "OBSERVED 1/1 non-empty: tools/import_gaps.py stamps gap_category, gap_need_id and gap_need_type on every generated gap. gap_need_id duplicates the gap_for link on purpose -- a report template cannot walk links, so the field is the half a Jinja report can read.",
-      "select": { "properties": { "type": { "const": "gap" } } },
-      "validate": {
-        "local": {
-          "properties": {
-            "gap_category": { "minLength": 1 },
-            "gap_need_id": { "minLength": 1 },
-            "gap_need_type": { "minLength": 1 }
-          },
-          "required": ["gap_category", "gap_need_id", "gap_need_type"]
-        }
-      }
-    },
-    {
-      "id": "status-present-on-spec-needs",
-      "severity": "violation",
-      "message": "PRESENCE only -- the VALUE is constrained globally by `[needs.fields.status]` in ubproject.toml (enum draft/review/approved), which is the right home for it because the vocabulary is the same wherever a status appears. This rule adds the half a global schema cannot express: WHICH TYPES OWE ONE. All 70 authored spec needs (user_story, req, arch, swreq, risk, decision) carry a status; the four derived types (impl, test, test_result, gap) carry none, correctly -- their state is the source file or the import, not a lifecycle -- and `status` is nullable precisely so they can. Raised from warning to violation now that the vocabulary is declared: a spec need with no status is no longer an unwritten convention.",
-      "select": { "$ref": "#/$defs/select-spec-need" },
-      "validate": {
-        "local": {
-          "properties": { "status": { "minLength": 1 } },
-          "required": ["status"]
-        }
-      }
-    },
-    {
       "id": "field-req-asil",
       "severity": "warning",
-      "message": "Each requirement states its ASIL (QM or A to D). PRESENCE only -- the VALUE is constrained by `[needs.fields.asil]` in ubproject.toml. Warning, not violation: a new requirement is often written before its safety classification is known.",
+      "message": "Each requirement states its ASIL (QM or A to D). PRESENCE only -- the VALUE is constrained by `req`'s own declaration, `[needs.types.req.fields.asil]` in ubproject.toml. Warning, not violation: a new requirement is often written before its safety classification is known. This is the one presence check that is NOT declared on the type: `nullable = false` there would not report a req without an ASIL, it would not create it at all, and the draft-requirement skill writes none.",
       "select": {
         "properties": { "type": { "const": "req" } },
         "required": ["type"]
