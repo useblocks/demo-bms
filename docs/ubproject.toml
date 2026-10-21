@@ -1122,3 +1122,80 @@ parent_fit = 1
 
 [quality.type_configs.decision.required]
 context_present = 1
+
+# --- REPORTS AND DASHBOARDS (consumed by `ubc report` / the VS Code Reports view) ---
+# A plain report is a `.html.j2` template rendered from the needs index; a
+# DASHBOARD is a template plus a declaration here, and its declared Cypher
+# queries run against the needs graph before the template renders.
+#
+# That is the whole reason these three exist as dashboards and not as plain
+# reports. A plain template CANNOT walk links: `ubc report` builds each need in
+# the Jinja context from its scalar FIELDS, so `satisfies`, `refines`,
+# `verifies`, `results_for` and the other link fields are absent, and a
+# link-based view silently reports zero everywhere. A dashboard's queries run
+# in the engine first, so the template receives the traversals as data. The
+# three below are the same fact three ways: a `need` dashboard for a system
+# requirement, a `need` dashboard for a software requirement, and a project-wide
+# `none` dashboard. Their queries live in `reports/queries/` beside the
+# templates.
+#
+# This table is ubCode-only; Sphinx and sphinx-needs ignore it, and editing a
+# declaration changes no parsing or indexing, so the warm index cache survives
+# a template or query edit.
+[reports]
+directory = "reports"
+
+# Persona: the functional safety manager. For ONE requirement: its ASIL, the
+# risk register entries that mitigate it, the common-cause peers that share
+# those risks, the evidence chain below it, and the architecture decisions its
+# design rests on.
+[reports.dashboards.safety_case]
+title = "Safety Case"
+description = "ASIL, risk mitigations and the evidence chain of one requirement."
+template = "safety_case.html.j2"
+input = "need"
+types = ["req"]
+
+[reports.dashboards.safety_case.queries]
+risks = { file = "queries/safety_risks.cypher" }
+peers = { file = "queries/safety_peers.cypher" }
+evidence = { file = "queries/safety_evidence.cypher" }
+decisions = { file = "queries/safety_decisions.cypher" }
+
+# Persona: the verification lead. For ONE software requirement: the impl needs
+# that implement it, the test needs that verify it with their last recorded
+# outcomes, the closure checklist, where it sits in the V, and its sibling
+# software requirements on the same component.
+[reports.dashboards.verification_cockpit]
+title = "Verification Cockpit"
+description = "Implementation and recorded test evidence of one software requirement."
+template = "verification_cockpit.html.j2"
+input = "need"
+types = ["swreq"]
+
+[reports.dashboards.verification_cockpit.queries]
+impls = { file = "queries/verif_impls.cypher" }
+results = { file = "queries/verif_results.cypher" }
+upstream = { file = "queries/verif_upstream.cypher" }
+siblings = { file = "queries/verif_siblings.cypher" }
+
+# Persona: the release manager / chief engineer. Project-wide (input = "none"),
+# so it is not offered on a single need: render it with
+# `ubc report program_health`. A GO / NO-GO release gate, the V-model funnel,
+# requirements by ASIL and evidence state, the failing evidence with its
+# fan-out, the risks, the structural gaps and the variant the index was built
+# for.
+[reports.dashboards.program_health]
+title = "Program Health"
+description = "Release gate, V-model coverage and failing evidence across the whole graph."
+template = "program_health.html.j2"
+input = "none"
+
+[reports.dashboards.program_health.queries]
+rungs = { file = "queries/health_rungs.cypher" }
+swreq = { file = "queries/health_swreq.cypher" }
+reqs = { file = "queries/health_reqs.cypher" }
+risks = { file = "queries/health_risks.cypher" }
+gaps = { file = "queries/health_gaps.cypher" }
+failing = { file = "queries/health_failing.cypher" }
+variant = { file = "queries/health_variant.cypher" }
