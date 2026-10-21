@@ -334,6 +334,9 @@ style="file"
 [needs.types.req.fields.status]
 nullable = false
 
+[needs.types.req.fields.test_count]
+derive = { kind = "sum", field = "test_count", over = "satisfies_back" }
+
 # Automotive Safety Integrity Level (ISO 26262), on `req` alone: no other type
 # states one (0 of 25 swreqs). The values are fictional, like the rest of this
 # project: plausible for a BMS, not the result of a hazard analysis.
@@ -354,6 +357,27 @@ style="node"
 [needs.types.arch.fields.status]
 nullable = false
 
+# DERIVED FIELDS, one name each, a rule per type. A plain report template cannot
+# walk links (`ubc report` gives it each need's scalar fields), so the facts a
+# report needs from up or down the chain are computed onto the need, by both
+# tools, from the links alone; no importer stamps them and no author writes them.
+# A rule reading its own field over a link type reads the value each linked need
+# computes, through any depth.
+#
+# `chain_reqs`: the system requirements a need is evidence for, up the V. The arch
+# rung copies the ids of the reqs it satisfies; every rung below collects the
+# rung above (`collect` flattens and keeps each id once).
+[needs.types.arch.fields.chain_reqs]
+description = "System requirement ids this need is evidence for, up the chain to req."
+schema = { type = "array", items = { type = "string" } }
+derive = { kind = "copy", field = "id", over = "satisfies", select = "list" }
+
+# `test_count`, rolled UP: a swreq counts the tests that verify it, an arch sums
+# its swreqs, a req its archs. Every test verifies one swreq and every swreq refines
+# one arch (`maxItems = 1` below), so the sum counts each test once.
+[needs.types.arch.fields.test_count]
+derive = { kind = "sum", field = "test_count", over = "refines_back" }
+
 # The BOTTOM of the decomposition arm. A software requirement states the testable
 # behaviour of ONE architecture element: what the component shall do, across which
 # interface, with which data, under which timing / resource / accuracy bound. It
@@ -367,6 +391,28 @@ style="card"
 
 [needs.types.swreq.fields.status]
 nullable = false
+
+[needs.types.swreq.fields.chain_reqs]
+derive = { kind = "collect", field = "chain_reqs", over = "refines" }
+
+# The verdict where both lower arms meet: how many tests verify it, how many impls
+# implement it, and whether every one of its tests passed its last recorded run
+# (`true` with no test, as `all` over nothing is — so "unverified or failing" is
+# `test_count == 0 or not all_tests_passed`).
+[needs.types.swreq.fields.test_count]
+description = "Tests that verify this need: on a swreq, its verifying tests; on an arch or a req, those below it."
+schema = { type = "integer" }
+derive = { kind = "count", over = "verifies_back" }
+
+[needs.types.swreq.fields.impl_count]
+description = "Implementations of this software requirement."
+schema = { type = "integer" }
+derive = { kind = "count", over = "implements_back" }
+
+[needs.types.swreq.fields.all_tests_passed]
+description = "Every test verifying this software requirement passed its last recorded run."
+schema = { type = "boolean" }
+derive = { kind = "all", field = "all_passed", over = "verifies_back" }
 
 # The implementation-arm need: an implementation element authored as a real need via
 # a one-line codelinks marker in production source. It `implements` the `swreq` it
@@ -387,6 +433,17 @@ prefix = "TEST_"
 color="#BBF7D0"
 style="hexagon"
 
+[needs.types.test.fields.chain_reqs]
+derive = { kind = "collect", field = "chain_reqs", over = "verifies" }
+
+# Every recorded result of this test passed (`true` when it has none yet). Read
+# over `results_for_back`: `over` names a link type or its back links, not the
+# `incoming` label (`results`), which both tools refuse there.
+[needs.types.test.fields.all_passed]
+description = "Every recorded result of this test passed; true when it has none."
+schema = { type = "boolean" }
+derive = { kind = "all", test = "outcome == 'passed'", over = "results_for_back" }
+
 # The EXECUTION-EVIDENCE need: the recorded outcome of ONE test case in ONE test
 # run, imported from a JUnit XML report rather than authored by hand. It is
 # deliberately a separate type from `test`: a `test` need is the test case that
@@ -404,9 +461,10 @@ prefix = "TRES_"
 color="#4ADE80"
 style="database"
 
-# The four fields of the execution evidence, on `test_result` alone and REQUIRED
+# The three fields of the execution evidence, on `test_result` alone and REQUIRED
 # there: `tools/import_test_results.py` stamps every one on every generated result,
-# so a result missing one is a half-written import and is not created.
+# so a result missing one is a half-written import and is not created. Its
+# `chain_reqs` is derived (below), not stamped.
 #
 # The four words are exactly OUTCOME_BY_TAG plus the `passed` default in
 # tools/import_test_results.py. `outcome` is the one worth filtering on
@@ -432,16 +490,8 @@ description = "Identifier of the test run the outcome came from: the report's ti
 schema = { type = "string", pattern = "^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}" }
 nullable = false
 
-# The chain roll-up: the system requirements this result is evidence for, resolved
-# through `test -> swreq -> arch -> req` by the importer. It exists because a plain
-# REPORT TEMPLATE CANNOT WALK LINKS — `ubc report` gives a template each need's
-# scalar fields only — so stamping the resolved chain on the result is what lets
-# `reports/traceability_coverage.html.j2` read it. A list of ids whose length varies,
-# so the only statement about it is that it is a non-empty string.
 [needs.types.test_result.fields.chain_reqs]
-description = "System requirement ids this test result is evidence for, via test -> swreq -> arch -> req."
-schema = { type = "string", minLength = 1 }
-nullable = false
+derive = { kind = "collect", field = "chain_reqs", over = "results_for" }
 
 [needs.types.risk]
 title = "Risk"
@@ -491,12 +541,13 @@ prefix = "GAP_"
 color="#EF4444"
 style="rectangle"
 
-# The five fields of one `ubc agent gaps` record, on `gap` alone, stamped by
-# `tools/import_gaps.py`. They are FIELDS and not just the `gap_for` link for the
-# same reason `chain_reqs` is: a plain report template cannot walk links, so the
-# link and `gap_need_id` carry one fact for two consumers. `gap_category`,
-# `gap_need_id` and `gap_need_type` are on every record and REQUIRED; `gap_link`
-# and `gap_shortfall` are absent from a record that carries no link (an `orphan`).
+# The fields of one `ubc agent gaps` record, on `gap` alone. The gate's own
+# findings — `gap_category` (on every record, REQUIRED), `gap_link` and
+# `gap_shortfall` (absent from a record that carries no link, an `orphan`) — are
+# stamped by `tools/import_gaps.py`. `gap_need_id` and `gap_need_type` are DERIVED
+# from the `gap_for` link: a plain report template cannot walk links, so the
+# link's target id and type are copied onto the gap, by both tools, from the
+# link alone.
 
 # NO ENUM HERE, the one deliberate omission. The categories are known (the seven
 # the 0.34 engine emits plus `change_incomplete` from `ubc agent change`;
@@ -533,32 +584,15 @@ schema = { type = "string", enum = [
 description = "How far short the need fell, as a label: \"<have> of <need>\" links present."
 schema = { type = "string", pattern = "^[0-9]+ of [0-9]+$" }
 
-# The project's own `id_regex`, so a malformed id cannot reach a report template
-# through this field even though it arrives as a plain string rather than a link.
 [needs.types.gap.fields.gap_need_id]
-description = "Id of the need the gap is attributed to — the same fact as the `gap_for` link, as a field a report template can read."
-schema = { type = "string", pattern = "^([A-Z]+_[A-Z][A-Z0-9_]*|CR_[0-9]{8}_[0-9A-F]{4})$" }
-nullable = false
+description = "Id of the need the gap is attributed to, copied from its `gap_for` link."
+schema = { type = "string" }
+derive = { kind = "copy", field = "id", over = "gap_for" }
 
-# The eleven need types of this file. Adding a type means adding it here — the
-# duplication is the price of letting a report group gaps by V-model level from a
-# plain field.
 [needs.types.gap.fields.gap_need_type]
-description = "Type of the need the gap is attributed to (req, swreq, arch, ...), so a report can group gaps by V-model level."
-schema = { type = "string", enum = [
-  "user_story",
-  "req",
-  "arch",
-  "swreq",
-  "impl",
-  "test",
-  "test_result",
-  "risk",
-  "decision",
-  "gap",
-  "change_request",
-] }
-nullable = false
+description = "Type of the need the gap is attributed to, copied from its `gap_for` link, so a report can group gaps by V-model level."
+schema = { type = "string" }
+derive = { kind = "copy", field = "type", over = "gap_for" }
 
 # The CHANGE-REQUEST need: one proposed change to the graph. `ubc agent change plan`
 # drafts it from the impact analysis of the need the change is aimed at and writes

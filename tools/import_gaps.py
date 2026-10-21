@@ -317,8 +317,6 @@ def render(gaps: list[Gap], by_category: dict[str, int], report: Path) -> str:
         if gap.shortfall and counts_links:
             lines.append(f"   :gap_shortfall: {gap.shortfall}")
         lines += [
-            f"   :gap_need_id: {gap.need_id}",
-            f"   :gap_need_type: {gap.need_type}",
             # sphinx-needs CSS class, NOT the graphviz shape (that is `style` on the
             # type in ubproject.toml). It paints the need's own rendered block red.
             "   :style: red_bar",

@@ -12,10 +12,10 @@
     `results_for`, …) is absent. Reading `n.verifies` yields undefined, and the
     usual `(n.verifies or [])` guard turns that into an empty list — so a
     link-based coverage report renders clean and reports 0 % everywhere.
-    This template therefore reads the `chain_reqs` extra field that
-    `tools/import_test_results.py` stamps on every generated `test_result`: the
-    requirement ids that result is evidence for, already resolved through
-    `test -> swreq -> arch -> req`. Fields are visible to a template; links are not.
+    This template therefore reads the `chain_reqs` field of every `test_result`:
+    the requirement ids that result is evidence for, a DERIVED field both tools
+    compute from the links (`test -> swreq -> arch -> req`, see ubproject.toml).
+    Fields are visible to a template; links are not.
 
     Script-free by design — pure inline SVG with native <title> tooltips — so it
     renders identically in the editor preview, a browser, and print.
@@ -30,7 +30,7 @@
     evidence for either reason, which is why both halves are here.
     The gap half reads the `gap_*` fields for the same reason the evidence half
     reads `chain_reqs`: a template can read fields but cannot follow the `gap_for`
-    link.
+    link (`gap_need_id` and `gap_need_type` are derived from it).
 
     Colour: the three requirement states, the two test outcomes and the gap rows are
     STATUS, not categories, so they use a fixed status palette and are never themed.
@@ -151,7 +151,7 @@
 {% for r in reqs %}
   {% set row = namespace(passed=0, failed=0, failing_ids=[]) %}
   {% for t in results %}
-    {% if r.id in (t.chain_reqs | default('') | split(', ') | list) %}
+    {% if r.id in (t.chain_reqs or []) %}
       {% if t.outcome == 'passed' %}
         {% set row.passed = row.passed + 1 %}
       {% else %}
@@ -350,9 +350,9 @@
   <dd>
     A recorded test outcome reaches the requirement through
     <span class="chain">req &larr;satisfies&mdash; arch &larr;refines&mdash; swreq &larr;verifies&mdash; test &larr;results_for&mdash; test_result</span>.
-    That chain is resolved by <code>tools/import_test_results.py</code> and stamped on
-    each <code>test_result</code> as its <code>chain_reqs</code> field, because a report
-    template can read fields but cannot follow links.
+    That chain is derived from the links and held on each <code>test_result</code> as
+    its <code>chain_reqs</code> field, because a report template can read fields but
+    cannot follow links.
   </dd>
   <dt>Why “no test evidence” merges two cases</dt>
   <dd>

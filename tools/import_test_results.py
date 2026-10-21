@@ -36,18 +36,7 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_REPORT = REPO_ROOT / "docs" / "reports" / "junit" / "testresults.xml"
 DEFAULT_TESTS_DIR = REPO_ROOT / "tests"
-DEFAULT_SPECS_DIR = REPO_ROOT / "docs" / "specs"
 DEFAULT_OUTPUT = REPO_ROOT / "docs" / "specs" / "_global" / "test_results.rst"
-
-#: Directive id line and the two upward link fields the roll-up walks, as they
-#: appear in the spec sources. Parsed from source rather than from `needs.json` so
-#: the import never depends on a build having already run. Two directive
-#: spellings: the RST `.. swreq::` and the MyST fence ```{swreq} used by the
-#: Markdown-authored `specs/isolation-monitoring/` stream; the field lines are
-#: the same in both, indented in RST and at column 0 in Markdown.
-RST_DIRECTIVE = re.compile(r"^\.\.\s+(?P<type>[a-z_]+)::")
-MD_DIRECTIVE = re.compile(r"^\s*(?:`{3,}|:{3,})\{(?P<type>[a-z_]+)\}")
-RST_FIELD = re.compile(r"^\s*:(?P<name>id|refines|satisfies):\s*(?P<value>.+?)\s*$")
 
 #: The one-line codelinks marker grammar declared in `[codelinks.projects.tests]`:
 #: title, id, the `verifies` list — and the type LAST, defaulted to `test`, so the
@@ -84,62 +73,6 @@ class Outcome:
     outcome: str
     runtime_s: str
     message: str
-    chain_reqs: tuple[str, ...] = ()
-
-
-def collect_spec_links(specs_dir: Path) -> dict[str, list[str]]:
-    """Read `:refines:` / `:satisfies:` off the spec directives.
-
-    Returns one flat ``need id -> parent ids`` map. Both fields are upward links
-    and no id is ever both a swreq and an arch, so one map is enough to walk
-    ``swreq -> arch -> req`` without tracking which rung a hop is on.
-    """
-    parents: dict[str, list[str]] = {}
-    for source in sorted([*specs_dir.rglob("*.rst"), *specs_dir.rglob("*.md")]):
-        current_id: str | None = None
-        pending: list[str] = []
-        for line in source.read_text().splitlines():
-            if RST_DIRECTIVE.match(line) or MD_DIRECTIVE.match(line):
-                current_id, pending = None, []
-                continue
-            field = RST_FIELD.match(line)
-            if field is None:
-                continue
-            name, value = field.group("name"), field.group("value")
-            if name == "id":
-                current_id = value
-                if pending:
-                    parents.setdefault(current_id, []).extend(pending)
-                    pending = []
-            else:
-                targets = [t.strip() for t in value.split(",") if t.strip()]
-                if current_id is None:
-                    pending.extend(targets)  # link listed above the :id: line
-                else:
-                    parents.setdefault(current_id, []).extend(targets)
-    return parents
-
-
-def resolve_chain_reqs(swreq_ids: list[str], parents: dict[str, list[str]]) -> tuple[str, ...]:
-    """Walk `swreq -> arch -> req` and return the requirement ids reached.
-
-    Only ids with the `REQ_` prefix are returned: the walk is bounded by the
-    project's id convention rather than by a hop count, so an extra rung inserted
-    between arch and req would still resolve.
-    """
-    reached: set[str] = set()
-    seen: set[str] = set()
-    frontier = list(swreq_ids)
-    while frontier:
-        current = frontier.pop()
-        if current in seen:
-            continue
-        seen.add(current)
-        if current.startswith("REQ_"):
-            reached.add(current)
-            continue
-        frontier.extend(parents.get(current, []))
-    return tuple(sorted(reached))
 
 
 def collect_test_needs(tests_dir: Path) -> dict[tuple[str, str], TestNeed]:
@@ -199,7 +132,6 @@ def classify(case: ET.Element) -> tuple[str, str]:
 def join(
     cases: list[ET.Element],
     needs: dict[tuple[str, str], TestNeed],
-    parents: dict[str, list[str]],
 ) -> tuple[list[Outcome], list[str]]:
     """Join report cases onto `test` needs, collecting the unresolvable ones."""
     joined: list[Outcome] = []
@@ -211,14 +143,12 @@ def join(
             unmapped.append(f"{key[0]}::{key[1]}")
             continue
         outcome, message = classify(case)
-        swreq_ids = [t.strip() for t in need.verifies.split(",") if t.strip()]
         joined.append(
             Outcome(
                 need=need,
                 outcome=outcome,
                 runtime_s=case.get("time", "0.000"),
                 message=message,
-                chain_reqs=resolve_chain_reqs(swreq_ids, parents),
             )
         )
     return joined, unmapped
@@ -304,7 +234,6 @@ def render(suite: dict[str, str], joined: list[Outcome], report: Path) -> str:
             f"   :outcome: {item.outcome}",
             f"   :runtime_s: {item.runtime_s}",
             f"   :test_run_label: {run_id}",
-            f"   :chain_reqs: {', '.join(item.chain_reqs)}",
             "",
             f"   ``{need.path}::{need.function}`` recorded ``{item.outcome}`` in "
             f"{item.runtime_s} s.",
@@ -320,7 +249,6 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--report", type=Path, default=DEFAULT_REPORT)
     parser.add_argument("--tests-dir", type=Path, default=DEFAULT_TESTS_DIR)
-    parser.add_argument("--specs-dir", type=Path, default=DEFAULT_SPECS_DIR)
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument(
         "--check",
@@ -334,9 +262,8 @@ def main() -> int:
         return 2
 
     needs = collect_test_needs(args.tests_dir)
-    parents = collect_spec_links(args.specs_dir)
     suite, cases = read_report(args.report)
-    joined, unmapped = join(cases, needs, parents)
+    joined, unmapped = join(cases, needs)
 
     if unmapped:
         print(

@@ -19,17 +19,18 @@ An ASIL C or D requirement that no test reaches is the safety case's first hole.
 The tests hang three levels down (``test -> swreq -> arch -> req``), so this is a
 question about a path, not about one need.
 
-Filter string — one level down only: a requirement with nothing below it at all,
-read from the union's back links. ``ubc query filter`` refuses it: back links are
-resolved only in view directives there.
+Filter string — exact, because the path is already a field: ``test_count`` is
+derived on every rung (a swreq counts the tests that verify it, an arch sums its
+swreqs, a req its archs), so the three-level question reads one value. ``ubc query
+filter`` answers the same string.
 
 .. code-block:: text
 
-   type == 'req' and asil in ['C', 'D'] and len(trace_up_back) == 0
+   type == 'req' and asil in ['C', 'D'] and test_count == 0
 
 .. needtable::
-   :filter: type == 'req' and asil in ['C', 'D'] and len(trace_up_back) == 0
-   :columns: id;title;asil;trace_up_back
+   :filter: type == 'req' and asil in ['C', 'D'] and test_count == 0
+   :columns: id;title;asil;test_count
    :style: table
 
 Cypher — the whole path, over the union:
@@ -81,7 +82,8 @@ it one comparison.
 Failed test results and the requirements they are evidence for
 ---------------------------------------------------------------
 
-Filter string — the results, with the requirements each one's chain reaches:
+Filter string — the results, with the requirements each one's chain reaches
+(``chain_reqs``, derived from the links):
 
 .. code-block:: text
 
@@ -103,6 +105,20 @@ Cypher — the same chain walked in the query rather than read from a stamped fi
 
 Two failures reach four requirements: ``TRES_IMBALANCE_WARNING`` reaches three
 through one architecture element.
+
+One level down, the same verdict is a field of the software requirement:
+``all_tests_passed`` (every test verifying it passed its last run), derived from
+``all_passed`` on each test, and ``test_count``. Unverified or failing, in one
+filter:
+
+.. code-block:: text
+
+   type == 'swreq' and (test_count == 0 or not all_tests_passed)
+
+.. needtable::
+   :filter: type == 'swreq' and (test_count == 0 or not all_tests_passed)
+   :columns: id;title;test_count;impl_count;all_tests_passed
+   :style: table
 
 .. needflow:: One failure, followed up the V
    :root_id: TRES_IMBALANCE_WARNING
