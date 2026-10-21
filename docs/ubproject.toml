@@ -709,6 +709,25 @@ schema = { minItems = 1, maxItems = 1 }
 incoming = "motivated_by"
 outgoing = "motivates"
 
+# --- DERIVED: the upward chain as ONE link type ---
+# `trace_up` holds every link a need has UP the V — the union of the six chain
+# links, in V order — so a `needflow`, a `needtable` column, a filter or a Cypher
+# path follows "up" by one name instead of six, and `trace_up_back` is the view
+# down from a need. Derived: no author writes it (a value written is ignored and
+# reported), both tools compute it from the six members. `mitigates`, `affects` and
+# `gap_for` are not in it: a risk, a decision or a gap is ABOUT a need, not below it.
+[needs.links.trace_up]
+incoming = "traced up from"
+outgoing = "traces up to"
+derive = { kind = "union", fields = [
+  "traces_to",
+  "satisfies",
+  "refines",
+  "implements",
+  "verifies",
+  "results_for",
+] }
+
 # --- CHANGE REQUESTS: the fields and links a change request carries ---
 # Written by `ubc agent change`, never authored by hand except where the assessment
 # rules on the impact. `[needs.fields]` and `[needs.links]` are project-global, so

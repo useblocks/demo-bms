@@ -66,6 +66,7 @@ project was authored.
    :caption: Cross-cutting
 
    specs/_global/traceability
+   specs/_global/queries
    specs/_global/decisions
    specs/_global/risks
    specs/_global/test_results
