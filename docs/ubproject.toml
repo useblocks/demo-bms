@@ -137,21 +137,16 @@ id_regex = "^([A-Z]+_[A-Z][A-Z0-9_]*|CR_[0-9]{8}_[0-9A-F]{4})$"
 flow_engine = "graphviz"
 
 # --- ONTOLOGY SCHEMA ---
-# The structural rules the graph must hold to, checked by `ubc schema validate` and
-# by the sphinx-needs build. JSON carries no comments, so each rule in `schemas.json`
-# states its own rationale in its `message`, and the file's `$defs._readme` carries
-# the derivation.
-#
-# Two sources, two severities, and the split is deliberate:
-#
-# - `violation` for what THIS FILE ALREADY DECLARES — every `[[workflow.stages.trace]]`
-#   edge (link / direction / min / up) and every `[needs.types.<directive>]` prefix. These are
-#   obligations the project has committed to, so breaking one is an error, and the
-#   schema is only restating them where a build can enforce them per-need.
-# - `warning` for what the graph merely SHOWS — conventions that hold unanimously
-#   across all 194 needs but that no config declares (single-parent cardinality).
-#   Hard-failing a build on a rule the project never wrote down would turn an
-#   observation into a law by accident.
+# What a need type's own entry cannot declare, checked by `ubc schema validate` and
+# by the sphinx-needs build. Each type's fields and outgoing links — vocabularies,
+# patterns, required fields, target types, link counts — are DECLARATIONS under
+# NEED TYPES and LINKS below, checked by both tools from this file alone. What is
+# left for `schemas.json` is: each type's id prefix (`id-prefix-*`, violation;
+# `id` is not a field an entry may declare), the five INCOMING obligations
+# (`coverage-*-back`, warning; an entry on a back link is refused), the `gap`
+# category vocabulary at warning severity, and ASIL presence on `req` at warning
+# severity. JSON carries no comments, so each rule states its rationale in its
+# `message`, and the file's `$defs._readme` carries the derivation.
 #
 # THE FIVE `coverage-*-back` RULES ARE WARNINGS, AND A WARNING IS NOT FREE. Each
 # asserts an INCOMING link and is therefore owed by a stage that runs LATER than the
@@ -581,73 +576,120 @@ color="#5EEAD4"
 style="artifact"
 
 # --- LINKS ---
-# Declare every link the [workflow] trace edges reference here.
+# Each link type has one table here, `[needs.links.<name>]`, with its labels; and
+# the need type that WRITES it narrows it in its own entry,
+# `[needs.types.<type>.links.<name>]`: the type its links may point to
+# (`target_types`) and how many a need holds (`minItems` / `maxItems`). A link to
+# a need of the wrong type is a `needs.link_target_type` warning at the line that
+# writes it; a count out of range is a schema violation.
+#
+# `minItems = 1` is the forward half of each `[[workflow.stages.trace]]` edge below
+# (`min = 1`, `up = <the target type>`); both stay, because the trace edge is the
+# agent workflow's (it names the stage that owes the link) and the declaration is
+# what a build checks per need. `maxItems = 1` is the single parent the graph has
+# always had (one story per req, one arch per swreq, one swreq per impl and per
+# test, one test per result, one need per gap): declared, it is a violation where
+# schemas.json used to report it as a warning, and a gate fails either way —
+# `ubc check` exits 1 on a warning and `-W` turns one into an error.
+#
+# WHY NOT ON THE TYPE ALONE. Both tools also take a link type declared on need
+# types alone (labels in the type's entry, no `[needs.links]` table), which would
+# additionally refuse the link on every other type. `ubc agent config-validate`
+# does not see such a link type yet and reports every trace edge naming one as
+# `undeclared_link`, so the link types keep their `[needs.links]` tables.
+#
+# What a declaration cannot say stays in schemas.json: the INCOMING obligations
+# (`coverage-*-back`; an entry on a back link such as `traces_to_back` is refused
+# by both tools) and each type's id prefix (`id-prefix-*`; `id` is not a field a
+# need type's entry may declare).
 
 [needs.links.traces_to]
 incoming = "traces_from"
 outgoing = "traces_to"
 
+[needs.types.req.links.traces_to]
+target_types = ["user_story"]
+schema = { minItems = 1, maxItems = 1 }
+
 [needs.links.satisfies]
 incoming = "satisfied_by"
 outgoing = "satisfies"
 
-# The software-requirement link: a `swreq` need's outgoing `refines` points at the
-# `arch` element whose behaviour it pins down. Deliberately NOT a second use of
-# `satisfies`: one link name per level keeps a trace query unambiguous about which
-# rung of the V it is walking.
+[needs.types.arch.links.satisfies]
+target_types = ["req"]
+schema = { minItems = 1 }
+
+# The software-requirement link: a `swreq` need's outgoing `refines` points at THE
+# `arch` element whose behaviour it pins down — one. Deliberately NOT a second use
+# of `satisfies`: one link name per level keeps a trace query unambiguous about
+# which rung of the V it is walking.
 [needs.links.refines]
 incoming = "refined_by"
 outgoing = "refines"
 
-# The implementation link: an `impl` need's outgoing `implements` points at the `swreq`
-# it realises; the swreq's incoming `implements_back` is what the `code` stage's trace
-# edge counts. Declared here so `ubc build` emits the field and the one-line marker's
-# `implements` list-field resolves to a real link (an undeclared link is silently
-# ignored at runtime).
+[needs.types.swreq.links.refines]
+target_types = ["arch"]
+schema = { minItems = 1, maxItems = 1 }
+
+# The implementation link: an `impl` need's outgoing `implements` points at the
+# `swreq` it realises; the swreq's incoming `implements_back` is what the `code`
+# stage's trace edge counts. Declared here so the one-line marker's `implements`
+# list-field resolves to a real link.
 [needs.links.implements]
 incoming = "implements_back"
 outgoing = "implements"
 
+[needs.types.impl.links.implements]
+target_types = ["swreq"]
+schema = { minItems = 1, maxItems = 1 }
+
 # The verification link: a `test` need's outgoing `verifies` points at the `swreq`
 # it covers; the swreq's incoming `verifies_back` is what the `tests` stage's trace
-# edge counts. Declared here so `ubc build` emits the field and the one-line marker's
-# `verifies` list-field resolves to a real link (an undeclared link is silently
-# ignored at runtime).
+# edge counts. Declared here so the one-line marker's `verifies` list-field
+# resolves to a real link.
 [needs.links.verifies]
 incoming = "verifies_back"
 outgoing = "verifies"
 
+[needs.types.test.links.verifies]
+target_types = ["swreq"]
+schema = { minItems = 1, maxItems = 1 }
+
 # The execution-evidence link: a `test_result` need's outgoing `results_for`
-# points at the `test` need whose run it records; the test's incoming `results`
-# is how a query gets from a test case to its last recorded outcome. The
-# `test_results` stage's trace edge names it, so this is the field the import
-# writes on every generated need.
+# points at the ONE `test` need whose run it records — a second target would make
+# the evidence unattributable; the test's incoming `results` is how a query gets
+# from a test case to its last recorded outcome.
 [needs.links.results_for]
 incoming = "results"
 outgoing = "results_for"
 
-# The decision link: a `decision` need's outgoing `affects` points at the `arch` it
-# constrains. The `decisions` stage's trace edge names it, so this is the field the
-# authoring prompt orders on that stage.
-[needs.links.affects]
-incoming = "affected_by"
-outgoing = "affects"
-
-[needs.links.motivates]
-incoming = "motivated_by"
-outgoing = "motivates"
+[needs.types.test_result.links.results_for]
+target_types = ["test"]
+schema = { minItems = 1, maxItems = 1 }
 
 # The risk link: a `risk` need's outgoing `mitigates` points at the `req` it bears on.
-# The `risks` stage's trace edge names it, so this is the field the authoring prompt
-# orders on that stage.
 [needs.links.mitigates]
 incoming = "mitigated_by"
 outgoing = "mitigates"
 
-# The gap link: a `gap` need's outgoing `gap_for` points at the need the gate
-# attributed the gap to, and that need's incoming `gaps` is what puts a red node
-# next to it in every `needflow` on `traceability.rst` and a non-empty `gaps` cell
-# in every level table.
+[needs.types.risk.links.mitigates]
+target_types = ["req"]
+schema = { minItems = 1 }
+
+# The decision link: a `decision` need's outgoing `affects` points at the `arch` it
+# constrains.
+[needs.links.affects]
+incoming = "affected_by"
+outgoing = "affects"
+
+[needs.types.decision.links.affects]
+target_types = ["arch"]
+schema = { minItems = 1 }
+
+# The gap link: a `gap` need's outgoing `gap_for` points at the ONE need the gate
+# attributed the gap to — of any type, so no `target_types` — and that need's
+# incoming `gaps` is what puts a red node next to it in every `needflow` on
+# `traceability.rst` and a non-empty `gaps` cell in every level table.
 #
 # It is deliberately NOT named in any `[[workflow.stages.trace]]` edge. A trace edge
 # is an OBLIGATION the gate counts, and an obligation to carry a gap is nonsense: it
@@ -657,6 +699,15 @@ outgoing = "mitigates"
 [needs.links.gap_for]
 incoming = "gaps"
 outgoing = "gap_for"
+
+[needs.types.gap.links.gap_for]
+schema = { minItems = 1, maxItems = 1 }
+
+# WRITTEN BY NO NEED. No spec, marker, importer or skill in this repository sets
+# `motivates`, so no type narrows it.
+[needs.links.motivates]
+incoming = "motivated_by"
+outgoing = "motivates"
 
 # --- CHANGE REQUESTS: the fields and links a change request carries ---
 # Written by `ubc agent change`, never authored by hand except where the assessment
