@@ -1,0 +1,352 @@
+{#- Program Health — the project-wide dashboard, for the chief engineer and the
+    release manager.
+
+    It answers one question: "can this graph be released?" — and then shows the
+    evidence for the answer. It is declared with input = "none", so it is not
+    offered on a single need; render it with `ubc report program_health`.
+
+    The page has four movements:
+      * the release gate — a GO / NO-GO verdict and the checklist behind it;
+      * the V-model funnel — how many needs stand on each rung;
+      * safety and evidence — requirements by ASIL and evidence state, the
+        recorded failures with the whole chain each one reaches, the risks and
+        the structural gaps;
+      * the variant the index was built for.
+
+    Every number is a Cypher aggregation over the needs graph; none of it is a
+    field someone had to stamp. Declared in ubproject.toml as
+    [reports.dashboards.program_health] (input = "none"). Script-free and themed
+    with theme_style()'s --ub-* tokens. -#}
+{% set rungs = queries.rungs %}
+{% set sc = queries.swreq | first %}
+{% set reqs = queries.reqs %}
+{% set risks = queries.risks %}
+{% set gaps = queries.gaps %}
+{% set failing = queries.failing %}
+{% set variant = queries.variant %}
+{% set needs_total = rungs | map(attribute='n') | sum %}
+{% set no_evidence = reqs | selectattr('results', 'equalto', 0) | list %}
+{% set unmitigated = risks | selectattr('mitigations', 'equalto', 0) | list %}
+{#- Distinct failing results, not rows: one failing operator reaches one
+    requirement per chain branch, and the release decision is about operators. -#}
+{% set failing_results = failing | map(attribute='result') | unique | list %}
+
+{#- ── The release gate ────────────────────────────────────────────────────── -#}
+{% set gates = namespace(list=[]) %}
+{% set gates.list = gates.list + [{'label': 'Software requirements implemented',
+  'ok': sc.implemented == sc.total,
+  'detail': sc.implemented ~ ' of ' ~ sc.total ~ ' carry an incoming implements link'}] %}
+{% set gates.list = gates.list + [{'label': 'Software requirements verified',
+  'ok': sc.verified == sc.total,
+  'detail': sc.verified ~ ' of ' ~ sc.total ~ ' carry an incoming verifies link'}] %}
+{% set gates.list = gates.list + [{'label': 'Requirements have recorded evidence',
+  'ok': no_evidence | length == 0,
+  'detail': (no_evidence | length ~ ' requirement(s) with no recorded test outcome') if no_evidence else 'every requirement is reached by a recorded outcome'}] %}
+{% set gates.list = gates.list + [{'label': 'No failing recorded outcomes',
+  'ok': failing_results | length == 0,
+  'detail': (failing_results | length ~ ' failing result(s) reach ' ~ (failing | length) ~ ' requirement chain(s)') if failing_results else 'every recorded outcome passed'}] %}
+{% set gates.list = gates.list + [{'label': 'No open structural gaps',
+  'ok': gaps | length == 0,
+  'detail': (gaps | length ~ ' gap(s) from the last gate run') if gaps else 'the structural gate is clean'}] %}
+{% set gates.list = gates.list + [{'label': 'Every risk mitigates a requirement',
+  'ok': unmitigated | length == 0,
+  'detail': (unmitigated | length ~ ' risk(s) name no requirement') if unmitigated else 'every risk has a mitigation target'}] %}
+{% set blockers = gates.list | rejectattr('ok') | list %}
+{% set go = blockers | length == 0 %}
+{% set vcolor = 'var(--ub-ok)' if go else 'var(--ub-error)' %}
+
+{% set asil_order = ['D', 'C', 'B', 'A', 'QM', ''] %}
+{% set asil_color = {'QM': '#64748b', 'A': '#ca8a04', 'B': '#ea580c', 'C': '#dc2626', 'D': '#991b1b'} %}
+{% set rung_order = [
+  {'type': 'user_story', 'label': 'User stories'},
+  {'type': 'req', 'label': 'Requirements'},
+  {'type': 'arch', 'label': 'Architecture'},
+  {'type': 'swreq', 'label': 'Software requirements'},
+  {'type': 'impl', 'label': 'Implementations'},
+  {'type': 'test', 'label': 'Tests'},
+  {'type': 'test_result', 'label': 'Test results'}
+] %}
+{% set max_rung = rungs | map(attribute='n') | max %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ dashboard.title }}</title>
+  <style>
+    {{ theme_style() }}
+    /* The verdict accent. Set on :root, not on <body>: the editor panel
+       injects the rendered document with innerHTML, which drops body
+       attributes, so a body-level custom property never reaches the CSS. */
+    :root { --vc: {{ vcolor }}; }
+    * { box-sizing: border-box; }
+    body { font-family: var(--ub-font); color: var(--ub-fg); background: var(--ub-bg);
+           max-width: 1040px; margin: 0 auto; padding: 2rem 1rem 4rem; line-height: 1.5; }
+    h1 { font-size: 1.5rem; margin: 0; }
+    h2 { font-size: 1.05rem; margin: 2.4rem 0 .6rem; border-bottom: 1px solid var(--ub-border); padding-bottom: .35rem; }
+    a { color: var(--ub-accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .muted { color: var(--ub-muted); }
+    .mono { font-family: var(--ub-font-mono); }
+    .sub { color: var(--ub-muted); font-size: .85rem; margin: .3rem 0 0; }
+    .badge { display: inline-block; padding: .1rem .55rem; border-radius: 999px; font-size: .78rem;
+             font-weight: 700; letter-spacing: .03em; color: #fff; vertical-align: middle; }
+    .badge.plain { background: var(--ub-surface); color: var(--ub-fg); border: 1px solid var(--ub-border); font-weight: 600; }
+
+    /* The verdict: the whole page in one card. */
+    .verdict { margin: 1.4rem 0 0; border: 1px solid var(--ub-border); border-left: 6px solid var(--vc);
+               border-radius: 10px; padding: 1rem 1.2rem; background: var(--ub-surface); }
+    .verdict .label { font-size: 1.6rem; font-weight: 800; color: var(--vc); margin: 0; letter-spacing: .02em; }
+    .verdict .note { margin: .25rem 0 0; color: var(--ub-muted); font-size: .92rem; }
+    .verdict ul { margin: .5rem 0 0; padding-left: 1.1rem; font-size: .88rem; }
+    .verdict li { color: var(--ub-error); }
+
+    .tiles { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 1.4rem; }
+    .tile { flex: 1 1 160px; border: 1px solid var(--ub-border); border-radius: 10px; padding: .8rem 1rem; }
+    .tile .k { font-size: .7rem; color: var(--ub-muted); text-transform: uppercase; letter-spacing: .06em; margin: 0; }
+    .tile .v { font-size: 1.7rem; font-weight: 700; line-height: 1.15; margin: .2rem 0 0; }
+    .tile .n { font-size: .78rem; color: var(--ub-muted); margin: .15rem 0 0; }
+    .tile.alert { border-color: var(--ub-error); }
+    .tile.alert .v { color: var(--ub-error); }
+
+    /* Funnel rows: label | bar | count. */
+    .funnel { margin-top: .4rem; }
+    .funnel .row { display: grid; grid-template-columns: 12rem 1fr 3rem; gap: .6rem; align-items: center; padding: .22rem 0; }
+    .funnel .name { font-size: .86rem; }
+    .funnel .track { background: var(--ub-surface); border: 1px solid var(--ub-border); border-radius: 5px; height: 1.05rem; overflow: hidden; }
+    .funnel .fill { height: 100%; background: var(--ub-accent); border-radius: 4px 0 0 4px; }
+    .funnel .n { text-align: right; font-variant-numeric: tabular-nums; font-weight: 650; font-size: .88rem; }
+
+    /* Gate checklist. */
+    ul.gates { list-style: none; padding: 0; margin: .6rem 0 0; }
+    ul.gates li { display: grid; grid-template-columns: 1.3rem 1fr; gap: .5rem; padding: .45rem .1rem;
+                  border-bottom: 1px solid var(--ub-border); align-items: baseline; }
+    ul.gates .mark { font-weight: 800; }
+    ul.gates .mark.ok { color: var(--ub-ok); }
+    ul.gates .mark.no { color: var(--ub-error); }
+    ul.gates .detail { color: var(--ub-muted); font-size: .84rem; }
+
+    table { border-collapse: collapse; width: 100%; font-size: .85rem; }
+    th, td { border-bottom: 1px solid var(--ub-border); padding: .45rem .5rem; text-align: left; vertical-align: top; }
+    th { background: var(--ub-surface); font-weight: 650; white-space: nowrap; }
+    td.num { text-align: right; font-variant-numeric: tabular-nums; }
+    tr.bad td:first-child { border-left: 3px solid var(--ub-error); padding-left: .45rem; }
+
+    /* ASIL heat grid: one row per level, a bar of evidence state. */
+    .heat .row { display: grid; grid-template-columns: 4.5rem 1fr 10rem; gap: .7rem; align-items: center; padding: .3rem 0; }
+    .heat .level { font-weight: 700; }
+    .heat .bar { display: flex; height: 1.1rem; border-radius: 6px; overflow: hidden; border: 1px solid var(--ub-border); }
+    .heat .bar > span { display: block; height: 100%; }
+    .heat .bar .ok { background: var(--ub-ok); }
+    .heat .bar .fail { background: var(--ub-error); }
+    .heat .bar .none { background: var(--ub-warn); }
+    .heat .tally { font-size: .82rem; color: var(--ub-muted); text-align: right; }
+    .legend { display: flex; flex-wrap: wrap; gap: .35rem 1.2rem; margin: .6rem 0 0; font-size: .8rem; color: var(--ub-muted); }
+    .legend .sw { display: inline-block; width: .7rem; height: .7rem; border-radius: 2px; margin-right: .3rem; transform: translateY(1px); }
+  </style>
+</head>
+<body>
+  <h1>{{ dashboard.title }}</h1>
+  <p class="sub">
+    {{ needs_total }} needs across {{ rungs | length }} types
+    {% for v in variant %} · variant chemistry <span class="badge plain">{{ v.chemistry }}</span>{% endfor %}
+    {% if failing %} · test run <span class="mono">{{ needs_list | selectattr('type', 'equalto', 'test_result') | list | first | attr('test_run_label') }}</span>{% endif %}
+  </p>
+
+  <div class="verdict">
+    <p class="label">{{ 'GO' if go else 'NO-GO' }}</p>
+    <p class="note">
+      {% if go %}
+      All {{ gates.list | length }} release gates pass: every software requirement is
+      implemented and verified, every recorded outcome passed, and the structural gate is clean.
+      {% else %}
+      {{ blockers | length }} of {{ gates.list | length }} release gates fail. The blockers:
+      {% endif %}
+    </p>
+    {% if blockers %}
+    <ul>
+      {% for b in blockers %}<li><strong>{{ b.label }}</strong> — {{ b.detail }}</li>{% endfor %}
+    </ul>
+    {% endif %}
+  </div>
+
+  <div class="tiles">
+    <div class="tile">
+      <p class="k">Needs</p>
+      <p class="v">{{ needs_total }}</p>
+      <p class="n">in the indexed graph</p>
+    </div>
+    <div class="tile">
+      <p class="k">Requirements</p>
+      <p class="v">{{ reqs | length }}</p>
+      <p class="n">across {{ rungs | selectattr('type', 'equalto', 'user_story') | list | first | attr('n') }} user stories</p>
+    </div>
+    <div class="tile">
+      <p class="k">Swreq closure</p>
+      <p class="v">{{ (sc.complete / sc.total * 100) | round(0) | int }}<span style="font-size:1rem"> %</span></p>
+      <p class="n">{{ sc.complete }} of {{ sc.total }} implemented and verified</p>
+    </div>
+    <div class="tile{% if no_evidence | length %} alert{% endif %}">
+      <p class="k">No evidence</p>
+      <p class="v">{{ no_evidence | length }}</p>
+      <p class="n">requirement{{ 's' if no_evidence | length != 1 }} with no recorded outcome</p>
+    </div>
+    <div class="tile{% if failing_results | length %} alert{% endif %}">
+      <p class="k">Failing</p>
+      <p class="v">{{ failing_results | length }}</p>
+      <p class="n">failing result{{ 's' if failing_results | length != 1 }}, reaching {{ failing | length }} requirement chain{{ 's' if failing | length != 1 }}</p>
+    </div>
+    <div class="tile{% if gaps | length %} alert{% endif %}">
+      <p class="k">Structural gaps</p>
+      <p class="v">{{ gaps | length }}</p>
+      <p class="n">from the last gate run</p>
+    </div>
+  </div>
+
+  <h2>Release gate</h2>
+  <ul class="gates">
+    {% for g in gates.list %}
+    <li>
+      <span class="mark {{ 'ok' if g.ok else 'no' }}" aria-hidden="true">{{ '✓' if g.ok else '✕' }}</span>
+      <span><strong>{{ g.label }}</strong><br><span class="detail">{{ g.detail }}</span></span>
+    </li>
+    {% endfor %}
+  </ul>
+
+  <h2>The V-model, one rung at a time</h2>
+  <div class="funnel">
+    {% for r in rung_order %}
+      {% set row = rungs | selectattr('type', 'equalto', r.type) | list | first %}
+      {% set n = row.n if row else 0 %}
+      <div class="row">
+        <span class="name">{{ r.label }}</span>
+        <span class="track"><span class="fill" style="width: {{ (n / max_rung * 100) | round(1) }}%"></span></span>
+        <span class="n">{{ n }}</span>
+      </div>
+    {% endfor %}
+  </div>
+  <p class="sub">
+    {{ rungs | selectattr('type', 'equalto', 'decision') | list | first | attr('n') }} decisions ·
+    {{ risks | length }} risks ·
+    {{ gaps | length }} gaps sit beside the spine.
+  </p>
+
+  <h2>Safety integrity and evidence</h2>
+  <div class="heat">
+    {% for a in asil_order %}
+      {% set arows = reqs | selectattr('asil', 'equalto', a) | list %}
+      {% set ns = namespace(n_fail=0, n_none=0, n_ok=0) %}
+      {% for r in arows %}
+        {% if r.failing > 0 %}{% set ns.n_fail = ns.n_fail + 1 %}
+        {% elif r.results == 0 %}{% set ns.n_none = ns.n_none + 1 %}
+        {% else %}{% set ns.n_ok = ns.n_ok + 1 %}{% endif %}
+      {% endfor %}
+      {% if arows | length %}
+      <div class="row">
+        <span class="level" {% if a %}style="color: {{ asil_color[a] }}"{% endif %}>{{ 'ASIL ' ~ a if a else 'unrated' }}</span>
+        <span class="bar">
+          {% if ns.n_ok %}<span class="ok" style="flex: {{ ns.n_ok }}" title="{{ ns.n_ok }} passing"></span>{% endif %}
+          {% if ns.n_fail %}<span class="fail" style="flex: {{ ns.n_fail }}" title="{{ ns.n_fail }} failing"></span>{% endif %}
+          {% if ns.n_none %}<span class="none" style="flex: {{ ns.n_none }}" title="{{ ns.n_none }} with no evidence"></span>{% endif %}
+        </span>
+        <span class="tally">{{ arows | length }} req · {{ ns.n_ok }} ✓ · {{ ns.n_fail }} ✕ · {{ ns.n_none }} ◐</span>
+      </div>
+      {% endif %}
+    {% endfor %}
+  </div>
+  <p class="legend">
+    <span><span class="sw" style="background: var(--ub-ok)"></span>passing evidence</span>
+    <span><span class="sw" style="background: var(--ub-error)"></span>failing evidence</span>
+    <span><span class="sw" style="background: var(--ub-warn)"></span>no recorded evidence</span>
+  </p>
+  <table>
+    <thead><tr><th>ASIL</th><th>Requirement</th><th class="num">Results</th><th>State</th></tr></thead>
+    <tbody>
+      {% for r in reqs %}
+      <tr{% if r.failing > 0 %} class="bad"{% endif %}>
+        <td>{% if r.asil %}<span class="badge" style="background: {{ asil_color[r.asil] }}">{{ r.asil }}</span>{% else %}<span class="muted">—</span>{% endif %}</td>
+        <td><a class="mono" href="{{ need_url(r.id) }}">{{ r.id }}</a><br><span class="muted">{{ r.title }}</span></td>
+        <td class="num">{{ r.results }}</td>
+        <td style="white-space: nowrap; font-weight: 650; color: {{ 'var(--ub-error)' if r.failing else ('var(--ub-ok)' if r.results else 'var(--ub-warn)') }}">
+          {% if r.failing %}✕ failing{% elif r.results %}✓ passing{% else %}◐ no evidence{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h2>Failing evidence <span class="muted">— every chain one non-passing operator reaches</span></h2>
+  {% if failing %}
+  <table>
+    <thead><tr><th>Result</th><th>Test</th><th>Software requirement</th><th>Requirements reached</th></tr></thead>
+    <tbody>
+      {% for result, rows in failing | groupby('result') %}
+      {% set first = rows | first %}
+      <tr class="bad">
+        <td><a class="mono" href="{{ need_url(result) }}">{{ result }}</a><br><span style="color: var(--ub-error); font-weight: 650">✕ {{ first.outcome }}</span></td>
+        <td><a class="mono" href="{{ need_url(first.test) }}">{{ first.test }}</a></td>
+        <td><a class="mono" href="{{ need_url(first.swreq) }}">{{ first.swreq }}</a></td>
+        <td>
+          {% for r in rows %}
+            <a class="mono" href="{{ need_url(r.req) }}">{{ r.req }}</a>
+            <span class="muted">({{ r.story }})</span>{% if not loop.last %}<br>{% endif %}
+          {% endfor %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p class="sub">
+    The same failing operator reaches more than one requirement when its test's
+    software requirement refines an architecture element that several
+    requirements share. That fan-out is the release risk.
+  </p>
+  {% else %}
+  <p class="muted">No non-passing recorded outcome in the index.</p>
+  {% endif %}
+
+  <h2>Risks</h2>
+  <table>
+    <thead><tr><th>Risk</th><th class="num">Mitigations</th><th>State</th></tr></thead>
+    <tbody>
+      {% for k in risks %}
+      <tr{% if k.mitigations == 0 %} class="bad"{% endif %}>
+        <td><a class="mono" href="{{ need_url(k.id) }}">{{ k.id }}</a><br><span class="muted">{{ k.title }}</span></td>
+        <td class="num">{{ k.mitigations }}</td>
+        <td style="font-weight: 650; color: {{ 'var(--ub-error)' if k.mitigations == 0 else 'var(--ub-ok)' }}">
+          {{ '✕ unmitigated' if k.mitigations == 0 else '✓ mitigated' }}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <h2>Structural gaps</h2>
+  {% if gaps %}
+  <table>
+    <thead><tr><th>Gate</th><th>Need</th><th>Type</th><th>Link</th><th>Present</th><th>Gap need</th></tr></thead>
+    <tbody>
+      {% for g in gaps %}
+      <tr class="bad">
+        <td style="color: var(--ub-error); font-weight: 650">✕ {{ g.category }}</td>
+        <td><a class="mono" href="{{ need_url(g.need_id) }}">{{ g.need_id }}</a></td>
+        <td>{{ g.need_type }}</td>
+        <td>{% if g.link %}<span class="mono">{{ g.link }}</span>{% endif %}</td>
+        <td>{{ g.shortfall }}</td>
+        <td><a class="mono" href="{{ need_url(g.id) }}">{{ g.id }}</a></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">The last structural gate run found no gap: every declared trace obligation is met.</p>
+  {% endif %}
+
+  <p class="muted" style="margin-top: 2.5rem; font-size: .78rem">
+    Rendered from the needs index by <code>ubc report program_health</code>.
+    Every figure is a Cypher aggregation over the graph, not a pre-computed field.
+    {% if variant %}The variant is <span class="mono">{{ variant | first | attr('chemistry') }}</span>,
+    carried by <span class="mono">{{ variant | first | attr('id') }}</span>.{% endif %}
+  </p>
+</body>
+</html>

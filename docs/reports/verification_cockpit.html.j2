@@ -1,0 +1,296 @@
+{#- Verification Cockpit — a dashboard for ONE software requirement, for the
+    verification lead.
+
+    It answers "is this requirement actually closed, and by what?" A
+    software requirement is the bottom of the decomposition arm and the level
+    both lower arms attach to, so it is the one place where implementation and
+    verification meet:
+      * the impl needs that implement it, each linked to its source location;
+      * the test needs that verify it, each with its last recorded outcome;
+      * the closure checklist — implemented, verified, run, passing;
+      * where the requirement sits in the V (user story -> req -> arch -> swreq);
+      * its sibling software requirements on the same component, so a green page
+        for one requirement cannot hide an unclosed sibling.
+
+    Declared in ubproject.toml as [reports.dashboards.verification_cockpit]
+    (input = "need", types = ["swreq"]). Render it with
+    `ubc report verification_cockpit --need SWREQ_LIMIT_EVALUATION`, or from the
+    need's insight lens in VS Code. The four queries traverse links a plain
+    report template cannot follow.
+
+    Script-free, themed with theme_style()'s --ub-* tokens. -#}
+{% set need = current_need %}
+{% set impls = queries.impls %}
+{% set results = queries.results %}
+{% set upstream = queries.upstream %}
+{% set siblings = queries.siblings %}
+
+{% set tests = results | length %}
+{% set passed = results | selectattr('outcome', 'equalto', 'passed') | list | length %}
+{% set failed = results | rejectattr('outcome', 'equalto', 'passed') | rejectattr('outcome', 'equalto', '') | list | length %}
+{% set untested = results | selectattr('outcome', 'equalto', '') | list | length %}
+
+{% set runtime = namespace(s=0.0) %}
+{% for t in results %}{% if t.runtime %}{% set runtime.s = runtime.s + (t.runtime | float) %}{% endif %}{% endfor %}
+
+{#- The closure checklist, in the order the V is walked. Each entry is a gate
+    the reader can point at when asked "why is this not done?". -#}
+{% set gates = namespace(list=[]) %}
+{% set gates.list = gates.list + [{'label': 'Implemented', 'ok': impls | length > 0,
+  'detail': (impls | length) ~ ' implementation need' ~ ('' if impls | length == 1 else 's')}] %}
+{% set gates.list = gates.list + [{'label': 'Verified', 'ok': tests > 0,
+  'detail': (tests ~ ' test need' ~ ('' if tests == 1 else 's')) if tests else 'no test verifies this requirement'}] %}
+{% set gates.list = gates.list + [{'label': 'Run', 'ok': tests > 0 and untested == 0,
+  'detail': (untested ~ ' test' ~ ('' if untested == 1 else 's') ~ ' with no recorded result') if untested else 'every test has a recorded run'}] %}
+{% set gates.list = gates.list + [{'label': 'Passing', 'ok': failed == 0,
+  'detail': (failed ~ ' recorded outcome' ~ ('' if failed == 1 else 's') ~ ' not passing') if failed else 'every recorded outcome passed'}] %}
+{% set blockers = gates.list | rejectattr('ok') | list %}
+
+{% set verdict = namespace(key='closed', label='Closed',
+                           note='Implemented, verified and every recorded run passed.') %}
+{% if impls | length == 0 and tests == 0 %}
+  {% set verdict.key = 'open' %}{% set verdict.label = 'Nothing closes this requirement' %}
+  {% set verdict.note = 'No implementation and no test attaches to it yet.' %}
+{% elif failed > 0 %}
+  {% set verdict.key = 'risk' %}{% set verdict.label = 'Failing evidence' %}
+  {% set verdict.note = failed ~ ' recorded outcome' ~ ('' if failed == 1 else 's') ~ ' below this requirement did not pass.' %}
+{% elif tests == 0 %}
+  {% set verdict.key = 'open' %}{% set verdict.label = 'Not verified' %}
+  {% set verdict.note = 'It is implemented but no test verifies it.' %}
+{% elif impls | length == 0 %}
+  {% set verdict.key = 'open' %}{% set verdict.label = 'Not implemented' %}
+  {% set verdict.note = 'It is verified but no implementation realises it.' %}
+{% elif untested > 0 %}
+  {% set verdict.key = 'incomplete' %}{% set verdict.label = 'Not fully run' %}
+  {% set verdict.note = untested ~ ' test' ~ ('' if untested == 1 else 's') ~ ' has no recorded result yet.' %}
+{% endif %}
+{% set vcolor = {'closed': 'var(--ub-ok)', 'risk': 'var(--ub-error)',
+                 'open': 'var(--ub-warn)', 'incomplete': 'var(--ub-warn)'}[verdict.key] %}
+
+{#- The worst ASIL among the requirements above this software requirement. -#}
+{% set asil_color = {'QM': '#64748b', 'A': '#ca8a04', 'B': '#ea580c', 'C': '#dc2626', 'D': '#991b1b'} %}
+{% set max_asil = namespace(a='') %}
+{% for u in upstream %}
+  {% if asil_color.get(u.asil) and (not max_asil.a or {'D': 0, 'C': 1, 'B': 2, 'A': 3, 'QM': 4}[u.asil] < {'D': 0, 'C': 1, 'B': 2, 'A': 3, 'QM': 4}[max_asil.a]) %}
+    {% set max_asil.a = u.asil %}
+  {% endif %}
+{% endfor %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ dashboard.title }} — {{ need.id }}</title>
+  <style>
+    {{ theme_style() }}
+    /* The verdict accent. Set on :root, not on <body>: the editor panel
+       injects the rendered document with innerHTML, which drops body
+       attributes, so a body-level custom property never reaches the CSS. */
+    :root { --vc: {{ vcolor }}; }
+    * { box-sizing: border-box; }
+    body { font-family: var(--ub-font); color: var(--ub-fg); background: var(--ub-bg);
+           max-width: 980px; margin: 0 auto; padding: 2rem 1rem 4rem; line-height: 1.5; }
+    h1 { font-size: 1.45rem; margin: 0; }
+    h2 { font-size: 1.05rem; margin: 2.4rem 0 .6rem; border-bottom: 1px solid var(--ub-border); padding-bottom: .35rem; }
+    a { color: var(--ub-accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .muted { color: var(--ub-muted); }
+    .mono { font-family: var(--ub-font-mono); }
+    .crumb { font-size: .85rem; color: var(--ub-muted); margin: .2rem 0 0; }
+    .badge { display: inline-block; padding: .1rem .55rem; border-radius: 999px; font-size: .78rem;
+             font-weight: 700; letter-spacing: .03em; color: #fff; vertical-align: middle; }
+    .badge.plain { background: var(--ub-surface); color: var(--ub-fg); border: 1px solid var(--ub-border); font-weight: 600; }
+
+    .verdict { display: flex; align-items: flex-start; gap: .9rem; margin: 1.4rem 0 0;
+               border: 1px solid var(--ub-border); border-left: 5px solid var(--vc);
+               border-radius: 10px; padding: .9rem 1.1rem; background: var(--ub-surface); }
+    .verdict .glyph { font-size: 1.5rem; line-height: 1; color: var(--vc); }
+    .verdict .label { font-weight: 750; color: var(--vc); margin: 0; }
+    .verdict .note { margin: .15rem 0 0; color: var(--ub-muted); font-size: .9rem; }
+
+    .tiles { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 1.4rem; }
+    .tile { flex: 1 1 180px; border: 1px solid var(--ub-border); border-radius: 10px; padding: .8rem 1rem; }
+    .tile .k { font-size: .7rem; color: var(--ub-muted); text-transform: uppercase; letter-spacing: .06em; margin: 0; }
+    .tile .v { font-size: 1.7rem; font-weight: 700; line-height: 1.15; margin: .2rem 0 0; }
+    .tile .n { font-size: .78rem; color: var(--ub-muted); margin: .15rem 0 0; }
+
+    /* The closure checklist: one row per gate, in V order. */
+    ul.checklist { list-style: none; padding: 0; margin: .8rem 0 0; }
+    ul.checklist li { display: flex; gap: .7rem; align-items: baseline; padding: .4rem .1rem;
+                      border-bottom: 1px solid var(--ub-border); }
+    ul.checklist .mark { font-weight: 800; width: 1.1rem; text-align: center; }
+    ul.checklist .mark.ok { color: var(--ub-ok); }
+    ul.checklist .mark.no { color: var(--ub-error); }
+    ul.checklist .label { font-weight: 650; min-width: 7.5rem; }
+    ul.checklist .detail { color: var(--ub-muted); font-size: .86rem; }
+
+    table { border-collapse: collapse; width: 100%; font-size: .85rem; }
+    th, td { border-bottom: 1px solid var(--ub-border); padding: .45rem .5rem; text-align: left; vertical-align: top; }
+    th { background: var(--ub-surface); font-weight: 650; white-space: nowrap; }
+    tr.current td { background: var(--ub-surface); font-weight: 650; }
+    td.state { white-space: nowrap; font-weight: 650; }
+
+    .pips { display: inline-flex; gap: 4px; vertical-align: middle; }
+    .pip { width: 1rem; height: 1rem; border-radius: 4px; display: inline-block; }
+    .pip.passed { background: var(--ub-ok); }
+    .pip.failed { background: var(--ub-error); }
+    .pip.untested { background: var(--ub-warn); }
+
+    .breadcrumb { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin-top: .6rem; }
+    .breadcrumb .node { border: 1px solid var(--ub-border); border-radius: 8px; padding: .45rem .7rem; background: var(--ub-surface); }
+    .breadcrumb .node .t { font-size: .7rem; text-transform: uppercase; letter-spacing: .05em; color: var(--ub-muted); }
+    .breadcrumb .node .i { font-family: var(--ub-font-mono); font-size: .82rem; }
+    .breadcrumb .arrow { color: var(--ub-muted); }
+
+    .impl { border: 1px solid var(--ub-border); border-radius: 8px; padding: .6rem .8rem; margin: .5rem 0; }
+    .impl .title { font-size: .9rem; }
+  </style>
+</head>
+<body>
+  <h1>{{ need.title }}</h1>
+  <p class="crumb">
+    <span class="mono">{{ need.id }}</span>
+    {% if need.status %}<span class="badge plain">{{ need.status }}</span>{% endif %}
+    {% if max_asil.a %}<span class="badge" style="background: {{ asil_color[max_asil.a] }}">ASIL {{ max_asil.a }}</span>{% endif %}
+    {% if need.section_name %} · {{ need.section_name }}{% endif %}
+  </p>
+
+  <div class="verdict">
+    <span class="glyph" aria-hidden="true">{% if verdict.key == 'closed' %}✓{% elif verdict.key == 'risk' %}✕{% else %}◐{% endif %}</span>
+    <div>
+      <p class="label">{{ verdict.label }}</p>
+      <p class="note">{{ verdict.note }}</p>
+    </div>
+  </div>
+
+  <div class="tiles">
+    <div class="tile">
+      <p class="k">Implementations</p>
+      <p class="v" style="color: {{ 'var(--ub-ok)' if impls | length else 'var(--ub-warn)' }}">{{ impls | length }}</p>
+      <p class="n">production need{{ 's' if impls | length != 1 }} realising this behaviour</p>
+    </div>
+    <div class="tile">
+      <p class="k">Tests</p>
+      <p class="v" style="color: {{ 'var(--ub-ok)' if tests else 'var(--ub-warn)' }}">{{ tests }}</p>
+      <p class="n">test case{{ 's' if tests != 1 }} verifying it</p>
+    </div>
+    <div class="tile">
+      <p class="k">Passed</p>
+      <p class="v" style="color: {{ 'var(--ub-error)' if failed else ('var(--ub-ok)' if tests else 'var(--ub-muted)') }}">{{ passed }} / {{ tests }}</p>
+      <p class="n">{% if failed %}{{ failed }} failing{% elif untested %}{{ untested }} not run{% else %}recorded runs{% endif %}</p>
+    </div>
+    <div class="tile">
+      <p class="k">Recorded runtime</p>
+      <p class="v">{{ '%.3f' | format(runtime.s) }}<span class="muted" style="font-size: 1rem"> s</span></p>
+      <p class="n">summed over {{ tests }} recorded result{{ 's' if tests != 1 }}</p>
+    </div>
+  </div>
+
+  <h2>Closure checklist</h2>
+  <ul class="checklist">
+    {% for g in gates.list %}
+    <li>
+      <span class="mark {{ 'ok' if g.ok else 'no' }}" aria-hidden="true">{{ '✓' if g.ok else '✕' }}</span>
+      <span class="label">{{ g.label }}</span>
+      <span class="detail">{{ g.detail }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+  {% if blockers %}
+  <p class="muted" style="font-size: .85rem">
+    {{ blockers | length }} open gate{{ 's' if blockers | length != 1 }}.
+    Ask <code>ubc agent next --id {{ need.id }}</code> which stage owns the first one.
+  </p>
+  {% endif %}
+
+  <h2>Test evidence</h2>
+  {% if results %}
+  <p>
+    <span class="pips">
+      {% for t in results %}<span class="pip {{ t.outcome if t.outcome else 'untested' }}" title="{{ t.test }} — {{ t.outcome if t.outcome else 'not run' }}"></span>{% endfor %}
+    </span>
+    <span class="muted" style="margin-left: .5rem">one square per test, left to right</span>
+  </p>
+  <table>
+    <thead><tr><th>Test</th><th>Recorded outcome</th><th>Result</th><th>Runtime</th><th>Source</th></tr></thead>
+    <tbody>
+      {% for t in results %}
+      <tr>
+        <td><a class="mono" href="{{ need_url(t.test) }}">{{ t.test }}</a><br><span class="muted">{{ t.title }}</span></td>
+        <td class="state" style="color: {{ 'var(--ub-ok)' if t.outcome == 'passed' else ('var(--ub-error)' if t.outcome else 'var(--ub-warn)') }}">
+          {% if t.outcome == 'passed' %}✓ passed{% elif t.outcome %}✕ {{ t.outcome }}{% else %}◐ not run{% endif %}
+        </td>
+        <td>{% if t.result %}<a class="mono" href="{{ need_url(t.result) }}">{{ t.result }}</a>{% else %}<span class="muted">—</span>{% endif %}</td>
+        <td>{% if t.runtime %}{{ t.runtime }} s{% else %}<span class="muted">—</span>{% endif %}</td>
+        <td>{% if t.url %}<a href="{{ t.url }}">open</a>{% else %}<span class="muted">—</span>{% endif %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">No test verifies this software requirement. The verification arm is open here.</p>
+  {% endif %}
+
+  <h2>Implementations</h2>
+  {% if impls %}
+    {% for i in impls %}
+    <div class="impl">
+      <span class="title">{{ i.title }}</span>
+      <p class="crumb"><a class="mono" href="{{ need_url(i.id) }}">{{ i.id }}</a>
+        {% if i.url %} · <a href="{{ i.url }}">source</a>{% endif %}</p>
+    </div>
+    {% endfor %}
+  {% else %}
+  <p class="muted">No implementation need implements this software requirement. The implementation arm is open here.</p>
+  {% endif %}
+
+  <h2>Where this sits in the V</h2>
+  {% if upstream %}
+    {% set arch = upstream | first %}
+    <div class="breadcrumb">
+      {% if arch.story %}<div class="node"><div class="t">User story</div><div class="i"><a href="{{ need_url(arch.story) }}">{{ arch.story }}</a></div></div><span class="arrow">→</span>{% endif %}
+      <div class="node">
+        <div class="t">Requirement{{ 's' if upstream | length != 1 }}</div>
+        <div class="i">
+          {% for u in upstream %}<a href="{{ need_url(u.req) }}">{{ u.req }}</a>{% if not loop.last %}, {% endif %}{% endfor %}
+        </div>
+      </div>
+      <span class="arrow">→</span>
+      <div class="node"><div class="t">Architecture</div><div class="i"><a href="{{ need_url(arch.arch) }}">{{ arch.arch }}</a></div></div>
+      <span class="arrow">→</span>
+      <div class="node" style="border-color: var(--ub-accent)"><div class="t">Software requirement</div><div class="i">{{ need.id }}</div></div>
+    </div>
+    <p class="muted" style="font-size: .84rem; margin-top: .7rem">
+      {{ arch.arch_title }}{% if arch.story %} · serving {{ arch.story_title }}{% endif %}
+    </p>
+  {% else %}
+  <p class="muted">This software requirement refines no architecture element that satisfies a requirement — the chain up the V is broken.</p>
+  {% endif %}
+
+  <h2>Siblings on this component <span class="muted">— the whole obligation, not just this page</span></h2>
+  {% if siblings | length > 1 %}
+  <table>
+    <thead><tr><th>Software requirement</th><th>Impl</th><th>Tests</th><th>Runs</th><th>State</th></tr></thead>
+    <tbody>
+      {% for s in siblings %}
+      <tr{% if s.swreq == need.id %} class="current"{% endif %}>
+        <td><a class="mono" href="{{ need_url(s.swreq) }}">{{ s.swreq }}</a>{% if s.swreq == need.id %} <span class="muted">(this page)</span>{% endif %}<br><span class="muted">{{ s.title }}</span></td>
+        <td>{{ s.impls }}</td>
+        <td>{{ s.tests }}</td>
+        <td>{{ s.results }}</td>
+        <td class="state" style="color: {{ 'var(--ub-error)' if s.failing else ('var(--ub-ok)' if s.impls and s.tests and s.results == s.tests else 'var(--ub-warn)') }}">
+          {% if s.failing %}✕ failing{% elif s.impls and s.tests and s.results == s.tests %}✓ closed{% else %}◐ open{% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted">This is the only software requirement on its architecture element.</p>
+  {% endif %}
+
+  <p class="muted" style="margin-top: 2.5rem; font-size: .78rem">
+    Rendered from the needs index by <code>ubc report verification_cockpit --need {{ need.id }}</code>.
+  </p>
+</body>
+</html>

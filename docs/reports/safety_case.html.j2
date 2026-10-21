@@ -1,0 +1,306 @@
+{#- Safety Case — a dashboard for ONE system requirement, for the functional
+    safety manager.
+
+    It answers the question a safety review actually asks: "is the argument for
+    THIS requirement complete, and where is it weak?" The structural V is
+    necessary but not sufficient, so the page shows both halves:
+      * the risk register entry the requirement is mitigated by, with its
+        cause / effect / mitigation / residual;
+      * the common-cause peers — other requirements the SAME risks mitigate,
+        which are in scope together if the risk materialises;
+      * the evidence chain below the requirement (arch -> swreq -> test ->
+        recorded outcome), rolled up per software requirement;
+      * the architecture decisions the design rests on.
+
+    Declared in ubproject.toml as [reports.dashboards.safety_case]
+    (input = "need", types = ["req"]). Render it with
+    `ubc report safety_case --need REQ_CELL_OVERTEMPERATURE`, or from the need's
+    insight lens in VS Code. The four queries walk the links the needs index
+    holds; a plain report template cannot follow a link, which is the whole
+    reason this is a dashboard.
+
+    Script-free: every chart is inline HTML/SVG and the page follows the editor
+    theme through theme_style()'s --ub-* tokens. -#}
+{% set need = current_need %}
+{% set risks = queries.risks %}
+{% set peers = queries.peers %}
+{% set evidence = queries.evidence %}
+{% set decisions = queries.decisions %}
+{% set asil = need.asil | default('') %}
+{#- ASIL is a status, not a category, so it uses a fixed ISO 26262 palette and
+    never follows the theme. Every badge carries the level as text as well, so
+    colour is never the only carrier. -#}
+{% set asil_color = {
+  'QM': '#64748b', 'A': '#ca8a04', 'B': '#ea580c', 'C': '#dc2626', 'D': '#991b1b'
+} %}
+{% set asil_rank = {'D': 0, 'C': 1, 'B': 2, 'A': 3, 'QM': 4, '': 5} %}
+
+{#- ── Roll the evidence chain up per software requirement ────────────────── -#}
+{% set archs = evidence | map(attribute='arch') | unique | list %}
+{% set swreqs = evidence | map(attribute='swreq') | unique | list %}
+{% set totals = namespace(tests=0, passed=0, failed=0, untested=0, missing=0) %}
+{% for s in swreqs %}
+  {% set srows = evidence | selectattr('swreq', 'equalto', s) | list %}
+  {% set tests = srows | rejectattr('test', 'equalto', '') | list %}
+  {% if tests | length == 0 %}
+    {% set totals.missing = totals.missing + 1 %}
+  {% else %}
+    {% for t in tests %}
+      {% set totals.tests = totals.tests + 1 %}
+      {% if t.outcome == 'passed' %}{% set totals.passed = totals.passed + 1 %}
+      {% elif t.outcome == '' %}{% set totals.untested = totals.untested + 1 %}
+      {% else %}{% set totals.failed = totals.failed + 1 %}{% endif %}
+    {% endfor %}
+  {% endif %}
+{% endfor %}
+
+{#- The one-line verdict the page leads with. -#}
+{% set verdict = namespace(key='complete', label='Argument complete',
+                           note='Every software requirement below is covered by a recorded, passing test.') %}
+{% if archs | length == 0 %}
+  {% set verdict.key = 'incomplete' %}{% set verdict.label = 'No argument yet' %}
+  {% set verdict.note = 'Nothing in the architecture satisfies this requirement, so there is no evidence chain to judge.' %}
+{% elif totals.failed > 0 %}
+  {% set verdict.key = 'risk' %}{% set verdict.label = 'Evidence at risk' %}
+  {% set verdict.note = totals.failed ~ ' recorded outcome' ~ ('' if totals.failed == 1 else 's') ~ ' below this requirement did not pass.' %}
+{% elif totals.missing > 0 or totals.untested > 0 %}
+  {% set verdict.key = 'incomplete' %}{% set verdict.label = 'Argument incomplete' %}
+  {% set parts = [] %}
+  {% if totals.missing %}{% set parts = parts + [totals.missing ~ ' software requirement' ~ ('s' if totals.missing != 1 else '') ~ ' with no test'] %}{% endif %}
+  {% if totals.untested %}{% set parts = parts + [totals.untested ~ ' test' ~ ('s' if totals.untested != 1 else '') ~ ' with no recorded run'] %}{% endif %}
+  {% set verdict.note = parts | join(' and ') ~ '.' %}
+{% endif %}
+{% set vcolor = {'complete': 'var(--ub-ok)', 'risk': 'var(--ub-error)', 'incomplete': 'var(--ub-warn)'}[verdict.key] %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ dashboard.title }} — {{ need.id }}</title>
+  <style>
+    {{ theme_style() }}
+    /* The verdict accent. Set on :root, not on <body>: the editor panel
+       injects the rendered document with innerHTML, which drops body
+       attributes, so a body-level custom property never reaches the CSS. */
+    :root { --vc: {{ vcolor }}; }
+    * { box-sizing: border-box; }
+    body { font-family: var(--ub-font); color: var(--ub-fg); background: var(--ub-bg);
+           max-width: 1000px; margin: 0 auto; padding: 2rem 1rem 4rem; line-height: 1.5; }
+    h1 { font-size: 1.45rem; margin: 0; }
+    h2 { font-size: 1.05rem; margin: 2.4rem 0 .6rem; border-bottom: 1px solid var(--ub-border); padding-bottom: .35rem; }
+    a { color: var(--ub-accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .muted { color: var(--ub-muted); }
+    .mono { font-family: var(--ub-font-mono); }
+    .crumb { font-size: .85rem; color: var(--ub-muted); margin: .2rem 0 0; }
+    .badge { display: inline-block; padding: .1rem .55rem; border-radius: 999px; font-size: .78rem;
+             font-weight: 700; letter-spacing: .03em; color: #fff; vertical-align: middle; }
+    .badge.plain { background: var(--ub-surface); color: var(--ub-fg); border: 1px solid var(--ub-border); font-weight: 600; }
+
+    /* The verdict card: the one thing the reader must take away. */
+    .verdict { display: flex; align-items: flex-start; gap: .9rem; margin: 1.4rem 0 0;
+               border: 1px solid var(--ub-border); border-left: 5px solid var(--vc);
+               border-radius: 10px; padding: .9rem 1.1rem; background: var(--ub-surface); }
+    .verdict .glyph { font-size: 1.5rem; line-height: 1; color: var(--vc); }
+    .verdict .label { font-weight: 750; color: var(--vc); margin: 0; }
+    .verdict .note { margin: .15rem 0 0; color: var(--ub-muted); font-size: .9rem; }
+
+    .tiles { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 1.4rem; }
+    .tile { flex: 1 1 190px; border: 1px solid var(--ub-border); border-radius: 10px; padding: .8rem 1rem; }
+    .tile .k { font-size: .7rem; color: var(--ub-muted); text-transform: uppercase; letter-spacing: .06em; margin: 0; }
+    .tile .v { font-size: 1.7rem; font-weight: 700; line-height: 1.15; margin: .2rem 0 0; }
+    .tile .n { font-size: .78rem; color: var(--ub-muted); margin: .15rem 0 0; }
+
+    .card { border: 1px solid var(--ub-border); border-radius: 10px; padding: .8rem 1rem; margin: .7rem 0; }
+    .card.risk { border-left: 4px solid var(--ub-error); }
+    .card.decision { border-left: 4px solid var(--ub-accent); }
+    .card h3 { font-size: .95rem; margin: 0 0 .2rem; }
+    .card .id { font-size: .78rem; color: var(--ub-muted); }
+    .card dl { margin: .55rem 0 0; display: grid; grid-template-columns: 6.2rem 1fr; gap: .25rem .7rem; font-size: .86rem; }
+    .card dt { font-weight: 650; color: var(--ub-muted); }
+    .card dd { margin: 0; white-space: pre-line; }
+
+    table { border-collapse: collapse; width: 100%; font-size: .85rem; }
+    th, td { border-bottom: 1px solid var(--ub-border); padding: .45rem .5rem; text-align: left; vertical-align: top; }
+    th { background: var(--ub-surface); font-weight: 650; white-space: nowrap; }
+    tr.arch td { background: var(--ub-surface); font-weight: 650; }
+    td.state { white-space: nowrap; font-weight: 650; }
+
+    /* Outcome pips: one per test, with the text in the title. */
+    .pips { display: inline-flex; gap: 3px; vertical-align: middle; }
+    .pip { width: .8rem; height: .8rem; border-radius: 3px; display: inline-block; }
+    .pip.passed { background: var(--ub-ok); }
+    .pip.failed { background: var(--ub-error); }
+    .pip.untested { background: var(--ub-warn); }
+    .pip.none { background: var(--ub-border); }
+
+    .bar { display: flex; height: 1.1rem; border-radius: 6px; overflow: hidden; border: 1px solid var(--ub-border); }
+    .bar > span { display: block; height: 100%; }
+    .bar .passed { background: var(--ub-ok); }
+    .bar .failed { background: var(--ub-error); }
+    .bar .untested { background: var(--ub-warn); }
+    .legend { display: flex; flex-wrap: wrap; gap: .35rem 1.2rem; margin: .5rem 0 0; font-size: .8rem; color: var(--ub-muted); }
+    .legend .sw { display: inline-block; width: .7rem; height: .7rem; border-radius: 2px; margin-right: .3rem; transform: translateY(1px); }
+  </style>
+</head>
+<body>
+  <h1>{{ need.title }}</h1>
+  <p class="crumb">
+    <span class="mono">{{ need.id }}</span>
+    {% if asil %}<span class="badge" style="background: {{ asil_color[asil] }}">ASIL {{ asil }}</span>{% endif %}
+    {% if need.status %}<span class="badge plain">{{ need.status }}</span>{% endif %}
+    {% if need.section_name %} · {{ need.section_name }}{% endif %}
+  </p>
+
+  <div class="verdict">
+    <span class="glyph" aria-hidden="true">{% if verdict.key == 'complete' %}✓{% elif verdict.key == 'risk' %}✕{% else %}◐{% endif %}</span>
+    <div>
+      <p class="label">{{ verdict.label }}</p>
+      <p class="note">{{ verdict.note }}</p>
+    </div>
+  </div>
+
+  <div class="tiles">
+    <div class="tile">
+      <p class="k">Safety integrity</p>
+      <p class="v" {% if asil %}style="color: {{ asil_color[asil] }}"{% endif %}>{{ 'ASIL ' ~ asil if asil else 'unrated' }}</p>
+      <p class="n">{{ risks | length }} risk register entr{{ 'y' if risks | length == 1 else 'ies' }} point{{ 's' if risks | length == 1 else '' }} here</p>
+    </div>
+    <div class="tile">
+      <p class="k">Evidence chain</p>
+      <p class="v">{{ swreqs | length }}</p>
+      <p class="n">software requirement{{ 's' if swreqs | length != 1 }} under {{ archs | length }} architecture element{{ 's' if archs | length != 1 }}</p>
+    </div>
+    <div class="tile">
+      <p class="k">Tests passed</p>
+      <p class="v" style="color: {{ 'var(--ub-error)' if totals.failed else ('var(--ub-ok)' if totals.tests else 'var(--ub-muted)') }}">
+        {{ totals.passed }} / {{ totals.tests }}
+      </p>
+      <p class="n">{% if totals.tests == 0 %}no test below this requirement{% elif totals.failed %}{{ totals.failed }} failing{% elif totals.untested %}{{ totals.untested }} not run{% else %}all recorded runs passed{% endif %}</p>
+    </div>
+    <div class="tile">
+      <p class="k">Common-cause peers</p>
+      <p class="v">{{ peers | length }}</p>
+      <p class="n">other requirements sharing a risk with this one</p>
+    </div>
+  </div>
+
+  {% if totals.tests > 0 %}
+  <div class="bar" role="img" aria-label="Recorded outcomes below this requirement">
+    {% if totals.passed %}<span class="passed" style="flex: {{ totals.passed }}"></span>{% endif %}
+    {% if totals.failed %}<span class="failed" style="flex: {{ totals.failed }}"></span>{% endif %}
+    {% if totals.untested %}<span class="untested" style="flex: {{ totals.untested }}"></span>{% endif %}
+  </div>
+  <p class="legend">
+    <span><span class="sw" style="background: var(--ub-ok)"></span>{{ totals.passed }} passed</span>
+    <span><span class="sw" style="background: var(--ub-error)"></span>{{ totals.failed }} failed</span>
+    <span><span class="sw" style="background: var(--ub-warn)"></span>{{ totals.untested }} not run</span>
+    {% if totals.missing %}<span>{{ totals.missing }} software requirement{{ 's' if totals.missing != 1 }} with no test</span>{% endif %}
+  </p>
+  {% endif %}
+
+  <h2>Risk mitigations</h2>
+  {% if risks %}
+    {% for r in risks %}
+    <div class="card risk">
+      <h3>{{ r.title }}</h3>
+      <p class="id"><a class="mono" href="{{ need_url(r.id) }}">{{ r.id }}</a></p>
+      <dl>
+        {% if r.cause %}<dt>Cause</dt><dd>{{ r.cause | split('**: ') | last }}</dd>{% endif %}
+        {% if r.effect %}<dt>Effect</dt><dd>{{ r.effect | split('**: ') | last }}</dd>{% endif %}
+        {% if r.mitigation %}<dt>Mitigation</dt><dd>{{ r.mitigation | split('**: ') | last }}</dd>{% endif %}
+        {% if r.residual %}<dt>Residual</dt><dd>{{ r.residual | split('**: ') | last }}</dd>{% endif %}
+      </dl>
+    </div>
+    {% endfor %}
+  {% else %}
+    <p class="muted">
+      No risk register entry names this requirement.
+      {% if asil and asil != 'QM' %}
+      For an ASIL {{ asil }} requirement that is itself a finding: the hazard analysis does not reach it.
+      {% endif %}
+    </p>
+  {% endif %}
+
+  {% if peers %}
+  <h2>Common-cause peers <span class="muted">— in scope together if a shared risk materialises</span></h2>
+  <table>
+    <thead><tr><th>ASIL</th><th>Requirement</th><th>Shared via</th></tr></thead>
+    <tbody>
+      {% for p in peers %}
+      <tr>
+        <td>{% if p.asil %}<span class="badge" style="background: {{ asil_color[p.asil] }}">{{ p.asil }}</span>{% else %}<span class="muted">—</span>{% endif %}</td>
+        <td><a class="mono" href="{{ need_url(p.id) }}">{{ p.id }}</a><br><span class="muted">{{ p.title }}</span></td>
+        <td>{% for k in p.via %}<a class="mono" href="{{ need_url(k) }}">{{ k }}</a>{% if not loop.last %}, {% endif %}{% endfor %}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% endif %}
+
+  <h2>Evidence chain <span class="muted">— architecture → software requirement → test → outcome</span></h2>
+  {% if archs %}
+  <table>
+    <thead><tr><th>Software requirement</th><th>Tests</th><th>Recorded outcomes</th><th>State</th></tr></thead>
+    <tbody>
+      {% for arch in archs %}
+      <tr class="arch"><td colspan="4"><span class="mono">{{ arch }}</span> <span class="muted">— {{ (evidence | selectattr('arch', 'equalto', arch) | list | first).arch_title }}</span></td></tr>
+        {% for swreq, srows in evidence | selectattr('arch', 'equalto', arch) | list | groupby('swreq') %}
+          {% set tests = srows | rejectattr('test', 'equalto', '') | list %}
+          {% set failed = tests | rejectattr('outcome', 'equalto', 'passed') | rejectattr('outcome', 'equalto', '') | list %}
+          {% set untested = tests | selectattr('outcome', 'equalto', '') | list %}
+          <tr>
+            <td><a class="mono" href="{{ need_url(swreq) }}">{{ swreq }}</a><br><span class="muted">{{ srows | first | attr('swreq_title') }}</span></td>
+            <td>
+              {% if tests %}
+                <span class="pips">
+                  {% for t in tests %}<span class="pip {{ t.outcome if t.outcome else 'untested' }}" title="{{ t.test }} — {{ t.outcome if t.outcome else 'not run' }}"></span>{% endfor %}
+                </span>
+                <span class="muted"> {{ tests | length }}</span>
+              {% else %}
+                <span class="muted">none</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if tests %}
+                {% for t in tests %}
+                  <a class="mono" href="{{ need_url(t.test) }}">{{ t.test }}</a>
+                  <span class="muted">{% if t.outcome == 'passed' %}✓ passed{% elif t.outcome %}✕ {{ t.outcome }}{% else %}◐ not run{% endif %}</span>{% if not loop.last %}<br>{% endif %}
+                {% endfor %}
+              {% else %}
+                <span class="muted">no test verifies this software requirement</span>
+              {% endif %}
+            </td>
+            <td class="state" style="color: {{ 'var(--ub-error)' if failed else ('var(--ub-warn)' if not tests or untested else 'var(--ub-ok)') }}">
+              {% if failed %}✕ failing{% elif not tests %}◐ untested{% elif untested %}◐ not run{% else %}✓ passing{% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <p class="muted">No architecture element satisfies this requirement yet, so there is no chain to show. Ask <code>ubc agent next --id {{ need.id }}</code> which stage owes the work.</p>
+  {% endif %}
+
+  {% if decisions %}
+  <h2>Design decisions <span class="muted">— the "why" the evidence rests on</span></h2>
+  {% for d in decisions %}
+  <div class="card decision">
+    <h3>{{ d.title }}</h3>
+    <p class="id"><a class="mono" href="{{ need_url(d.id) }}">{{ d.id }}</a> · affects {% for a in d.archs %}<span class="mono">{{ a }}</span>{% if not loop.last %}, {% endif %}{% endfor %}</p>
+    <dl>
+      {% if d.context %}<dt>Context</dt><dd>{{ d.context }}</dd>{% endif %}
+      {% if d.consequences %}<dt>Consequences</dt><dd>{{ d.consequences }}</dd>{% endif %}
+    </dl>
+  </div>
+  {% endfor %}
+  {% endif %}
+
+  <p class="muted" style="margin-top: 2.5rem; font-size: .78rem">
+    Rendered from the needs index by <code>ubc report safety_case --need {{ need.id }}</code>.
+    The risks, peers, evidence and decisions above are Cypher traversals of the
+    graph, not pre-computed fields.
+  </p>
+</body>
+</html>
