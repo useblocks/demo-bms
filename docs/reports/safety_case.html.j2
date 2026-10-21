@@ -79,6 +79,10 @@
   <title>{{ dashboard.title }} — {{ need.id }}</title>
   <style>
     {{ theme_style() }}
+    /* The verdict accent. Set on :root, not on <body>: the editor panel
+       injects the rendered document with innerHTML, which drops body
+       attributes, so a body-level custom property never reaches the CSS. */
+    :root { --vc: {{ vcolor }}; }
     * { box-sizing: border-box; }
     body { font-family: var(--ub-font); color: var(--ub-fg); background: var(--ub-bg);
            max-width: 1000px; margin: 0 auto; padding: 2rem 1rem 4rem; line-height: 1.5; }
@@ -139,7 +143,7 @@
     .legend .sw { display: inline-block; width: .7rem; height: .7rem; border-radius: 2px; margin-right: .3rem; transform: translateY(1px); }
   </style>
 </head>
-<body style="--vc: {{ vcolor }}">
+<body>
   <h1>{{ need.title }}</h1>
   <p class="crumb">
     <span class="mono">{{ need.id }}</span>
