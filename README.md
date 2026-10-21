@@ -522,10 +522,10 @@ sources and stamps the result on each generated `test_result` as `chain_reqs`.
 The template then reads a field, which it can see. Derived data, on a derived
 need, regenerated on every import — nothing hand-maintained.
 
-A **dashboard** is the way around the whole problem: it declares Cypher queries
+An **insight** is the way around the whole problem: it declares Cypher queries
 that the engine runs over the graph before the template, so the template renders
 the traversals as data instead of guessing at links it cannot follow. See
-[Three dashboards, three personas](#three-dashboards-three-personas).
+[Three insights, three personas](#three-insights-three-personas).
 
 ### The whole V in one query
 
@@ -553,19 +553,19 @@ absence of evidence rather than as a special case anyone had to write down.
 > parents covered), `needs.json` carries it, the gates enforce it, and Cypher
 > traverses it. Use `status` or a query, not `audit`, to show that arm.
 
-### Three dashboards, three personas
+### Three insights, three personas
 
 The coverage report above is a **plain** template, which is why it has to work
-around the link blindness with the `chain_reqs` field. A **dashboard** is the
+around the link blindness with the `chain_reqs` field. An **insight** is the
 other half of the feature: it declares its Cypher queries in `ubproject.toml`,
 the engine runs them over the needs graph before the template renders, and the
 template receives the traversals as `queries.<name>`. The report can finally
 walk the graph.
 
-Three dashboards ship here, one per persona in the V-model workflow. They are
+Three insights ship here, one per persona in the V-model workflow. They are
 the same graph read three ways:
 
-| Dashboard | Persona | Input | Render it |
+| Insight | Persona | Input | Render it |
 |---|---|---|---|
 | [`safety_case`](docs/reports/safety_case.html.j2) | Functional safety manager | one `req` | `ubc report safety_case --need REQ_CELL_OVERTEMPERATURE` |
 | [`verification_cockpit`](docs/reports/verification_cockpit.html.j2) | Verification lead | one `swreq` | `ubc report verification_cockpit --need SWREQ_LIMIT_EVALUATION` |
@@ -573,9 +573,9 @@ the same graph read three ways:
 
 The queries live beside the templates in
 [`docs/reports/queries/`](docs/reports/queries/), one `.cypher` file per query,
-and the declarations are the `[reports.dashboards.*]` tables at the end of
+and the declarations are the `[reports.insights.*]` tables at the end of
 [`docs/ubproject.toml`](docs/ubproject.toml). In VS Code, the two `need`
-dashboards appear as an **Insights** CodeLens on every requirement and software
+insights appear as an **Insights** CodeLens on every requirement and software
 requirement, and render in a panel beside the editor.
 
 **`safety_case`** answers the question a safety review actually asks. For one
