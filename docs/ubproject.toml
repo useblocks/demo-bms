@@ -78,6 +78,12 @@ contains = "needuml:"
 # Skip framework-internal directories so they are not parsed as needs.
 extend_exclude = [".specify"]
 
+# The LFP build's one variant document (see VARIANTS below): every rule whose `if`
+# is false removes its `files` from the build.
+[[source.variant_sources]]
+if = "var.pack.chemistry == 'LFP'"
+files = ["specs/cell-protection/lfp_charging.rst"]
+
 # --- PARSERS: reStructuredText AND Markdown (MyST) ---
 # Declaring parsers switches ubCode into parser mode, where discovery follows
 # each parser's own `include` globs. BOTH must be declared: an `md` table alone
@@ -101,8 +107,8 @@ include = ["specs/*.md"]
 check = "ubc check"
 schema = "ubc schema validate"
 needs = "ubc build needs -o needs.json"
-"needs:lfp" = "ubc build needs -c \"needs.variant_data_file = 'variants/lfp.json'\" -o needs.lfp.json"
-variant-diff = "ubc diff -c \"needs.variant_data_file = 'variants/lfp.json'\""
+"needs:lfp" = "ubc build needs -c \"variants.data_file = 'variants/lfp.json'\" -o needs.lfp.json"
+variant-diff = "ubc diff -c \"variants.data_file = 'variants/lfp.json'\""
 html = "ubc build html --deny none -o _build/ubc-html"
 # No `--deny` override, unlike `html` above: the one code the PDF builder trips
 # on this project is ignored by name under [lint], so the bar stays at "warning".
@@ -179,26 +185,37 @@ schema_definitions_from_json = "schemas.json"
 # voltage values are STRINGS on purpose: they are rendered into prose ("2.50 V"),
 # where a JSON number would print as 2.5.
 #
+# The data file is named in the shared `[variants]` table below, which ubCode,
+# Sphinx-Needs (through `needs_from_toml`) and sphinx-mounts all read; the older
+# `[needs] variant_data_file` key is ignored once `[variants]` is set.
+#
 # Switch the profile per build without editing a single need:
-#   ubc build needs -c "needs.variant_data_file = 'variants/lfp.json'"
-#   ubc diff       -c "needs.variant_data_file = 'variants/lfp.json'"   # = `ubc script variant-diff`
+#   ubc build needs -c "variants.data_file = 'variants/lfp.json'"
+#   ubc diff       -c "variants.data_file = 'variants/lfp.json'"   # = `ubc script variant-diff`
+# (A `-c "needs.variant_data_file = ..."` override is now ignored, with a
+# `config.variant_data_location` warning, and the build stays NMC.)
 # RUN THOSE FROM THIS DIRECTORY (or through `ubc script`, which does). A path given
 # with `-c` is resolved against the WORKING DIRECTORY, not against this file, and a
 # variant data file that is not found resolves SILENTLY: no warning, every `var.*`
 # value empty, `chemistry` "" (observed with ubc 0.33). From the repository root the
 # path has to be `docs/variants/lfp.json`.
-# Sphinx reads the same key through `needs_from_toml`, overridable with
+# Sphinx reads the same table through `needs_from_toml`, overridable with
 # `-D needs_variant_data_file=...` (see the README for the path to use there).
 #
-# `[[source.variant_sources]]` (per-variant FILE selection) is deliberately not
-# used: sphinx-build honours it only with sphinx-mounts installed, and without
-# that the `-W` publish would build a different document set than ubc does.
+# ONE variant document, `specs/cell-protection/lfp_charging.rst`, exists only in
+# the LFP build: `[[source.variant_sources]]` under `[source]` removes it from every
+# other build, so its page and its need are not read at all. ubc does that natively;
+# sphinx-build only with sphinx-mounts in `extensions` (ubc says so once, as
+# `info[config.variant_sources_sphinx_unsupported]`): without it the NMC publish
+# would read the LFP page too.
 # Quick switch for a live demo: comment the NMC line, uncomment the LFP one, save —
 # the IDE re-indexes on save and the cell-protection page reads 3.65 V, and every
 # command and the Sphinx build follow. The `-c` override above and the
 # `variant-diff` / `needs:lfp` scripts switch one command at a time instead.
-variant_data_file = "variants/nmc.json"
-# variant_data_file = "variants/lfp.json"
+
+[variants]
+data_file = "variants/nmc.json"
+# data_file = "variants/lfp.json"
 
 # --- ubTRACE VARIANTS ---
 # The variants published to ubTrace, one build each. ubTrace shows the variants of

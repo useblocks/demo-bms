@@ -18,6 +18,32 @@ NMC build.
       phosphate leaves little headroom between "full" and the upper limit, so
       cell balancing is what keeps a full pack clear of this reaction.
 
+The charging strategy follows the chemistry too. Exactly one of these paragraphs
+is in any build:
+
+.. choose::
+
+   .. when:: var.pack.chemistry == 'NMC'
+
+      **NMC.** Constant current, then constant voltage at
+      :variant:`pack.cell_v_max` V per cell until the current tapers off.
+
+   .. when:: var.pack.chemistry == 'LFP'
+
+      **LFP.** Constant current until the first cell reaches
+      :variant:`pack.cell_v_max` V, then a current taper: see the variant
+      document below, which exists in this build only.
+
+      .. toctree::
+         :maxdepth: 1
+
+         lfp_charging
+
+   .. otherwise::
+
+      **Unknown chemistry.** No charging strategy applies, and the build is
+      refused by the schema: ``chemistry`` admits NMC and LFP only.
+
 .. req:: The battery management system shall open the high-voltage contactors when any cell voltage leaves the safe window of the pack chemistry
    :id: REQ_CELL_VOLTAGE_LIMITS
    :status: draft

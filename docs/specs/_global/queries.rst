@@ -126,3 +126,32 @@ filter:
    :link_types: trace_up
    :direction: LR
    :align: center
+
+Requirements of the active chemistry
+------------------------------------
+
+The project is a 150 % specification: the pack chemistry comes from the variant
+data (``[variants]`` in ``ubproject.toml``), and a requirement written for one
+chemistry carries it in its ``chemistry`` field. Which requirements belong to the
+chemistry this build is for?
+
+Filter string — the same through ``ubc query filter``:
+
+.. code-block:: text
+
+   type == 'req' and chemistry == var.pack.chemistry
+
+.. needtable::
+   :filter: type == 'req' and chemistry == var.pack.chemistry
+   :columns: id;title;chemistry
+   :style: table
+
+Cypher — ubCode reaches the variant data through the reserved ``$var`` parameter:
+
+.. code-block:: text
+
+   MATCH (r:req) WHERE r.chemistry = $var.pack.chemistry
+   RETURN r.id, r.title
+
+The NMC build answers ``REQ_CELL_VOLTAGE_LIMITS``; the LFP build adds
+``REQ_LFP_CHARGE_TAPER``, which exists in that build only.
