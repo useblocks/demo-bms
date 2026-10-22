@@ -617,8 +617,8 @@ derive = { kind = "copy", field = "type", over = "gap_for" }
 # approving, executing and closing it are the other `ubc agent change` verbs, or the
 # Changes panel in VS Code. No stage produces it (a change is raised on demand, not
 # authored as a step of the V), so `[workflow.change_request]` below claims the type
-# and `orphan_exempt_types` lists it. Its fields and links are declared under
-# CHANGE REQUESTS below. `artifact` is a node style sphinx-needs maps onto graphviz
+# and `orphan_exempt_types` lists it. Its fields and links are declared on it alone,
+# under CHANGE REQUESTS below. `artifact` is a node style sphinx-needs maps onto graphviz
 # (a note), so it raises no "Unknown node style" warning.
 [needs.types.change_request]
 title = "Change Request"
@@ -781,78 +781,77 @@ derive = { kind = "union", fields = [
 
 # --- CHANGE REQUESTS: the fields and links a change request carries ---
 # Written by `ubc agent change`, never authored by hand except where the assessment
-# rules on the impact. `[needs.fields]` and `[needs.links]` are project-global, so
-# these names are legal on every type, which is why each one starts with `cr_`: none
-# can collide with a field of this project's own. What a change is FOR is written in
-# the record's body, under its **Purpose** heading, not in a field.
+# rules on the impact. They are declared on `change_request` ALONE: on a need of any
+# other type each field is null and each link empty, and a value written there is
+# ignored with a `needs.undeclared_for_type` warning. What a change is FOR is
+# written in the record's body, under its **Purpose** heading, not in a field.
 #
 # `cr_status` is the change request's status LOG, one `state | at | by | rationale`
 # line per step (approved, executed, closed, ...), deliberately not the core `status`
 # field: that one carries the spec lifecycle and its enum above.
 #
-# Each says `nullable = true`: the field is absent until the engine writes it. That
-# is also what a field declaring nothing defaults to, but sphinx-needs warns about
-# such a field ("has no 'schema', 'nullable' or 'default' defined"), and `-W` makes
-# the warning an error.
+# Every field is a nullable string, absent until the engine writes it; a field
+# declared on need types alone takes its `schema` `type` from its declaration.
 
-[needs.fields.cr_requester]
+[needs.types.change_request.fields.cr_requester]
 description = "Who asked for the change"
-nullable = true
+schema = { type = "string" }
 
-[needs.fields.cr_external_id]
+[needs.types.change_request.fields.cr_external_id]
 description = "The id the change carries in an external tracker"
-nullable = true
+schema = { type = "string" }
 
-[needs.fields.cr_approval_decision]
+[needs.types.change_request.fields.cr_approval_decision]
 description = "The recorded decision: approved, rejected or deferred"
-nullable = true
+schema = { type = "string" }
 
-[needs.fields.cr_approval_by]
+[needs.types.change_request.fields.cr_approval_by]
 description = "Who made the recorded decision"
-nullable = true
+schema = { type = "string" }
 
-[needs.fields.cr_approval_at]
+[needs.types.change_request.fields.cr_approval_at]
 description = "When the recorded decision was made"
-nullable = true
+schema = { type = "string" }
 
-[needs.fields.cr_status]
+[needs.types.change_request.fields.cr_status]
 description = "The change request's status log, one transition per line"
-nullable = true
+schema = { type = "string" }
 
 # The six sets a change request carries are links: the need `plan` was seeded from,
 # the two tiers its impact analysis computed, and the assessment's ruling on each
 # need the change reaches. They are NOT trace links: no `[[workflow.stages.trace]]`
 # edge names them, the impact walks never step into or out of a change request, and
-# the orphan gate does not count them as wiring. A change request records what was
-# true when it was assessed, so each allows dead links: a need a later change removes
-# or renames raises no warning and no gap on the record that once named it.
+# the orphan gate does not count them as wiring. Each may point at a need of ANY
+# type, so none has `target_types`. A change request records what was true when it
+# was assessed, so each allows dead links: a need a later change removes or renames
+# raises no warning and no gap on the record that once named it.
 
-[needs.links.cr_anchor]
+[needs.types.change_request.links.cr_anchor]
 incoming = "anchor_of"
 outgoing = "anchored_on"
 allow_dead_links = true
 
-[needs.links.cr_computed_impact]
+[needs.types.change_request.links.cr_computed_impact]
 incoming = "impact_computed_by"
 outgoing = "reaches"
 allow_dead_links = true
 
-[needs.links.cr_potentially_affected]
+[needs.types.change_request.links.cr_potentially_affected]
 incoming = "potentially_affected_by"
 outgoing = "may_affect"
 allow_dead_links = true
 
-[needs.links.cr_impact_modify]
+[needs.types.change_request.links.cr_impact_modify]
 incoming = "impact_modified_by"
 outgoing = "modifies"
 allow_dead_links = true
 
-[needs.links.cr_impact_remove]
+[needs.types.change_request.links.cr_impact_remove]
 incoming = "impact_removed_by"
 outgoing = "removes"
 allow_dead_links = true
 
-[needs.links.cr_impact_excluded]
+[needs.types.change_request.links.cr_impact_excluded]
 incoming = "impact_excluded_by"
 outgoing = "excludes"
 allow_dead_links = true
