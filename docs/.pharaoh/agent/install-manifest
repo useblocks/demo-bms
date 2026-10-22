@@ -1,19 +1,19 @@
 {
   "schema_version": 1,
   "profile_id": "vmodel",
-  "profile_version": "22",
+  "profile_version": "23",
   "entries": [
     {
       "path": ".claude/skills/drive-workflow/SKILL.md",
-      "baseline": "c4d176c3172af0d875e3809c33c45f8bb5df244095fe9d405b5f0c4b628385c1"
+      "baseline": "787e5daacd8808f7120a1581e2bde70d6226825385133aff8b6433d8dcc6fcdd"
     },
     {
       "path": ".github/agents/drive-workflow.agent.md",
-      "baseline": "c4d176c3172af0d875e3809c33c45f8bb5df244095fe9d405b5f0c4b628385c1"
+      "baseline": "787e5daacd8808f7120a1581e2bde70d6226825385133aff8b6433d8dcc6fcdd"
     },
     {
       "path": ".agents/skills/drive-workflow/SKILL.md",
-      "baseline": "c4d176c3172af0d875e3809c33c45f8bb5df244095fe9d405b5f0c4b628385c1"
+      "baseline": "787e5daacd8808f7120a1581e2bde70d6226825385133aff8b6433d8dcc6fcdd"
     },
     {
       "path": ".claude/skills/draft-requirement/SKILL.md",
@@ -149,11 +149,11 @@
     },
     {
       "path": ".claude/commands/ubc-agent-next.md",
-      "baseline": "76572b62cfa21f1196473a0832337ef194e337dbceff77b87be671bdc40c03e2"
+      "baseline": "bf60d7dd2bcb06038695a991da58f7215b0e2a26a099dfcd0bb0bdf522c951d8"
     },
     {
       "path": ".github/agents/workflow-author.agent.md",
-      "baseline": "8d9f132494ff1264c3370e369f274fde2fefe6ed30c6f679b1a910126f8bf29f"
+      "baseline": "e15c74b80cc507e370118fc26e4ca51772a92cd8b57a060e5d933b7fd4c8f071"
     },
     {
       "path": "quality/feat.toml",

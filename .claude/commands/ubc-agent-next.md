@@ -90,6 +90,15 @@ same decision. Read it when you want the state rather than the instruction.
 - `$.stage.gates_to_pass` says what is still open. A synthetic `review` token
   means the artefact is authored and the pending action is to review it. When
   `review` sits alongside other gates, the structural gates close first.
+  A `diagnostics` token means `ubc` reports a diagnostic on one of the stage's
+  needs, or on a need that failed to build (a code marker that failed to parse,
+  or a field value that cannot be converted). `$.stage.diagnostics` lists at most
+  50 findings and `$.stage.diagnostics_omitted` counts the rest: fix the listed
+  ones in place before authoring or reviewing anything, then re-run `next` for
+  the next batch. If a fix needs a value or a decision you cannot take from the
+  need, its links or the code (an owner, a safety level, which of two needs
+  keeps a duplicate id), stop and ask the user; never make one up to clear the
+  gate.
 - If `$.stage` is `null`, read `$.reason`:
   - `empty`: the workflow configuration derives no stages. Define
     `[[workflow.stages]]`. This is a configuration state, not "nothing authored
