@@ -73,11 +73,15 @@ MARKER = re.compile(
 
 #: `category` -> the phrase that completes "<NEED_ID> — ...", and the id suffix
 #: that keeps two gaps on the same need apart. `{link}` is substituted where the
-#: gate names a link; the two trace categories are the only ones that do.
+#: gate names a link; the two trace categories are the only ones that do, except
+#: `change_incomplete`, whose record carries the change request's state there
+#: (`approved`: the work is not run yet, `executed`: it is run and not closed).
 #:
 #: The categories are the ones the 0.34 engine emits (`trace_forward`,
 #: `trace_backward`, `orphan`, `status_disallowed`, `status_undeclared`,
-#: `needs_clarification`, `code_trace`). `ubc agent` is alpha and says so — its
+#: `needs_clarification`, `code_trace`), plus `change_incomplete`, which
+#: `ubc agent change` adds for an approved or executed change request that is not
+#: closed. `ubc agent` is alpha and says so — its
 #: JSON shapes may still change — so an UNKNOWN category is rendered generically
 #: rather than rejected: a gate finding must never be dropped because this table
 #: has not caught up with the engine.
@@ -94,7 +98,13 @@ CATEGORIES: dict[str, tuple[str, str]] = {
     "status_undeclared": ("its status is not declared in the lifecycle", "STATUS_UNDECLARED"),
     "needs_clarification": ("it still carries a NEEDS CLARIFICATION marker", "NEEDS_CLARIFICATION"),
     "code_trace": ("it has no code trace", "CODE_TRACE"),
+    "change_incomplete": ("it is {link} and not yet closed", "CHANGE_INCOMPLETE"),
 }
+#: The categories whose record carries something other than a link name in `link`.
+#: `change_incomplete` puts the change request's state there (`approved` or
+#: `executed`), which is neither a `gap_link` value nor a count of links, so its gap
+#: writes no `:gap_link:` and no shortfall, and is resolved by the change verbs.
+STATE_IN_LINK = {"change_incomplete"}
 FALLBACK = ("the {category} gate is not satisfied", "{CATEGORY}")
 
 
@@ -301,9 +311,10 @@ def render(gaps: list[Gap], by_category: dict[str, int], report: Path) -> str:
         # A record that carries no link (an `orphan`, say) writes no `:gap_link:` at
         # all rather than an empty one: extra options default to "" anyway, and a
         # field line with nothing after the colon is noise on the rendered page.
-        if gap.link:
+        counts_links = gap.category not in STATE_IN_LINK
+        if gap.link and counts_links:
             lines.append(f"   :gap_link: {gap.link}")
-        if gap.shortfall:
+        if gap.shortfall and counts_links:
             lines.append(f"   :gap_shortfall: {gap.shortfall}")
         lines += [
             f"   :gap_need_id: {gap.need_id}",
@@ -325,15 +336,27 @@ def render(gaps: list[Gap], by_category: dict[str, int], report: Path) -> str:
                 "engine version ``tools/import_gaps.py`` was written against. Read the "
                 "raw record in the snapshot for the detail."
             )
-        if gap.shortfall:
+        if gap.shortfall and counts_links:
             lines += _body(
                 f"It carries **{gap.shortfall}** of the ``{gap.link}`` links that gate requires."
             )
-        lines += _body(
-            f"Resolve it with ``ubc agent next --id {gap.need_id}``, which names the stage "
-            "that owes the missing artefact, then refresh this page from a new "
-            "``ubc agent gaps`` snapshot."
-        )
+        if gap.category == "change_incomplete":
+            run_first = (
+                f"run it with ``ubc agent change execute --id {gap.need_id}``, then "
+                if gap.link == "approved"
+                else ""
+            )
+            lines += _body(
+                f"Finish the change: {run_first}close it with ``ubc agent change close "
+                f"--id {gap.need_id} --by <WHO>``. Refresh this page from a new "
+                "``ubc agent gaps`` snapshot afterwards."
+            )
+        else:
+            lines += _body(
+                f"Resolve it with ``ubc agent next --id {gap.need_id}``, which names the stage "
+                "that owes the missing artefact, then refresh this page from a new "
+                "``ubc agent gaps`` snapshot."
+            )
 
     return "\n".join(lines)
 
