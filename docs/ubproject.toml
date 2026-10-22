@@ -30,40 +30,10 @@ version = "0.1.0"
 # pinned to a need id precisely so that it stops being reachable and shows up as
 # dead config rather than quietly widening.
 [lint]
-# The PDF builder is ALPHA and does not typeset every construct yet. The ones it
-# cannot draw become a labelled placeholder box in the page and a
-# `build.pdf_diagram_unrendered` warning, and `[build.pdf] deny` defaults to
-# "warning", so `ubc build pdf` exits 1 on a project that is perfectly healthy.
-# This project trips it 6 times: the 5 `needflow` diagrams on traceability.rst
-# and the one on specs/_global/queries.rst.
-#
-# Silencing the CODE rather than lowering the bar. `[build.pdf] deny = "error"`
-# would also work and is what the CLI suggests first, but it is far too broad —
-# it retires the warning bar for the PDF build entirely, so a genuine future
-# build warning would land in the artefact unreported. This entry gives up
-# exactly one diagnostic and leaves the bar at "warning" for everything else.
-#
-# The warning against this form in the note above does not apply here: it is
-# about `needs.*` SCHEMA codes, which `ubc schema validate` shares with the
-# build, so blanking one there disarms the validator too. `build.pdf_*` is
-# emitted only by `ubc build pdf` — `ubc check`, `ubc schema validate` and
-# `ubc agent gaps` were verified byte-identical with and without this line.
-#
-# DELETE THIS ENTRY once the builder typesets needflow; the placeholders
-# disappear on their own and the line becomes dead config.
-ignore = ["build.pdf_diagram_unrendered"]
 
 [[lint.message-ignores]]
 codes = ["needs.schema_network_warning"]
 contains = "REQ_CELL_BALANCING_WINDOW:satisfies (incoming)"
-
-# The 3 `needuml` component diagrams under specs/*/architecture.rst hit the same
-# limitation under a different code: the PDF builder does not handle the directive
-# at all yet. Scoped to `needuml` so that any OTHER unhandled directive still fails
-# the build. DELETE once the builder typesets needuml.
-[[lint.message-ignores]]
-codes = ["build.pdf_directive_unhandled"]
-contains = "needuml:"
 
 # This file is the PROJECT ROOT, and it lives in docs/ on purpose: the source
 # root ubc discovers documents from is the directory holding this file, so with
@@ -1349,6 +1319,21 @@ brand = "@brand"
 link = "@brand"
 note = "@brand"
 link-underline = "@accent"
+
+# The diagrams, drawn by PlantUML for both builders (bring your own renderer):
+# the three `needuml` component diagrams and, with `needflow = true`, the six
+# `needflow`s. `[needs] flow_engine = "graphviz"` above stays the Sphinx build's
+# engine; for ubc it is only the low-precedence default this key overrides.
+# ubc always runs PlantUML under its SANDBOX security profile; nothing here
+# relaxes it. PlantUML 1.2026.2 or newer is required.
+#
+# THIS MACHINE'S PATH: the 1.2026.8 jar the sphinx-needs repository commits
+# (vendor/plantuml/). Homebrew's `plantuml` here is 1.2026.1, below the minimum.
+# Elsewhere, point `command` at your own PlantUML.
+[build.plantuml]
+enabled = true
+command = ["java", "-jar", "/Users/chrisjsewell/GitHub/sphinx-needs/vendor/plantuml/plantuml-1.2026.8.jar"]
+needflow = true
 
 # --- REPORTS AND INSIGHTS (consumed by `ubc report` / the VS Code Reports view) ---
 # A plain report is a `.html.j2` template rendered from the needs index; an
