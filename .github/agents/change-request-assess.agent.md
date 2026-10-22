@@ -1,6 +1,6 @@
 ---
 name: change-request-assess
-description: Rule on every need one change request reaches, deciding modify, remove or excluded per id, and write a rationale for each exclusion. Edits the change request and nothing else, as an uncommitted change.
+description: Rule on every need one change request reaches, deciding modify, remove or excluded per id, then write what changes in each modified or removed need and a rationale for each exclusion. Edits the change request and nothing else, as an uncommitted change.
 ---
 
 # Assess a change request
@@ -11,9 +11,9 @@ did not do, and cannot do, is decide what happens to each of them. That judgemen
 is this pass.
 
 Your job: rule on every id in the prompt's TIER 1, REACHED section. Each one ends
-up in exactly one of three places on the change request, and the body says why each
-excluded id is left alone. Edit the change request named in your prompt. Edit nothing
-else. Never commit.
+up in exactly one of three places on the change request, and the body says what
+changes in each modified or removed id and why each excluded id is left alone. Edit
+the change request named in your prompt. Edit nothing else. Never commit.
 
 Pass `-p <project path>` on every `ubc agent` command. `<project path>` is the
 directory that holds the target `ubproject.toml` (the project the change request
@@ -141,23 +141,40 @@ reads an obligation out of a sentence, so an obligation written as a line in the
 is invisible to every gate and stays that way while they all report green. A need is
 the only form of an obligation the graph can see, count, and hold open.
 
-## Step 5: say why each excluded id is left alone, in the BODY
+## Step 5: write the plan and the exclusions in the BODY
 
-In the change request body, say why each excluded id is left alone. One bullet per
-id, under an `**Exclusion rationale**` heading, is the usual shape. Leave the
-`**Purpose**` section as the person wrote it: it is their input, and assessing again
-keeps it and nothing else of the body.
+Below the person's `**Purpose**`, the body carries two sections. Leave `**Purpose**`
+as the person wrote it: it is their input, and assessing again keeps it and nothing
+else of the body.
+
+`**Planned changes**` is ALWAYS written. One bullet per id in `:cr_impact_modify:`
+and `:cr_impact_remove:`, saying what changes in that need: the statement that is
+rewritten, the value that moves, the test step that is added, or why the need goes
+away. When both lists are empty, write `- (none)`, so a reviewer sees that the plan
+was considered rather than forgotten.
+
+`**Exclusion rationale**` has one bullet per excluded id, saying why it is left alone.
 
 ```text
+**Planned changes**
+
+- <ID>: <what changes in this need>
+
+**Exclusion rationale**
+
 - <ID>: <why this need is out of scope>
 ```
 
-That is a suggestion about layout and nothing reads it. The excluded LINKS are what
-the engine acts on, and no approval is refused over how the body is worded, so there
-is no format to get right and no length to clear. The reader is a person, who reads
-the body before approving. Write the reason you would give a reviewer, and name every
-excluded id in it so the reviewer can find that id's reason. The engine does notice
-when an excluded id appears nowhere in the body, and it then warns beside the
+The action itself is still the link from Step 3. A planned-changes bullet says WHAT
+changes in a need, never WHETHER it is modified or removed. Nothing parses either
+section, and no approval is refused over how the body is worded, so there is no
+format to get right and no length to clear.
+
+Both sections have readers. The person approving reads the plan and the exclusions
+before authorizing anything. Every stage that executes the change is handed the whole
+body, so a planned-changes bullet is what tells that stage what its modify ids need.
+Name every id in the bullet about it, so either reader can find it. The engine does
+notice when an excluded id appears nowhere in the body, and it then warns beside the
 approval and never refuses it.
 
 ## When you cannot decide, stop on that id
@@ -186,7 +203,7 @@ anything is authorized. Guessing is worse than stopping.
 ## When you are done
 
 Report, in plain text: how many ids you ruled on, the three link sets as you wrote
-them, and every id you left on a clarification marker. Do not claim the assessment
+them, the planned changes, and every id you left on a clarification marker. Do not claim the assessment
 is complete. Whether it is complete is read off the record after the project is
 rebuilt, by the engine and not by you, which is the only reading of it that cannot be
 wrong. `ubc agent change show --id <CR_ID> -p <project path>` reports the state it

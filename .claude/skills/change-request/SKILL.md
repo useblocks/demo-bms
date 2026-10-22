@@ -80,6 +80,8 @@ line's label is written out in full:
   the engine does after the last step.
 - `PURPOSE (what the change is for):` the change request's own statement of why
   the change is made. Read it before you decide what an id in your sets needs.
+  The body quoted with it also carries the assessment's `**Planned changes**`, one
+  bullet per modified or removed id: read the bullet for an id before you edit it.
 - where a brand-new artefact of this stage goes, as a resolved path and an id
   prefix, in the sentence that follows the three lists.
 
