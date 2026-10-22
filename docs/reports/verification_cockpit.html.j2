@@ -1,4 +1,4 @@
-{#- Verification Cockpit — a dashboard for ONE software requirement, for the
+{#- Verification Cockpit — an insight for ONE software requirement, for the
     verification lead.
 
     It answers "is this requirement actually closed, and by what?" A
@@ -12,7 +12,7 @@
       * its sibling software requirements on the same component, so a green page
         for one requirement cannot hide an unclosed sibling.
 
-    Declared in ubproject.toml as [reports.dashboards.verification_cockpit]
+    Declared in ubproject.toml as [reports.insights.verification_cockpit]
     (input = "need", types = ["swreq"]). Render it with
     `ubc report verification_cockpit --need SWREQ_LIMIT_EVALUATION`, or from the
     need's insight lens in VS Code. The four queries traverse links a plain
@@ -80,7 +80,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{ dashboard.title }} — {{ need.id }}</title>
+  <title>{{ insight.title }} — {{ need.id }}</title>
   <style>
     {{ theme_style() }}
     /* The verdict accent. Set on :root, not on <body>: the editor panel

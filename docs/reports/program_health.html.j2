@@ -1,4 +1,4 @@
-{#- Program Health — the project-wide dashboard, for the chief engineer and the
+{#- Program Health — the project-wide insight, for the chief engineer and the
     release manager.
 
     It answers one question: "can this graph be released?" — and then shows the
@@ -15,7 +15,7 @@
 
     Every number is a Cypher aggregation over the needs graph; none of it is a
     field someone had to stamp. Declared in ubproject.toml as
-    [reports.dashboards.program_health] (input = "none"). Script-free and themed
+    [reports.insights.program_health] (input = "none"). Script-free and themed
     with theme_style()'s --ub-* tokens. -#}
 {% set rungs = queries.rungs %}
 {% set sc = queries.swreq | first %}
@@ -72,7 +72,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{ dashboard.title }}</title>
+  <title>{{ insight.title }}</title>
   <style>
     {{ theme_style() }}
     /* The verdict accent. Set on :root, not on <body>: the editor panel
@@ -146,7 +146,7 @@
   </style>
 </head>
 <body>
-  <h1>{{ dashboard.title }}</h1>
+  <h1>{{ insight.title }}</h1>
   <p class="sub">
     {{ needs_total }} needs across {{ rungs | length }} types
     {% for v in variant %} · variant chemistry <span class="badge plain">{{ v.chemistry }}</span>{% endfor %}

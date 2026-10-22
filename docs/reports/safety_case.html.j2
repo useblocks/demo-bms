@@ -1,4 +1,4 @@
-{#- Safety Case — a dashboard for ONE system requirement, for the functional
+{#- Safety Case — an insight for ONE system requirement, for the functional
     safety manager.
 
     It answers the question a safety review actually asks: "is the argument for
@@ -12,12 +12,12 @@
         recorded outcome), rolled up per software requirement;
       * the architecture decisions the design rests on.
 
-    Declared in ubproject.toml as [reports.dashboards.safety_case]
+    Declared in ubproject.toml as [reports.insights.safety_case]
     (input = "need", types = ["req"]). Render it with
     `ubc report safety_case --need REQ_CELL_OVERTEMPERATURE`, or from the need's
     insight lens in VS Code. The four queries walk the links the needs index
     holds; a plain report template cannot follow a link, which is the whole
-    reason this is a dashboard.
+    reason this is an insight.
 
     Script-free: every chart is inline HTML/SVG and the page follows the editor
     theme through theme_style()'s --ub-* tokens. -#}
@@ -76,7 +76,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{{ dashboard.title }} — {{ need.id }}</title>
+  <title>{{ insight.title }} — {{ need.id }}</title>
   <style>
     {{ theme_style() }}
     /* The verdict accent. Set on :root, not on <body>: the editor panel

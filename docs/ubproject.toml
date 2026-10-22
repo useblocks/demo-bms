@@ -1246,20 +1246,20 @@ parent_fit = 1
 [quality.type_configs.decision.required]
 context_present = 1
 
-# --- REPORTS AND DASHBOARDS (consumed by `ubc report` / the VS Code Reports view) ---
-# A plain report is a `.html.j2` template rendered from the needs index; a
-# DASHBOARD is a template plus a declaration here, and its declared Cypher
+# --- REPORTS AND INSIGHTS (consumed by `ubc report` / the VS Code Reports view) ---
+# A plain report is a `.html.j2` template rendered from the needs index; an
+# INSIGHT is a template plus a declaration here, and its declared Cypher
 # queries run against the needs graph before the template renders.
 #
-# That is the whole reason these three exist as dashboards and not as plain
+# That is the whole reason these three exist as insights and not as plain
 # reports. A plain template CANNOT walk links: `ubc report` builds each need in
 # the Jinja context from its scalar FIELDS, so `satisfies`, `refines`,
 # `verifies`, `results_for` and the other link fields are absent, and a
-# link-based view silently reports zero everywhere. A dashboard's queries run
+# link-based view silently reports zero everywhere. An insight's queries run
 # in the engine first, so the template receives the traversals as data. The
-# three below are the same fact three ways: a `need` dashboard for a system
-# requirement, a `need` dashboard for a software requirement, and a project-wide
-# `none` dashboard. Their queries live in `reports/queries/` beside the
+# three below are the same fact three ways: a `need` insight for a system
+# requirement, a `need` insight for a software requirement, and a project-wide
+# `none` insight. Their queries live in `reports/queries/` beside the
 # templates.
 #
 # This table is ubCode-only; Sphinx and sphinx-needs ignore it, and editing a
@@ -1272,14 +1272,14 @@ directory = "reports"
 # risk register entries that mitigate it, the common-cause peers that share
 # those risks, the evidence chain below it, and the architecture decisions its
 # design rests on.
-[reports.dashboards.safety_case]
+[reports.insights.safety_case]
 title = "Safety Case"
 description = "ASIL, risk mitigations and the evidence chain of one requirement."
 template = "safety_case.html.j2"
 input = "need"
 types = ["req"]
 
-[reports.dashboards.safety_case.queries]
+[reports.insights.safety_case.queries]
 risks = { file = "queries/safety_risks.cypher" }
 peers = { file = "queries/safety_peers.cypher" }
 evidence = { file = "queries/safety_evidence.cypher" }
@@ -1289,14 +1289,14 @@ decisions = { file = "queries/safety_decisions.cypher" }
 # that implement it, the test needs that verify it with their last recorded
 # outcomes, the closure checklist, where it sits in the V, and its sibling
 # software requirements on the same component.
-[reports.dashboards.verification_cockpit]
+[reports.insights.verification_cockpit]
 title = "Verification Cockpit"
 description = "Implementation and recorded test evidence of one software requirement."
 template = "verification_cockpit.html.j2"
 input = "need"
 types = ["swreq"]
 
-[reports.dashboards.verification_cockpit.queries]
+[reports.insights.verification_cockpit.queries]
 impls = { file = "queries/verif_impls.cypher" }
 results = { file = "queries/verif_results.cypher" }
 upstream = { file = "queries/verif_upstream.cypher" }
@@ -1308,13 +1308,13 @@ siblings = { file = "queries/verif_siblings.cypher" }
 # requirements by ASIL and evidence state, the failing evidence with its
 # fan-out, the risks, the structural gaps and the variant the index was built
 # for.
-[reports.dashboards.program_health]
+[reports.insights.program_health]
 title = "Program Health"
 description = "Release gate, V-model coverage and failing evidence across the whole graph."
 template = "program_health.html.j2"
 input = "none"
 
-[reports.dashboards.program_health.queries]
+[reports.insights.program_health.queries]
 rungs = { file = "queries/health_rungs.cypher" }
 swreq = { file = "queries/health_swreq.cypher" }
 reqs = { file = "queries/health_reqs.cypher" }
