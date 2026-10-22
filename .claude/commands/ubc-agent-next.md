@@ -97,6 +97,10 @@ same decision. Read it when you want the state rather than the instruction.
   - `done`: no stage of this stream is actionable. Check `$.open_streams` before
     calling the project finished, since `done` is vacuous for an anchor no stage
     produces.
+  - `gaps`: the stream still carries gaps that no stage owns, because no stage
+    produces those needs' type. `$.unattributed_gaps` names them. Close them on
+    the needs themselves, or declare a stage that produces the type. This is
+    never a finish.
   - `blocked`: a dependency stage is unmet. Resolve it first.
   - `id_not_found`: the `--id` is not a need in the graph. Fix the id.
   - `stage_not_found`: the `--stage` is not a stage of this workflow. Fix the
