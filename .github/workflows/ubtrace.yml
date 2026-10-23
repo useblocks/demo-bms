@@ -359,23 +359,19 @@ jobs:
       - name: Build the specification PDF
         id: pdf
         # `ubc build pdf` runs NO Sphinx and no LaTeX — it typesets the same index
-        # `ubc check` and the editor use — so it needs none of the uv / graphviz /
-        # PlantUML apparatus installed above, and it cannot be folded into the
-        # sphinx-build below. It is ALPHA: the layout and the options may still move
+        # `ubc check` and the editor use — so it needs none of the uv / graphviz
+        # apparatus installed above, only the PlantUML installed above, which
+        # `[build.plantuml]` names (`plantuml` on PATH) to draw the nine diagrams;
+        # and it cannot be folded into the sphinx-build below. It is ALPHA: the layout and the options may still move
         # between releases, which is another reason it is a run attachment and not
         # something published to team.useblocks.com.
         #
         # Placed BEFORE the ubTrace build on purpose. The two are independent, and in
         # this order a sphinx failure still leaves a PDF for the upload to attach.
         #
-        # THERE IS NO `--deny` OVERRIDE HERE, deliberately. The builder does not
-        # typeset `needflow` or `needuml` yet and draws each as a labelled placeholder
-        # box plus a warning — 8 of them in this project — which under the default
-        # `--deny warning` bar exits 1 on a perfectly healthy graph. `--deny error`
-        # would fix that by retiring the warning bar altogether; instead
-        # docs/ubproject.toml ignores exactly those two findings, so the bar here
-        # stays at `warning` and any other build warning still fails this step.
-        # `-w` prints the detail of whatever is left.
+        # THERE IS NO `--deny` OVERRIDE HERE, deliberately: the bar stays at
+        # `warning`, so a diagram PlantUML cannot draw (a placeholder) or any other
+        # build warning fails this step. `-w` prints the detail.
         env:
           PDF_NAME: ${{ steps.vars.outputs.pdf_name }}
         run: ubc build pdf docs -w -o "_build/pdf/${PDF_NAME}.pdf"

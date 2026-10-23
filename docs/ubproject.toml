@@ -1337,12 +1337,13 @@ link-underline = "@accent"
 # ubc always runs PlantUML under its SANDBOX security profile; nothing here
 # relaxes it. PlantUML 1.2026.2 or newer is required.
 #
-# THIS MACHINE'S PATH: the 1.2026.8 jar the sphinx-needs repository commits
-# (vendor/plantuml/). Homebrew's `plantuml` here is 1.2026.1, below the minimum.
-# Elsewhere, point `command` at your own PlantUML.
+# `plantuml` is looked up on PATH, as the Sphinx build already requires (conf.py),
+# and must be 1.2026.2 or newer: CI installs 1.2026.8 in the publish job; locally,
+# `brew upgrade plantuml` (homebrew's 1.2026.1 is too old, and the diagrams then
+# stay placeholders with a warning).
 [build.plantuml]
 enabled = true
-command = ["java", "-jar", "/Users/chrisjsewell/GitHub/sphinx-needs/vendor/plantuml/plantuml-1.2026.8.jar"]
+command = ["plantuml"]
 needflow = true
 
 # --- REPORTS AND INSIGHTS (consumed by `ubc report` / the VS Code Reports view) ---
