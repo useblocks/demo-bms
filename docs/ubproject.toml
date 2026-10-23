@@ -916,6 +916,16 @@ needs_fields = [
   { name = "type", type = "str", default = "test" },
 ]
 
+# --- TEST REPORTS (sphinx-test-reports and ubCode's `[test_reports]`) ---
+# The committed JUnit run, read a second way: `specs/_global/test_run.rst` reads
+# `reports/junit/testresults.xml` with a `test-file` directive, one need per file,
+# suite and case, beside the `test_result` needs `tools/import_test_results.py`
+# writes from the same file. An empty table is enough: it gives ubCode, Sphinx (with
+# `sphinx_test_reports` in `extensions`) and the converter the `testfile` /
+# `testsuite` / `testcase` types and their fields. Additive for now; replacing the
+# importer with it is the next step.
+[test_reports]
+
 # --- AGENT RUNNER (consumed by `ubc agent run`) ---
 # `ubc agent run` spawns an AI runner to author the next-stage artefact. The
 # prompt (recommended skill + the anchor need's context briefing + the resolved
