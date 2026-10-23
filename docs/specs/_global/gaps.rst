@@ -28,8 +28,6 @@ diagram and as a non-empty ``gaps`` cell in every level table on
    :gap_category: trace_backward
    :gap_link: satisfies
    :gap_shortfall: 0 of 1
-   :gap_need_id: REQ_CELL_BALANCING_WINDOW
-   :gap_need_type: req
    :style: red_bar
 
    ``REQ_CELL_BALANCING_WINDOW`` (req) fails the ``trace_backward`` gate: nothing links
