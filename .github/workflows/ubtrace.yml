@@ -405,7 +405,9 @@ jobs:
         #
         # The variants come from `[ubtrace.variants]` in docs/ubproject.toml: one
         # build per entry, each in its own root, with the entry's data file and
-        # dimensions passed as `-D` flags. One line per variant: its name, then
+        # dimensions passed as `-D` flags. `needs_variant_data_file` is Sphinx's
+        # per-build switch and wins over the `[variants]` table the project
+        # declares (sphinx-needs documents it so), so each entry names its file. One line per variant: its name, then
         # the `-D` values, which contain no spaces. Read on fd 3 so sphinx-build
         # cannot consume the list from stdin.
         run: |
