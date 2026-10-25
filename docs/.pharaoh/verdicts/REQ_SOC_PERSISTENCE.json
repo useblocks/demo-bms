@@ -2,37 +2,36 @@
   "agent": "claude-code",
   "axes": {
     "atomicity": {
-      "reason": "One obligation - a single bound on the first published value after a power cycle.",
+      "reason": "One obligation: the first publication after a power cycle must match the last value published before shutdown within 2 % of rated capacity.",
       "score": 2
     },
     "comprehensibility": {
-      "reason": "Self-contained - it names both compared values, the bound and its unit.",
+      "reason": "Self-contained: the precondition (no charge left or entered), the event (first publication after a power cycle), the tolerance basis and the purpose are stated in the body.",
       "score": 2
     },
     "feasibility": {
-      "reason": "Feasible via a shutdown store, but it collides with REQ_SOC_REST_CORRECTION: a standstill long enough to power-cycle a vehicle also satisfies that requirement's 30-minutes-below-1 A rest condition, and its correction is unbounded in magnitude, so it can legitimately shift the value by more than the 2 % allowed here. Neither requirement states which wins.",
-      "score": 1,
-      "suggestion": "State the precedence explicitly - e.g. exempt the first publication after an open-circuit-voltage correction from this bound, or rate-limit the correction so it cannot breach it."
+      "reason": "Persisting the last SoC to non-volatile storage and restoring it is routine, and a 2 % tolerance conflicts with none of the other SoC requirements.",
+      "score": 2
     },
     "parent_fit": {
-      "reason": "Directly delivers the parent story's observable that the level does not jump when the vehicle is switched off and on again.",
+      "reason": "Implements the parent's explicit observable: the charge level the vehicle shows does not jump when the vehicle is switched off and on again.",
       "score": 2
     },
     "unambiguity": {
-      "reason": "One reading: compare the first post-power-cycle value against the last pre-shutdown value, bounded in percent of rated capacity.",
-      "score": 2
+      "reason": "The title says 'within 2 % of the value reported before shutdown' (reads as relative to the value) while the body says '2 % of rated capacity' (absolute points), which give different limits at low SoC, and 'power cycle' does not say whether an abrupt power loss counts as well as an orderly shutdown.",
+      "score": 1,
+      "suggestion": "Make the title carry the body's basis ('within 2 % of rated capacity') and state whether the requirement covers orderly shutdown only or any power loss."
     },
     "verifiability": {
-      "reason": "The 2 % bound and the observation point (first publication after the power cycle) are concrete, but 'a power cycle in which no charge left or entered the pack' cannot be realised literally - quiescent load and self-discharge always move some charge - so the test precondition is unbounded and the tester must invent one.",
-      "score": 1,
-      "suggestion": "Bound the precondition, e.g. an off period of at most a stated duration with no external charge or discharge and at most a stated charge movement."
+      "reason": "Concrete: with no charge flowing, power-cycle the pack and compare the first published SoC with the last pre-shutdown value; pass if within 2 % of rated capacity (basis stated in the body).",
+      "score": 2
     }
   },
   "criteria": "requirement",
   "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
-  "model": "claude-opus-5[1m]",
+  "model": "claude-sonnet-5-5",
   "need": "REQ_SOC_PERSISTENCE",
-  "reviewed_fingerprint": "926151e67d16643ce88fba5ab486d249072a082274045f2e2cb5a32192b72316",
+  "reviewed_fingerprint": "475330817f527980bbd66a76823a5546fb53860f27719dd866b6c28192418aed",
   "schema": 2,
-  "summary": "Matches the parent's no-jump observable, but its precondition ('no charge left or entered the pack') is not physically realisable as written, and the 2 % bound collides with the unbounded open-circuit-voltage correction, which triggers in exactly the same standstill."
+  "summary": "Directly traceable and testable; unambiguity reduced by a title/body mismatch in the tolerance basis (relative vs absolute) and an unstated power-loss scope."
 }

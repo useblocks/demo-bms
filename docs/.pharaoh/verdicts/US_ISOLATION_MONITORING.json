@@ -2,32 +2,33 @@
   "agent": "claude-code",
   "axes": {
     "naming_clarity": {
-      "reason": "Stakeholder vocabulary throughout, but 'insulation' and 'isolation' are used for the same barrier, which a non-implementer may read as two things.",
-      "score": 1,
-      "suggestion": "Pick one term - 'isolation' matches the requirement and the fault name - and use it in both title and body."
-    },
-    "no_mechanism_leak": {
-      "reason": "Names interfaces a user sees (dashboard, diagnostic interface) and no implementation construct.",
+      "reason": "Title and body use stakeholder vocabulary (fleet operator, insulation between pack and chassis, touch hazard, live part, applicable safety standard); the story mixes the words insulation and isolation for the same thing, but the plain insulation wording anchors the term so a non-implementer can still confirm it.",
       "score": 2
     },
+    "no_mechanism_leak": {
+      "reason": "Mostly implementation-free, but the out-of-scope sentence names the contactors, a hardware disconnect device that is an incidental design hint and not load-bearing for isolation monitoring.",
+      "score": 1,
+      "suggestion": "Say disconnecting the pack from the high-voltage circuit, as the cell-protection story does, or drop the clause; note that the cell-protection story and its requirements cover only cell voltage, cell temperature and pack-current faults, so the reaction to an isolation fault that this clause defers to them currently has no owner."
+    },
     "parent_fit": {
-      "reason": "Root story of its stream: no parent exists to trace to, which the pack scores as full fit.",
+      "reason": "Root of the V: the user_stories stage has no upstream stage (depends_on is empty) and the story has no outgoing trace link, so there is no parent to engage with and the axis is fully met by default.",
       "score": 2
     },
     "single_user_capability": {
-      "reason": "Exactly one capability - report a degrading isolation barrier - with the neighbouring reactions explicitly ruled out of scope.",
+      "reason": "Exactly one capability, watching the insulation between the high-voltage pack and the chassis and raising an isolation fault when it degrades below the minimum the applicable standard sets; cell protection and the contactor reaction are explicitly out of scope and one child requirement covers it.",
       "score": 2
     },
     "user_observable": {
-      "reason": "Observable from the driver's seat (dashboard fault) and from the workshop (diagnostic readout confirmable with a hand-held tester).",
-      "score": 2
+      "reason": "Observable in principle (the pack raises an isolation fault), but the story names no observer, channel or bench check, so the fault reads as an internal state rather than a visible effect, and nothing says how anyone would establish that the barrier really fell below the minimum set by the standard.",
+      "score": 1,
+      "suggestion": "Say where the fault is seen (for example a warning to the driver or a fault the workshop can read) and give a bench check: a known resistance connected between the high-voltage bus and the chassis makes the fault appear once it falls below the minimum set by the standard for the pack voltage, and not above it."
     }
   },
   "criteria": "feat",
   "criteria_fingerprint": "bb61c1a1cf63adcf67ee69adf932c3812909a595fa4b3037b66f097932231afe",
-  "model": "claude-fable-5-1",
+  "model": "claude-sonnet-5-5",
   "need": "US_ISOLATION_MONITORING",
-  "reviewed_fingerprint": "7cfbd0c3b98eaefe3e1cd35f505a0d407ee5ebe11d86ac68dbe33888030ac0c9",
+  "reviewed_fingerprint": "f2de2518b38f9120333f6ea69338cab87be95aa0bf0683d81c39385215266bda",
   "schema": 2,
-  "summary": "Clean single-capability story with a strong observability paragraph; the only wobble is the insulation/isolation synonym pair."
+  "summary": "One clean capability in plain language, but the observable names no channel or bench check for the isolation fault and the out-of-scope line names the contactors."
 }

@@ -2,37 +2,36 @@
   "agent": "claude-code",
   "axes": {
     "atomicity": {
-      "reason": "One obligation - monotonic non-increase of the reported figure; the discard sentence is the same obligation expressed as its mechanism.",
+      "reason": "One obligation: the reported capacity figure never increases; the sentence about discarding higher measurements is the mechanism of that same rule.",
       "score": 2
     },
     "comprehensibility": {
-      "reason": "Self-contained - it states the reported quantity, its unit and the monotonic rule with its mechanism.",
+      "reason": "Intelligible on its own: the body gives the unit (percentage of rated capacity), the rule (never increases), the discard behaviour and the purpose (a worn pack must not look healthier than it was).",
       "score": 2
     },
     "feasibility": {
-      "reason": "Implementable as a discard rule, but permanently discarding higher measurements means a repaired or recalibrated pack can never report its true capacity; and because no accuracy bound is stated anywhere, a constant figure would conform while telling the fleet operator nothing.",
-      "score": 1,
-      "suggestion": "Pair the monotonic rule with an accuracy bound on the reported capacity (against a bench full-discharge reference) and a defined service reset for pack repairs."
+      "reason": "A monotonic running-minimum clamp on a reported figure is trivial to implement and contradicts nothing in the linked context.",
+      "score": 2
     },
     "parent_fit": {
-      "reason": "Directly delivers the parent story's observable that the fleet report shows a remaining-capacity figure that only decreases over the life of the pack.",
+      "reason": "Implements the parent's explicit observable: the fleet report shows a remaining-capacity figure that never rises over the life of the pack.",
       "score": 2
     },
     "unambiguity": {
-      "reason": "Clear for a pack in continuous service but silent on legitimate increases - module replacement or a service recalibration - so it is open whether the never-increase rule survives a repair or applies only to one pack configuration.",
+      "reason": "'Remaining capacity expressed as a percentage of rated capacity' is almost the wording REQ_SOC_ACCURACY uses to define state of charge (the share of rated capacity still available); only the cues 'never increase' and 'worn pack' show that capacity fade is meant, not SoC.",
       "score": 1,
-      "suggestion": "State the exceptions explicitly, e.g. the reported value may be reset on a documented pack repair, and scope the monotonic rule to an unchanged pack configuration."
+      "suggestion": "Use a distinct term (e.g. state of health or capacity retention) or define 'remaining capacity' as the pack's full-charge capacity relative to rated capacity."
     },
     "verifiability": {
-      "reason": "Directly checkable against a sequence of reported values: any increase between successive values is a failure.",
+      "reason": "Concrete property check: supply capacity candidates above and below the reported value (including across power cycles) and confirm the reported series never increases and higher candidates leave it unchanged.",
       "score": 2
     }
   },
   "criteria": "requirement",
   "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
-  "model": "claude-opus-5[1m]",
+  "model": "claude-sonnet-5-5",
   "need": "REQ_SOH_CAPACITY_REPORT",
-  "reviewed_fingerprint": "2d09dd28f7d5837c51201c5cbe43f63095e57bd6ab485e165421cc9f9dd12ce5",
+  "reviewed_fingerprint": "6d6686d8722ddc2215d8ce1264cb2aa71b177c78ed06f1ad3596b9e76f173bf3",
   "schema": 2,
-  "summary": "Faithful to the parent's monotonic-capacity observable, but the never-increase rule has no exception for a repaired pack and the requirement sets no accuracy bound at all, so a constant reported value would satisfy it."
+  "summary": "Clearly traceable and testable monotonic-capacity rule; unambiguity reduced because 'remaining capacity' collides with the SoC definition used by REQ_SOC_ACCURACY."
 }

@@ -2,31 +2,32 @@
   "agent": "claude-code",
   "axes": {
     "naming_clarity": {
-      "reason": "Title and body stay in stakeholder vocabulary (safety engineer, driver, workshop, test bench, safe window); thermal runaway is standard battery-domain terminology a non-implementer stakeholder can confirm.",
+      "reason": "Plain stakeholder vocabulary (vehicle safety engineer, high-voltage circuit, safe voltage window, workshop, fault entry, service reset); thermal runaway and service reset are standard domain terms a safety engineer or workshop can confirm, and the guidance asks for leniency on domain terminology.",
       "score": 2
     },
     "no_mechanism_leak": {
-      "reason": "No class, function, module, table, internal endpoint or technology choice appears; high-voltage circuit and terminals are physical domain objects, and no contactor, sensor or software construct is named.",
+      "reason": "Describes behaviour only (leaving the high-voltage circuit, a stored fault entry, a service reset) and names no class, function, module, table, endpoint or technology; it does not even name the contactors, the memory or the diagnostic protocol.",
       "score": 2
     },
     "parent_fit": {
-      "reason": "user_story is the root stage of this project V and the need carries no outgoing parent link, so per the pack scoring guide this axis is fully met by default.",
+      "reason": "Root of the V: the user_stories stage has no upstream stage (depends_on is empty) and the story has no outgoing trace link, so there is no parent to engage with and the axis is fully met by default.",
       "score": 2
     },
     "single_user_capability": {
-      "reason": "One capability throughout: remove the pack from the high-voltage circuit when any cell leaves its safe voltage, current or temperature window. The driver warning, stored fault entry, latch-until-cleared and bench measurement are all facets of that same disconnect event, and the other two pack capabilities are explicitly scoped out.",
-      "score": 2
+      "reason": "Centred on one capability, the pack removing itself from the high-voltage circuit when a cell or current limit is violated and staying out until a service reset, but it also folds in a workshop diagnostic aspect (a stored fault entry naming the cell or sensor and the limit) that has a different observer and could arguably ship separately.",
+      "score": 1,
+      "suggestion": "Keep this story on the protective disconnect with its hold until a service reset, and move the stored fault entry for the workshop into its own diagnostics story (or state why the record cannot ship without the disconnect)."
     },
     "user_observable": {
-      "reason": "Four external observation points are named: driver battery warning plus loss of drive power, a workshop fault entry naming the cell and the limit crossed, high-voltage terminals measurably dead on a test bench within a bounded reaction time, and the pack staying disconnected until a technician clears the fault.",
+      "reason": "Every observable names an observer and a visible effect: the vehicle loses drive power as the pack disconnects, the workshop reads a stored fault entry naming the cell or sensor and the limit, a bench forcing a cell past a limit sees the disconnect command within a bounded time, and the pack stays open until a service reset.",
       "score": 2
     }
   },
   "criteria": "feat",
   "criteria_fingerprint": "bb61c1a1cf63adcf67ee69adf932c3812909a595fa4b3037b66f097932231afe",
-  "model": "claude-opus-5[1m]",
+  "model": "claude-sonnet-5-5",
   "need": "US_CELL_PROTECTION",
-  "reviewed_fingerprint": "2c9677e18f9784d317fc872949bf5c34ac44f888ebd8c8c2e8912b1b3e7aecdc",
+  "reviewed_fingerprint": "77386aeef3a62d884fb95b23f71cf13afdc7cb970a215d6d9eb4ca5e5d1bbe45",
   "schema": 2,
-  "summary": "Root user story describing one protective-disconnect capability in externally observable terms, with no implementation constructs named. Full marks on all five axes (10/10)."
+  "summary": "Clear, observable, implementation-free protective-disconnect story, but it folds in a workshop-facing stored fault entry that could arguably ship separately."
 }

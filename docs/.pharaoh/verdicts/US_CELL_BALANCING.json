@@ -2,31 +2,31 @@
   "agent": "claude-code",
   "axes": {
     "naming_clarity": {
-      "reason": "Title and body are in stakeholder vocabulary (fleet operator, charge, usable capacity, range, workshop) with no undefined abbreviations; the one domain term, cell voltage spread, is made self-evident by the 'fanned out' vs 'narrow band' phrasing.",
+      "reason": "Title and body use plain stakeholder language (fleet operator, cell, pack, charge session, workshop, usable capacity); cell voltages converging into a narrow band is something a non-implementer can confirm with a voltmeter.",
       "score": 2
     },
     "no_mechanism_leak": {
-      "reason": "The body names no class, function, module, table, endpoint, or technology choice; it stays on physical/observable quantities (charge, cell voltages, capacity, range) and never hints at how balancing is achieved.",
+      "reason": "Names no class, function, module, table, endpoint or technology, and states what happens (charge evened out) without saying how (no balancing method, circuit or algorithm).",
       "score": 2
     },
     "parent_fit": {
-      "reason": "This user_story is the root of the V for this project (audit shows no outgoing trace, only an incoming traces_to_back from REQ_CELL_BALANCING_WINDOW), so per the pack's scoring guide the axis is fully met by default.",
+      "reason": "Root of the V: the user_stories stage has no upstream stage (depends_on is empty) and the story has no outgoing trace link, so there is no parent to engage with and the axis is fully met by default.",
       "score": 2
     },
     "single_user_capability": {
-      "reason": "Exactly one capability — the pack autonomously equalising charge across its cells to preserve usable capacity — and the closing paragraph explicitly fences out protection, remaining-charge reporting, and thermal regulation as separate stories.",
+      "reason": "Exactly one capability, the pack evening out the charge between its cells on its own; the out-of-scope paragraph explicitly excludes protection, charge reporting and temperature regulation, and its one child requirement covers only this.",
       "score": 2
     },
     "user_observable": {
-      "reason": "Three externally observable channels are named — a shrinking reported cell voltage spread after a charge session, slower range loss in the fleet report over months, and a workshop reading per-cell voltages converged into a narrow band — none requiring source code or internal logs.",
+      "reason": "Names the observer (a workshop), the condition (resting pack, a stated time after a charge session ends) and the visible result (cell voltages converged into a narrow band instead of fanned out), all checkable without reading source or logs.",
       "score": 2
     }
   },
   "criteria": "feat",
   "criteria_fingerprint": "bb61c1a1cf63adcf67ee69adf932c3812909a595fa4b3037b66f097932231afe",
-  "model": "claude-opus-5[1m]",
+  "model": "claude-sonnet-5-5",
   "need": "US_CELL_BALANCING",
-  "reviewed_fingerprint": "0ac5d1041b8c0101c234383c58f36a69cef0fd1fcb96ce60b01b7c2da8593e10",
+  "reviewed_fingerprint": "3cd1858603bcde405dacc4d898422af11b8c0c3b903f85b3081a039017671828",
   "schema": 2,
-  "summary": "Root user story with a single automatic-balancing capability, three concrete external observation channels, an explicit out-of-scope fence, and no implementation constructs; meets every axis at max."
+  "summary": "Single, observable, implementation-free story with a clear workshop check; fully meets every axis (parent_fit met by default as the root of the V)."
 }

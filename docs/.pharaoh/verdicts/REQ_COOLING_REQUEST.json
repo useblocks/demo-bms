@@ -2,35 +2,36 @@
   "agent": "claude-code",
   "axes": {
     "atomicity": {
-      "reason": "One obligation - the state of a single cooling request signal; the raise and withdraw edges cannot be separated without leaving the signal's behaviour undefined.",
-      "score": 2
+      "reason": "Two shall-clauses, raise above 35 °C and withdraw at 30 °C or below; they are facets of one hysteresis behaviour but separately testable, and the title states only the raise.",
+      "score": 1,
+      "suggestion": "Split into a raise and a withdraw requirement, or state one hysteresis requirement ('raised above 35 °C, held until 30 °C or below') in both title and body."
     },
     "comprehensibility": {
-      "reason": "Self-contained, and the closing sentence explains why the two thresholds differ rather than adding hidden obligations.",
+      "reason": "Self-contained: both thresholds, the input (highest valid cell temperature), the output (cooling request on the thermal interface) and the reason for the 5 K gap are in the body.",
       "score": 2
     },
     "feasibility": {
-      "reason": "A thresholded request on an existing thermal interface; consistent with the heating request, whose band does not overlap.",
+      "reason": "A two-threshold comparator on cell temperature is routine and contradicts nothing in the linked context.",
       "score": 2
     },
     "parent_fit": {
-      "reason": "Delivers the 'cool itself when it is hot' half of the parent story, on the interface the story says the workshop reads back.",
+      "reason": "Implements the parent's hot-day behaviour: the pack calls for cooling while its warmest cell runs hot and stops once that cell has cooled down again.",
       "score": 2
     },
     "unambiguity": {
-      "reason": "One reading: the stated hysteresis band fixes the behaviour between 30 C and 35 C as 'hold the current state'.",
+      "reason": "One reading: raise strictly above 35 °C, withdraw at 30 °C or below, request held in between (the stated purpose is to prevent oscillation at the limit).",
       "score": 2
     },
     "verifiability": {
-      "reason": "Both thresholds (above 35 C to raise, 30 C or below to withdraw) carry values and units and the request is observable on the thermal interface.",
+      "reason": "Concrete threshold test: a highest valid cell temperature of 35.1 °C raises the request, 31 °C keeps it, 30 °C withdraws it; thresholds, units and inclusive/exclusive limits are stated.",
       "score": 2
     }
   },
   "criteria": "requirement",
   "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
-  "model": "claude-opus-5[1m]",
+  "model": "claude-sonnet-5-5",
   "need": "REQ_COOLING_REQUEST",
-  "reviewed_fingerprint": "202827e456680873bbda4424029f15cee11229fd3c1118a3b5220ad4c3b6f9fd",
+  "reviewed_fingerprint": "61c42e5375e20a87de15a724a2304d594b87a9c627dc7031bcb24d8e5ae0f470",
   "schema": 2,
-  "summary": "Complete hysteretic cooling-request requirement with both thresholds quantified; no axis-level defect found."
+  "summary": "Precise, testable hysteresis requirement; atomicity reduced because raising and withdrawing the request are bundled."
 }

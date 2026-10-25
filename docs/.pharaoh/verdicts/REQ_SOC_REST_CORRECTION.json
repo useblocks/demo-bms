@@ -2,37 +2,36 @@
   "agent": "claude-code",
   "axes": {
     "atomicity": {
-      "reason": "One obligation - a single correction action under a single rest condition.",
+      "reason": "One obligation: replace the counted SoC with the open-circuit-voltage-derived value once the rest condition holds.",
       "score": 2
     },
     "comprehensibility": {
-      "reason": "Self-contained: it states the trigger, the action and why the correction is placed after a rest.",
+      "reason": "Self-contained: trigger, action and purpose (bounding drift while cell voltages settle) are stated; 'counted state of charge' and 'open-circuit voltage' are standard domain terms.",
       "score": 2
     },
     "feasibility": {
-      "reason": "Implementable, but the replacement is unbounded in magnitude while REQ_SOC_PERSISTENCE caps the change across a power cycle at 2 % of rated capacity - and the rest condition here is exactly the standstill during which a power cycle occurs, so the two requirements can demand different values for the same publication.",
-      "score": 1,
-      "suggestion": "Bound the correction step (e.g. rate-limit it, or cap the shift per correction) and state its precedence over the 2 % restore bound."
+      "reason": "OCV re-anchoring after a rest period is established practice and matches the linked corrector design; nothing contradicts it.",
+      "score": 2
     },
     "parent_fit": {
-      "reason": "Substantively serves the parent story's trustworthiness obligation by bounding accumulated counting drift, which is what keeps the reported level inside the promised tolerance.",
+      "reason": "Serves the parent's trust goal by bounding counting drift each time the pack rests, so the reported charge stays trustworthy beyond a single bench discharge.",
       "score": 2
     },
     "unambiguity": {
-      "reason": "'the value derived from the measured open-circuit voltage' does not say which voltage is measured (pack terminal, mean cell, lowest cell) nor how it maps to state of charge, and the mapping's temperature dependence is left open - so two implementations can both claim conformance while producing different values.",
-      "score": 1,
-      "suggestion": "Name the measured quantity and the mapping, e.g. per-cell open-circuit voltage averaged over the pack, converted via a temperature-compensated open-circuit-voltage to state-of-charge table."
+      "reason": "One reading: once absolute current has stayed below 1 A for at least 30 minutes the counted SoC is replaced by the OCV-derived one; threshold, duration and inclusive/exclusive limits are explicit.",
+      "score": 2
     },
     "verifiability": {
-      "reason": "The rest condition is fully quantified (absolute pack current below 1 A continuously for at least 30 minutes) and the correction is observable by injecting known drift and watching the published value be replaced.",
-      "score": 2
+      "reason": "The trigger is concrete (absolute pack current below 1 A continuously for at least 30 minutes) but the expected outcome is not: 'the value derived from the measured open-circuit voltage' names no OCV-to-SoC characteristic, no choice of measured voltage (cell mean, minimum, maximum) and no tolerance, so a test cannot say what SoC must be reported after the correction.",
+      "score": 1,
+      "suggestion": "Reference the OCV-to-SoC characteristic and the voltage it is read at, and give an acceptance tolerance for the replaced value (or tie it to REQ_SOC_ACCURACY)."
     }
   },
   "criteria": "requirement",
   "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
-  "model": "claude-opus-5[1m]",
+  "model": "claude-sonnet-5-5",
   "need": "REQ_SOC_REST_CORRECTION",
-  "reviewed_fingerprint": "103d9f09ffae5494f634082c534bcb84fef51b6e1c3adb0519e19c354da4627a",
+  "reviewed_fingerprint": "6a5b86c4d8ae99b4b3a02651c2e036f08541fb742953be537434a3778e11fa2d",
   "schema": 2,
-  "summary": "Clear rest-detection condition, but the correction's source quantity and mapping are unspecified, and the unbounded replacement conflicts with REQ_SOC_PERSISTENCE's 2 % post-power-cycle bound."
+  "summary": "Clear trigger and rationale; verifiability limited because the OCV-derived replacement value has no stated mapping or tolerance."
 }

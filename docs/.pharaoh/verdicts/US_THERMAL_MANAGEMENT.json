@@ -2,32 +2,33 @@
   "agent": "claude-code",
   "axes": {
     "naming_clarity": {
-      "reason": "Title and body use stakeholder terms (usable temperature band, charging speed, warranty, temperature spread between cells) that a non-implementer could confirm without help.",
+      "reason": "Everyday stakeholder language (driver, cold morning, towing a trailer up a mountain pass, charging speed I was promised, warranty, uneven ageing); rated to deliver continuously is a standard rating phrase a non-implementer can follow.",
       "score": 2
     },
     "no_mechanism_leak": {
-      "reason": "No class, function, module, table, internal endpoint or technology choice appears; cooling and heating requests stay at the level of observable pack behaviour rather than naming any construct.",
+      "reason": "Describes behaviour only (the pack warming and cooling itself, drive power falling off, a reduced fallback power, a workshop warning) and names no class, function, module, table, endpoint, signal or technology.",
       "score": 2
     },
     "parent_fit": {
-      "reason": "user_story is the root stage of this project V and the need carries no outgoing parent link, so per the pack scoring guide this axis is fully met by default.",
+      "reason": "Root of the V: the user_stories stage has no upstream stage (depends_on is empty) and the story has no outgoing trace link, so there is no parent to engage with and the axis is fully met by default.",
       "score": 2
     },
     "single_user_capability": {
-      "reason": "Centred on one capability (keep the pack inside its usable temperature band by warming when cold and cooling when hot), but it also promises that the spread between the warmest and coldest cell stays inside a stated band. Uniformity across cells is a different property from overall band-keeping and could arguably ship separately.",
-      "score": 1,
-      "suggestion": "Move the warmest-to-coldest cell temperature-spread promise into its own story (even temperature distribution across the pack, so no part ages ahead of the rest) and keep this story to holding overall pack temperature in the usable band. If the reduced-but-predictable drive power on a hot day is intended as its own promise rather than a consequence of band-keeping, give thermal power derating a story of its own too."
+      "reason": "Bundles at least three independently deliverable capabilities under thermal management: heating and cooling calls, thermal power limiting (gradual fall-off near the limit, reduced power when the heating and cooling system stops responding, and the sustained-load current cap of the towing case), and a workshop warning for a wide cell-temperature spread; each could ship without the others and the warning has a different observer.",
+      "score": 0,
+      "suggestion": "Split into a thermal-conditioning story (heating and cooling), a thermal power-limiting story (derating and the fallback) and a thermal-imbalance warning story; the towing / continuous-current clause is a distinct current-limit promise that no requirement in the graph states (REQ_PACK_OVERCURRENT is a 350 A / 100 ms contactor trip, not a continuous-rating cap), so give it its own story and requirement or remove it."
     },
     "user_observable": {
-      "reason": "Observation points are external and concrete: available charging power rising within a stated time on a cold morning, drive power continuing at a reduced but predictable level on a hot day, and a workshop readback of the heating and cooling requests together with the temperatures that caused them.",
-      "score": 2
+      "reason": "Partly directly observable (power falls off gradually, a reduced-power fallback, a workshop warning), but much of the paragraph is framed through the requests and limits of the pack itself (calls for heating, calls for cooling, never draws more current than its cells are rated) with no observer or visible effect named, so the user-visible effect is harder to see than it should be.",
+      "score": 1,
+      "suggestion": "Describe heating and cooling by what is seen (the pack warms or cools and the promised charging speed holds, or the workshop reads the request) and say how the sustained-load limit is observed, e.g. a road or bench test measuring pack current against the cell rating."
     }
   },
   "criteria": "feat",
   "criteria_fingerprint": "bb61c1a1cf63adcf67ee69adf932c3812909a595fa4b3037b66f097932231afe",
-  "model": "claude-opus-5[1m]",
+  "model": "claude-sonnet-5-5",
   "need": "US_THERMAL_MANAGEMENT",
-  "reviewed_fingerprint": "74e704ad75c0e8f37144b951320d7600aa18174b0f25098a4a8113da3e83ccf7",
+  "reviewed_fingerprint": "8b269e8c69b7b22e3b2097e21e5fe14e085e427a4232e569632ad8ce23e8475b",
   "schema": 2,
-  "summary": "Observable and jargon-free, centred on holding pack temperature in band, but it folds in a separable cell-to-cell temperature-uniformity promise. 9/10."
+  "summary": "Plain and implementation-free, but it bundles heating/cooling, thermal power limiting (including an unbacked sustained-load current cap) and a workshop spread warning, and part of its observable paragraph is interface-level."
 }
