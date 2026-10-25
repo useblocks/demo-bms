@@ -15,11 +15,14 @@ Thermal Management — User Stories
    its warmest cell runs hot, and stops once that cell has cooled down again.
    As the pack nears its upper temperature limit, the drive power it allows
    falls off gradually and predictably instead of cutting out at a single
-   threshold. If the cooling and heating system stops responding, the pack falls
-   back to a reduced drive power, because it can no longer keep its own
-   temperature in check. When the spread between the warmest and the coldest
-   cell grows too wide, the workshop is warned, so uneven ageing is caught
-   before it costs capacity.
+   threshold. Even under sustained full load, such as towing a trailer up a
+   mountain pass, the pack never draws more current than its cells are rated to
+   deliver continuously, so it does not heat up into the range where its drive
+   power has to be cut back. If the cooling and heating system stops responding,
+   the pack falls back to a reduced drive power, because it can no longer keep
+   its own temperature in check. When the spread between the warmest and the
+   coldest cell grows too wide, the workshop is warned, so uneven ageing is
+   caught before it costs capacity.
 
    Out of scope for this story: disconnecting the pack on a safety fault, and
    reporting remaining charge. Those are separate capabilities with their own
