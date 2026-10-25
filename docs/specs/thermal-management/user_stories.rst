@@ -9,14 +9,17 @@ Thermal Management — User Stories
    itself when it is hot, so that I get the charging speed I was promised and
    the pack does not age faster than the warranty assumes.
 
-   The capability is observable from the vehicle. On a cold morning the
-   available charging power rises within a stated time instead of staying low
-   for the whole session. On a hot day the pack keeps delivering drive power at
-   a reduced but predictable level instead of cutting out. The workshop can read
-   back the cooling and heating requests the pack made together with the
-   temperatures that caused them. The temperature spread between the warmest and
-   the coldest cell stays inside a stated band, so no part of the pack ages
-   ahead of the rest.
+   The capability is observable from the vehicle. On a cold morning the pack
+   calls for heating while its coldest cell is too cold to charge quickly, and
+   stops once that cell has warmed up. On a hot day it calls for cooling while
+   its warmest cell runs hot, and stops once that cell has cooled down again.
+   As the pack nears its upper temperature limit, the drive power it allows
+   falls off gradually and predictably instead of cutting out at a single
+   threshold. If the cooling and heating system stops responding, the pack falls
+   back to a reduced drive power, because it can no longer keep its own
+   temperature in check. When the spread between the warmest and the coldest
+   cell grows too wide, the workshop is warned, so uneven ageing is caught
+   before it costs capacity.
 
    Out of scope for this story: disconnecting the pack on a safety fault, and
    reporting remaining charge. Those are separate capabilities with their own
