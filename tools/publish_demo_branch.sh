@@ -10,11 +10,16 @@
 # started from instead of overwriting it.
 #
 # Usage, from anywhere inside the checkout:
-#   tools/publish_demo_branch.sh [--dry-run] [BRANCH]
+#   tools/publish_demo_branch.sh [--dry-run] [--force] [BRANCH]
 #
 # Before it commits anything, it refreshes the two committed evidence snapshots
 # (the JUnit test results and the gap report) and runs the same blocking checks as
 # the graph-gates job. --dry-run stops right after those checks.
+#
+# A BRANCH that already exists is refused unless --force is given, which rebuilds
+# it from this checkout and force-pushes it. CI's upload always asks ubTrace to
+# overwrite, so the version of that name is replaced too, and a test run can reuse
+# its name.
 #
 # Review verdicts are not part of the demo. A change expires the verdicts of the
 # needs it touches, and tools/import_gaps.py leaves those review gaps out of the
@@ -24,10 +29,18 @@ set -euo pipefail
 
 UBC="${UBC:-ubc}"
 dry_run=false
-if [[ "${1:-}" == "--dry-run" ]]; then
-  dry_run=true
+force=false
+while [[ "${1:-}" == --* ]]; do
+  case "$1" in
+    --dry-run) dry_run=true ;;
+    --force) force=true ;;
+    *)
+      echo "error: unknown option $1" >&2
+      exit 2
+      ;;
+  esac
   shift
-fi
+done
 branch="${1:-trailer-test-200a}"
 
 # CI publishes trailer-test* names only, and a slash would nest the build too deep.
@@ -36,9 +49,9 @@ if [[ ! "$branch" =~ ^trailer-test[A-Za-z0-9._-]*$ ]]; then
   exit 2
 fi
 cd "$(git rev-parse --show-toplevel)"
-if git rev-parse --verify --quiet "refs/heads/$branch" >/dev/null ||
-  git ls-remote --exit-code --heads origin "$branch" >/dev/null; then
-  echo "error: branch '$branch' already exists, pass another name" >&2
+if ! $force && { git rev-parse --verify --quiet "refs/heads/$branch" >/dev/null ||
+  git ls-remote --exit-code --heads origin "$branch" >/dev/null; }; then
+  echo "error: branch '$branch' already exists; pass another name, or --force to replace it" >&2
   exit 2
 fi
 
@@ -111,13 +124,21 @@ fi
 
 echo "== publish"
 title="${titles[0]}"
-git switch -c "$branch"
+# The commit subject lower-cases the title's first letter. Spelled out with tr
+# rather than `${title,}`, which needs bash 4: macOS still ships bash 3.2.
+first="$(printf '%s' "${title:0:1}" | tr '[:upper:]' '[:lower:]')"
+# -C rather than -c: with --force an existing local branch is reset to this checkout.
+git switch -C "$branch"
 git add -A -- docs src tests
 git commit -q -F - <<EOF
-feat: ${title,}
+feat: ${first}${title:1}
 
 Carried out with ${ids[*]}. The test results and the gap snapshot are
 regenerated, and ubc check, the gap snapshot and both import checks pass.
 EOF
-git push -u origin "$branch"
+if $force; then
+  git push --force -u origin "$branch"
+else
+  git push -u origin "$branch"
+fi
 echo "CI now publishes ubTrace version '$branch'"
