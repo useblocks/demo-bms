@@ -7,7 +7,7 @@ from collections import deque
 DERATE_START_DC = 550  # 55.0 °C
 DERATE_END_DC = 600  # 60.0 °C
 ACTUATOR_FALLBACK_SHARE_PCT = 30.0
-CONTINUOUS_DISCHARGE_LIMIT_A = 250.0
+CONTINUOUS_DISCHARGE_LIMIT_A = 200.0
 FULL_POWER_DISCHARGE_A = 320.0
 AVERAGING_WINDOW_S = 10.0
 
@@ -53,7 +53,7 @@ class PowerLimitCalculator:
         while self._current_samples and self._current_samples[0][0] < cutoff_ms:
             self._current_samples.popleft()
 
-    # @Cap the sustained-load share at the share that draws 250 A while the 10 s average current is at or above 250 A, IMPL_SUSTAINED_LOAD_LIMIT, [SWREQ_SUSTAINED_LOAD_LIMIT]
+    # @Cap the sustained-load share at the share that draws 200 A while the 10 s average current is at or above 200 A, IMPL_SUSTAINED_LOAD_LIMIT, [SWREQ_SUSTAINED_LOAD_LIMIT]
     def sustained_load_share_pct(self) -> float:
         """The share that limits the pack current once its 10 s average is at the limit.
 
