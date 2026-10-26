@@ -14,7 +14,7 @@ Test Results
    build, so these needs record what happened in the run named below, not
    what would happen now.
 
-Run ``2026-09-10 13:09:32 +02:00`` — 52 test cases, 2 failed, 50 passed, 0.052 s total.
+Run ``2026-10-26 15:34:54 +01:00`` — 52 test cases, 2 failed, 50 passed, 0.038 s total.
 
 Every need below carries ``results_for`` up to the ``test`` need whose execution it records, so a query can walk requirement → software requirement → test → recorded outcome without leaving the graph.
 
@@ -23,7 +23,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :results_for: TEST_ACTUATOR_ACK_ID_MATCH
    :outcome: passed
    :runtime_s: 0.000
-   :test_run_label: 2026-09-10 13:09:32 +02:00
+   :test_run_label: 2026-10-26 15:34:54 +01:00
 
    ``tests/thermal_management/test_actuator_if.py::test_only_a_matching_request_id_confirms`` recorded ``passed`` in 0.000 s.
 
@@ -32,7 +32,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :results_for: TEST_ACTUATOR_ACK_RESTART
    :outcome: passed
    :runtime_s: 0.000
-   :test_run_label: 2026-09-10 13:09:32 +02:00
+   :test_run_label: 2026-10-26 15:34:54 +01:00
 
    ``tests/thermal_management/test_actuator_if.py::test_a_new_request_clears_the_previous_verdict`` recorded ``passed`` in 0.000 s.
 
@@ -41,7 +41,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :results_for: TEST_ACTUATOR_ACK_TIMER
    :outcome: passed
    :runtime_s: 0.000
-   :test_run_label: 2026-09-10 13:09:32 +02:00
+   :test_run_label: 2026-10-26 15:34:54 +01:00
 
    ``tests/thermal_management/test_actuator_if.py::test_missing_acknowledgement_becomes_unconfirmed_at_two_seconds`` recorded ``passed`` in 0.000 s.
 
@@ -50,7 +50,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :results_for: TEST_CAPACITY_ANCHOR_SPREAD
    :outcome: passed
    :runtime_s: 0.000
-   :test_run_label: 2026-09-10 13:09:32 +02:00
+   :test_run_label: 2026-10-26 15:34:54 +01:00
 
    ``tests/state_estimation/test_soh_tracker.py::test_narrow_anchor_spread_is_refused`` recorded ``passed`` in 0.000 s.
 
@@ -59,18 +59,18 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :results_for: TEST_CAPACITY_MONOTONIC_CLAMP
    :outcome: failed
    :runtime_s: 0.000
-   :test_run_label: 2026-09-10 13:09:32 +02:00
+   :test_run_label: 2026-10-26 15:34:54 +01:00
 
    ``tests/state_estimation/test_soh_tracker.py::test_reported_capacity_never_increases`` recorded ``failed`` in 0.000 s.
 
-   Reported message: assert 1 == 2 + where 1 = <src.state_estimation.soh_tracker.SohTracker object at 0x7f93f270c830>.rejected
+   Reported message: assert 1 == 2 + where 1 = <src.state_estimation.soh_tracker.SohTracker object at 0x10ac14590>.rejected
 
 .. test_result:: A long run of candidates forms a non increasing sequence — passed
    :id: TRES_CAPACITY_MONOTONIC_SEQUENCE
    :results_for: TEST_CAPACITY_MONOTONIC_SEQUENCE
    :outcome: passed
    :runtime_s: 0.000
-   :test_run_label: 2026-09-10 13:09:32 +02:00
+   :test_run_label: 2026-10-26 15:34:54 +01:00
 
    ``tests/state_estimation/test_soh_tracker.py::test_reported_sequence_is_monotonic_under_noise`` recorded ``passed`` in 0.000 s.
 
@@ -78,17 +78,17 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :id: TRES_CELL_SAMPLE_CYCLE
    :results_for: TEST_CELL_SAMPLE_CYCLE
    :outcome: passed
-   :runtime_s: 0.000
-   :test_run_label: 2026-09-10 13:09:32 +02:00
+   :runtime_s: 0.002
+   :test_run_label: 2026-10-26 15:34:54 +01:00
 
-   ``tests/cell_protection/test_acquisition.py::test_complete_sample_set_every_cycle`` recorded ``passed`` in 0.000 s.
+   ``tests/cell_protection/test_acquisition.py::test_complete_sample_set_every_cycle`` recorded ``passed`` in 0.002 s.
 
 .. test_result:: Acquisition cycle is due only after the 10 ms period elapsed — passed
    :id: TRES_CELL_SAMPLE_CYCLE_PERIOD
    :results_for: TEST_CELL_SAMPLE_CYCLE_PERIOD
    :outcome: passed
    :runtime_s: 0.000
-   :test_run_label: 2026-09-10 13:09:32 +02:00
+   :test_run_label: 2026-10-26 15:34:54 +01:00
 
    ``tests/cell_protection/test_acquisition.py::test_cycle_is_due_only_after_ten_milliseconds`` recorded ``passed`` in 0.000 s.
 
@@ -97,7 +97,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :results_for: TEST_CHARGE_INTEGRATION
    :outcome: passed
    :runtime_s: 0.000
-   :test_run_label: 2026-09-10 13:09:32 +02:00
+   :test_run_label: 2026-10-26 15:34:54 +01:00
 
    ``tests/state_estimation/test_coulomb_counter.py::test_trapezoidal_integration_over_three_ticks`` recorded ``passed`` in 0.000 s.
 
@@ -106,7 +106,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :results_for: TEST_CHARGE_INTEGRATION_RAMP
    :outcome: passed
    :runtime_s: 0.000
-   :test_run_label: 2026-09-10 13:09:32 +02:00
+   :test_run_label: 2026-10-26 15:34:54 +01:00
 
    ``tests/state_estimation/test_coulomb_counter.py::test_linear_ramp_matches_the_analytic_area`` recorded ``passed`` in 0.000 s.
 
@@ -115,7 +115,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :results_for: TEST_CHARGE_THROUGHPUT
    :outcome: passed
    :runtime_s: 0.000
-   :test_run_label: 2026-09-10 13:09:32 +02:00
+   :test_run_label: 2026-10-26 15:34:54 +01:00
 
    ``tests/state_estimation/test_coulomb_counter.py::test_throughput_counts_charge_and_discharge_alike`` recorded ``passed`` in 0.000 s.
 
@@ -124,7 +124,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :results_for: TEST_CONTACTOR_DEENERGISE
    :outcome: passed
    :runtime_s: 0.000
-   :test_run_label: 2026-09-10 13:09:32 +02:00
+   :test_run_label: 2026-10-26 15:34:54 +01:00
 
    ``tests/cell_protection/test_contactor.py::test_open_deenergises_both_channels_within_budget`` recorded ``passed`` in 0.000 s.
 
@@ -133,7 +133,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :results_for: TEST_CONTACTOR_LATCH_BLOCK
    :outcome: passed
    :runtime_s: 0.000
-   :test_run_label: 2026-09-10 13:09:32 +02:00
+   :test_run_label: 2026-10-26 15:34:54 +01:00
 
    ``tests/cell_protection/test_contactor.py::test_close_is_refused_while_latched`` recorded ``passed`` in 0.000 s.
 
@@ -142,7 +142,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :results_for: TEST_COOLING_HYSTERESIS
    :outcome: passed
    :runtime_s: 0.000
-   :test_run_label: 2026-09-10 13:09:32 +02:00
+   :test_run_label: 2026-10-26 15:34:54 +01:00
 
    ``tests/thermal_management/test_evaluator.py::test_cooling_request_holds_inside_the_band`` recorded ``passed`` in 0.000 s.
 
@@ -151,7 +151,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :results_for: TEST_CURRENT_STALENESS_LATCH
    :outcome: passed
    :runtime_s: 0.000
-   :test_run_label: 2026-09-10 13:09:32 +02:00
+   :test_run_label: 2026-10-26 15:34:54 +01:00
 
    ``tests/state_estimation/test_validity_monitor.py::test_returning_samples_do_not_clear_the_verdict`` recorded ``passed`` in 0.000 s.
 
@@ -160,7 +160,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :results_for: TEST_CURRENT_STALENESS_RESET
    :outcome: passed
    :runtime_s: 0.000
-   :test_run_label: 2026-09-10 13:09:32 +02:00
+   :test_run_label: 2026-10-26 15:34:54 +01:00
 
    ``tests/state_estimation/test_validity_monitor.py::test_a_valid_sample_resets_the_timer`` recorded ``passed`` in 0.000 s.
 
@@ -169,7 +169,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :results_for: TEST_CURRENT_STALENESS_TIMER
    :outcome: passed
    :runtime_s: 0.000
-   :test_run_label: 2026-09-10 13:09:32 +02:00
+   :test_run_label: 2026-10-26 15:34:54 +01:00
 
    ``tests/state_estimation/test_validity_monitor.py::test_verdict_is_raised_only_past_five_seconds`` recorded ``passed`` in 0.000 s.
 
@@ -178,7 +178,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :results_for: TEST_FAULT_RECORD_RING
    :outcome: passed
    :runtime_s: 0.000
-   :test_run_label: 2026-09-10 13:09:32 +02:00
+   :test_run_label: 2026-10-26 15:34:54 +01:00
 
    ``tests/cell_protection/test_fault_memory.py::test_ring_overwrites_the_oldest_record`` recorded ``passed`` in 0.000 s.
 
@@ -187,7 +187,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :results_for: TEST_FAULT_RECORD_WRITE
    :outcome: passed
    :runtime_s: 0.000
-   :test_run_label: 2026-09-10 13:09:32 +02:00
+   :test_run_label: 2026-10-26 15:34:54 +01:00
 
    ``tests/cell_protection/test_fault_memory.py::test_record_carries_the_required_fields_and_fixed_size`` recorded ``passed`` in 0.000 s.
 
@@ -196,7 +196,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :results_for: TEST_HEATING_HYSTERESIS
    :outcome: passed
    :runtime_s: 0.000
-   :test_run_label: 2026-09-10 13:09:32 +02:00
+   :test_run_label: 2026-10-26 15:34:54 +01:00
 
    ``tests/thermal_management/test_evaluator.py::test_heating_request_holds_inside_the_band`` recorded ``passed`` in 0.000 s.
 
@@ -205,7 +205,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :results_for: TEST_IGNORE_INVALID_ALL
    :outcome: passed
    :runtime_s: 0.000
-   :test_run_label: 2026-09-10 13:09:32 +02:00
+   :test_run_label: 2026-10-26 15:34:54 +01:00
 
    ``tests/cell_protection/test_supervisor.py::test_fully_invalid_cycle_is_silent`` recorded ``passed`` in 0.000 s.
 
@@ -214,7 +214,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :results_for: TEST_IGNORE_INVALID_SAMPLES
    :outcome: passed
    :runtime_s: 0.000
-   :test_run_label: 2026-09-10 13:09:32 +02:00
+   :test_run_label: 2026-10-26 15:34:54 +01:00
 
    ``tests/cell_protection/test_supervisor.py::test_invalid_samples_are_excluded_from_evaluation`` recorded ``passed`` in 0.000 s.
 
@@ -223,18 +223,18 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :results_for: TEST_IMBALANCE_WARNING
    :outcome: failed
    :runtime_s: 0.000
-   :test_run_label: 2026-09-10 13:09:32 +02:00
+   :test_run_label: 2026-10-26 15:34:54 +01:00
 
    ``tests/thermal_management/test_evaluator.py::test_imbalance_warning_tracks_the_spread_directly`` recorded ``failed`` in 0.000 s.
 
-   Reported message: assert True is False + where True = update_imbalance(80) + where update_imbalance = <src.thermal_management.evaluator.ThermalStateEvaluator object at 0x7f93f2739a70>.update_imbalance
+   Reported message: assert True is False + where True = update_imbalance(80) + where update_imbalance = <src.thermal_management.evaluator.ThermalStateEvaluator object at 0x10abc5cd0>.update_imbalance
 
 .. test_result:: The isolation fault is set strictly below 500 ohm per volt and only on a valid ratio — passed
    :id: TRES_ISOLATION_FAULT_FLAG
    :results_for: TEST_ISOLATION_FAULT_FLAG
    :outcome: passed
    :runtime_s: 0.000
-   :test_run_label: 2026-09-10 13:09:32 +02:00
+   :test_run_label: 2026-10-26 15:34:54 +01:00
 
    ``tests/isolation_monitoring/test_monitor.py::test_fault_is_set_strictly_below_the_limit_on_valid_ratios_only`` recorded ``passed`` in 0.000 s.
 
@@ -243,7 +243,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :results_for: TEST_ISOLATION_RATIO
    :outcome: passed
    :runtime_s: 0.000
-   :test_run_label: 2026-09-10 13:09:32 +02:00
+   :test_run_label: 2026-10-26 15:34:54 +01:00
 
    ``tests/isolation_monitoring/test_monitor.py::test_ratio_is_resistance_over_voltage_and_invalid_below_fifty_volts`` recorded ``passed`` in 0.000 s.
 
@@ -252,7 +252,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :results_for: TEST_LATCH_FIRST_CAUSE
    :outcome: passed
    :runtime_s: 0.000
-   :test_run_label: 2026-09-10 13:09:32 +02:00
+   :test_run_label: 2026-10-26 15:34:54 +01:00
 
    ``tests/cell_protection/test_supervisor.py::test_latch_retains_the_first_violation`` recorded ``passed`` in 0.000 s.
 
@@ -261,7 +261,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :results_for: TEST_LATCH_STATE_MACHINE
    :outcome: passed
    :runtime_s: 0.000
-   :test_run_label: 2026-09-10 13:09:32 +02:00
+   :test_run_label: 2026-10-26 15:34:54 +01:00
 
    ``tests/cell_protection/test_supervisor.py::test_latch_survives_healthy_samples_and_clears_only_on_reset`` recorded ``passed`` in 0.000 s.
 
@@ -270,7 +270,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :results_for: TEST_LIMIT_ACTUATOR_SHARE
    :outcome: passed
    :runtime_s: 0.000
-   :test_run_label: 2026-09-10 13:09:32 +02:00
+   :test_run_label: 2026-10-26 15:34:54 +01:00
 
    ``tests/thermal_management/test_power_limit.py::test_actuator_share_is_flat_and_conditional`` recorded ``passed`` in 0.000 s.
 
@@ -279,7 +279,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :results_for: TEST_LIMIT_EVALUATION
    :outcome: passed
    :runtime_s: 0.000
-   :test_run_label: 2026-09-10 13:09:32 +02:00
+   :test_run_label: 2026-10-26 15:34:54 +01:00
 
    ``tests/cell_protection/test_supervisor.py::test_each_limit_table_entry_is_evaluated`` recorded ``passed`` in 0.000 s.
 
@@ -288,7 +288,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :results_for: TEST_LIMIT_EVALUATION_NOMINAL
    :outcome: passed
    :runtime_s: 0.000
-   :test_run_label: 2026-09-10 13:09:32 +02:00
+   :test_run_label: 2026-10-26 15:34:54 +01:00
 
    ``tests/cell_protection/test_supervisor.py::test_nominal_sample_produces_no_violation`` recorded ``passed`` in 0.000 s.
 
@@ -297,7 +297,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :results_for: TEST_LIMIT_MINIMUM
    :outcome: passed
    :runtime_s: 0.000
-   :test_run_label: 2026-09-10 13:09:32 +02:00
+   :test_run_label: 2026-10-26 15:34:54 +01:00
 
    ``tests/thermal_management/test_power_limit.py::test_published_limit_takes_the_minimum`` recorded ``passed`` in 0.000 s.
 
@@ -306,7 +306,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :results_for: TEST_MODULE_MEDIAN_SCOPE
    :outcome: passed
    :runtime_s: 0.000
-   :test_run_label: 2026-09-10 13:09:32 +02:00
+   :test_run_label: 2026-10-26 15:34:54 +01:00
 
    ``tests/cell_protection/test_acquisition.py::test_median_is_scoped_to_the_module`` recorded ``passed`` in 0.000 s.
 
@@ -315,7 +315,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :results_for: TEST_MODULE_MEDIAN_VALIDITY
    :outcome: passed
    :runtime_s: 0.000
-   :test_run_label: 2026-09-10 13:09:32 +02:00
+   :test_run_label: 2026-10-26 15:34:54 +01:00
 
    ``tests/cell_protection/test_acquisition.py::test_module_median_deviation_marks_sample_invalid`` recorded ``passed`` in 0.000 s.
 
@@ -324,7 +324,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :results_for: TEST_OCV_CORRECTION_ANCHOR
    :outcome: passed
    :runtime_s: 0.000
-   :test_run_label: 2026-09-10 13:09:32 +02:00
+   :test_run_label: 2026-10-26 15:34:54 +01:00
 
    ``tests/state_estimation/test_ocv_corrector.py::test_correction_moves_the_fused_estimate_anchor`` recorded ``passed`` in 0.000 s.
 
@@ -333,7 +333,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :results_for: TEST_OCV_TABLE_CLAMP
    :outcome: passed
    :runtime_s: 0.000
-   :test_run_label: 2026-09-10 13:09:32 +02:00
+   :test_run_label: 2026-10-26 15:34:54 +01:00
 
    ``tests/state_estimation/test_ocv_corrector.py::test_out_of_table_voltages_clamp_instead_of_extrapolating`` recorded ``passed`` in 0.000 s.
 
@@ -342,7 +342,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :results_for: TEST_OCV_TABLE_LOOKUP
    :outcome: passed
    :runtime_s: 0.000
-   :test_run_label: 2026-09-10 13:09:32 +02:00
+   :test_run_label: 2026-10-26 15:34:54 +01:00
 
    ``tests/state_estimation/test_ocv_corrector.py::test_linear_interpolation_between_table_points`` recorded ``passed`` in 0.000 s.
 
@@ -351,7 +351,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :results_for: TEST_OVERCURRENT_DEBOUNCE
    :outcome: passed
    :runtime_s: 0.000
-   :test_run_label: 2026-09-10 13:09:32 +02:00
+   :test_run_label: 2026-10-26 15:34:54 +01:00
 
    ``tests/cell_protection/test_current_monitor.py::test_overcurrent_needs_the_full_persistence_window`` recorded ``passed`` in 0.000 s.
 
@@ -360,7 +360,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :results_for: TEST_OVERCURRENT_INRUSH_RESET
    :outcome: passed
    :runtime_s: 0.000
-   :test_run_label: 2026-09-10 13:09:32 +02:00
+   :test_run_label: 2026-10-26 15:34:54 +01:00
 
    ``tests/cell_protection/test_current_monitor.py::test_short_inrush_does_not_trip`` recorded ``passed`` in 0.000 s.
 
@@ -369,7 +369,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :results_for: TEST_REST_DETECTION
    :outcome: passed
    :runtime_s: 0.000
-   :test_run_label: 2026-09-10 13:09:32 +02:00
+   :test_run_label: 2026-10-26 15:34:54 +01:00
 
    ``tests/state_estimation/test_ocv_corrector.py::test_rest_requires_the_full_thirty_minutes`` recorded ``passed`` in 0.000 s.
 
@@ -378,7 +378,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :results_for: TEST_REST_DETECTION_RESET
    :outcome: passed
    :runtime_s: 0.000
-   :test_run_label: 2026-09-10 13:09:32 +02:00
+   :test_run_label: 2026-10-26 15:34:54 +01:00
 
    ``tests/state_estimation/test_ocv_corrector.py::test_load_during_rest_resets_the_timer`` recorded ``passed`` in 0.000 s.
 
@@ -387,7 +387,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :results_for: TEST_SOC_PERSIST_ALTERNATION
    :outcome: passed
    :runtime_s: 0.000
-   :test_run_label: 2026-09-10 13:09:32 +02:00
+   :test_run_label: 2026-10-26 15:34:54 +01:00
 
    ``tests/state_estimation/test_soc_store.py::test_writes_alternate_between_the_two_slots`` recorded ``passed`` in 0.000 s.
 
@@ -396,7 +396,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :results_for: TEST_SOC_PERSIST_WRITE
    :outcome: passed
    :runtime_s: 0.000
-   :test_run_label: 2026-09-10 13:09:32 +02:00
+   :test_run_label: 2026-10-26 15:34:54 +01:00
 
    ``tests/state_estimation/test_soc_store.py::test_writes_happen_on_shutdown_and_on_the_periodic_interval`` recorded ``passed`` in 0.000 s.
 
@@ -405,7 +405,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :results_for: TEST_SOC_RESTORE_NO_VALID_SLOT
    :outcome: passed
    :runtime_s: 0.000
-   :test_run_label: 2026-09-10 13:09:32 +02:00
+   :test_run_label: 2026-10-26 15:34:54 +01:00
 
    ``tests/state_estimation/test_soc_store.py::test_restore_reports_absence_rather_than_a_default`` recorded ``passed`` in 0.000 s.
 
@@ -414,7 +414,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :results_for: TEST_SOC_RESTORE_SLOT
    :outcome: passed
    :runtime_s: 0.000
-   :test_run_label: 2026-09-10 13:09:32 +02:00
+   :test_run_label: 2026-10-26 15:34:54 +01:00
 
    ``tests/state_estimation/test_soc_store.py::test_restore_prefers_the_newest_valid_slot`` recorded ``passed`` in 0.000 s.
 
@@ -423,7 +423,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :results_for: TEST_STATE_FRAME_CONTENT
    :outcome: passed
    :runtime_s: 0.000
-   :test_run_label: 2026-09-10 13:09:32 +02:00
+   :test_run_label: 2026-10-26 15:34:54 +01:00
 
    ``tests/state_estimation/test_publisher.py::test_frame_carries_the_latest_values`` recorded ``passed`` in 0.000 s.
 
@@ -432,7 +432,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :results_for: TEST_STATE_FRAME_PERIOD
    :outcome: passed
    :runtime_s: 0.000
-   :test_run_label: 2026-09-10 13:09:32 +02:00
+   :test_run_label: 2026-10-26 15:34:54 +01:00
 
    ``tests/state_estimation/test_publisher.py::test_frame_is_sent_once_per_period`` recorded ``passed`` in 0.000 s.
 
@@ -441,7 +441,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :results_for: TEST_STATE_FRAME_REPEATS_LAST
    :outcome: passed
    :runtime_s: 0.000
-   :test_run_label: 2026-09-10 13:09:32 +02:00
+   :test_run_label: 2026-10-26 15:34:54 +01:00
 
    ``tests/state_estimation/test_publisher.py::test_stale_producer_values_are_repeated_not_skipped`` recorded ``passed`` in 0.000 s.
 
@@ -450,7 +450,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :results_for: TEST_TEMP_DERATE_MONOTONIC
    :outcome: passed
    :runtime_s: 0.000
-   :test_run_label: 2026-09-10 13:09:32 +02:00
+   :test_run_label: 2026-10-26 15:34:54 +01:00
 
    ``tests/thermal_management/test_power_limit.py::test_ramp_is_monotonically_decreasing`` recorded ``passed`` in 0.000 s.
 
@@ -459,7 +459,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :results_for: TEST_TEMP_DERATE_RAMP
    :outcome: passed
    :runtime_s: 0.000
-   :test_run_label: 2026-09-10 13:09:32 +02:00
+   :test_run_label: 2026-10-26 15:34:54 +01:00
 
    ``tests/thermal_management/test_power_limit.py::test_derating_ramp_endpoints_and_midpoint`` recorded ``passed`` in 0.000 s.
 
@@ -468,7 +468,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :results_for: TEST_TEMP_EXTREMA
    :outcome: passed
    :runtime_s: 0.000
-   :test_run_label: 2026-09-10 13:09:32 +02:00
+   :test_run_label: 2026-10-26 15:34:54 +01:00
 
    ``tests/thermal_management/test_evaluator.py::test_extrema_and_spread_ignore_invalid_samples`` recorded ``passed`` in 0.000 s.
 
@@ -477,7 +477,7 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :results_for: TEST_TEMP_EXTREMA_UNAVAILABLE
    :outcome: passed
    :runtime_s: 0.000
-   :test_run_label: 2026-09-10 13:09:32 +02:00
+   :test_run_label: 2026-10-26 15:34:54 +01:00
 
    ``tests/thermal_management/test_evaluator.py::test_fully_invalid_cycle_reports_unavailable`` recorded ``passed`` in 0.000 s.
 
@@ -486,6 +486,6 @@ Every need below carries ``results_for`` up to the ``test`` need whose execution
    :results_for: TEST_THERMAL_CYCLE
    :outcome: passed
    :runtime_s: 0.000
-   :test_run_label: 2026-09-10 13:09:32 +02:00
+   :test_run_label: 2026-10-26 15:34:54 +01:00
 
    ``tests/thermal_management/test_evaluator.py::test_cycle_drives_every_output`` recorded ``passed`` in 0.000 s.

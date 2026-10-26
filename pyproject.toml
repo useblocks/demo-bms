@@ -26,6 +26,8 @@ package = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# xunit1 also writes each case's `file` and `line`, which the test-report needs carry.
+junit_family = "xunit1"
 
 # --- ubTRACE EXPORT ------------------------------------------------------------
 # The ubTrace export is a SECOND consumer of the same sources: `ubc build needs`
