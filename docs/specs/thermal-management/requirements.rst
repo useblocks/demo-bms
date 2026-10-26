@@ -37,6 +37,19 @@ Thermal Management — Requirements
    predictably as the pack heats up, instead of being cut off at a single
    threshold.
 
+.. req:: The battery management system shall limit the permitted discharge power to hold the 10 s average pack discharge current at or below 250 A
+   :id: REQ_SUSTAINED_DISCHARGE_LIMIT
+   :status: draft
+   :asil: B
+   :traces_to: US_THERMAL_MANAGEMENT
+
+   The battery management system shall limit the permitted discharge power it
+   publishes so that the pack discharge current, averaged over any 10 s
+   interval, does not exceed 250 A, the continuous discharge rating of the
+   cells. A short peak stays available, while a sustained load such as towing
+   a trailer up a mountain pass is held to what the pack can carry, so it does
+   not heat up into the range where its drive power has to be cut back.
+
 .. req:: The battery management system shall report a thermal imbalance warning when the spread between highest and lowest cell temperature exceeds 8 K
    :id: REQ_CELL_TEMP_SPREAD
    :status: draft

@@ -2,32 +2,34 @@
   "agent": "claude-code",
   "axes": {
     "completeness": {
-      "reason": "Every externally-visible obligation is addressed - the ramp endpoints and linearity, the 30 % fallback value, the fact that a single limit is published, and the combination behaviour when both causes are active; the 2 s detection interval is explicitly owned by ARCH_COOLANT_ACTUATOR_IF.",
-      "score": 2
+      "reason": "REQ_POWER_DERATING (linear fall between 55 and 60 °C) and REQ_THERMAL_ACTUATOR_FAILSAFE (30 % cap on an unconfirmed request, 2 s timer in the sibling) are covered in full. REQ_SUSTAINED_DISCHARGE_LIMIT is covered only at the level of \"a sustained-load limit from the pack discharge current\": the element never states the obligation that the 10 s average pack discharge current stays at or below 250 A, nor that a short peak stays available. Those figures exist only in the refining SWREQ_SUSTAINED_LOAD_LIMIT, so the obligation is covered shallowly, not absent.",
+      "score": 1,
+      "suggestion": "Add the 10 s averaging window, the 250 A bound and the short-peak allowance to the element body, so the design itself shows how the externally visible obligation of REQ_SUSTAINED_DISCHARGE_LIMIT is met and not only the software requirement below it."
     },
     "consistency": {
-      "reason": "Cleanly reconciled with its sibling ARCH_COOLANT_ACTUATOR_IF on REQ_THERMAL_ACTUATOR_FAILSAFE: that element declares it never decides a power limit and only reports the unconfirmed verdict, which this element consumes.",
+      "reason": "REQ_POWER_DERATING and REQ_SUSTAINED_DISCHARGE_LIMIT have no other satisfying element, so the only sibling is ARCH_COOLANT_ACTUATOR_IF on REQ_THERMAL_ACTUATOR_FAILSAFE. The split is clean and non-overlapping: that element owns the 2 s acknowledgement timer and the explicit unconfirmed verdict and never decides a power limit itself, while this one owns the flat 30 % and consumes the verdict. The linear ramp also agrees with DEC_HYSTERESIS_BANDS (calculator owns a ramp, evaluator owns the Schmitt bands), and the diagram edges match the body. The unreconciled provider side of the Pack Current Path Monitor interface involves a non-sibling and is scored under implementability.",
       "score": 2
     },
     "design_clarity": {
-      "reason": "Names the actual choices rather than the goal: a linear ramp with both endpoints given, a flat 30 % actuator-driven limit, and taking the minimum of the two with the reason the minimum was chosen over any other combination.",
-      "score": 2
+      "reason": "Most of the element names concrete choices with their parameters: ramp 100 % at 55 °C to 0 % at 60 °C, flat 30 % on an unconfirmed request, publish the minimum of the three (with the reason a minimum is used, so the causes cannot cancel each other out), and take the pack current from the existing Pack Current Path Monitor instead of duplicating the shunt acquisition. The new third limit is only \"a sustained-load limit from the pack discharge current\": no averaging window, no 250 A threshold and no rule that turns the average into a power share are named. For the one limit this change added, the element restates the goal of the requirement rather than naming the design chosen, so a material detail is missing.",
+      "score": 1,
+      "suggestion": "Name the sustained-load design with its key parameters, at the same level as the other two limits: a trailing 10 s average of the pack discharge current compared against 250 A, with the share scaled back to 250 A divided by that average (as SWREQ_SUSTAINED_LOAD_LIMIT already states), and say whether charge-direction samples count in that average given the signed convention of the monitor (discharge positive)."
     },
     "implementability": {
-      "reason": "Realisable and bounded, but the published quantity needs a judgement call: the element works in percentages while the requirement speaks of a permitted discharge power, and neither the base value of 'full permitted discharge power' nor the publication cycle/interface is named. It also drops the parent's 'valid' qualifier on highest cell temperature.",
+      "reason": "The unit is bounded: one component, three limit computations, one minimum and one published output, which a single module can realise. Two boundaries are loose enough to force judgement calls. First, the sustained-load computation is unspecified (window, threshold, share rule; see design_clarity). Second, the input boundary is not matched on the provider side: the element and its diagram take pack current from ARCH_CURRENT_PATH_MONITOR, but that element and the cell-protection diagram describe it delivering an already-debounced overcurrent condition (diagram label: filtered pack current) to the safety supervisor only, with no pack-current output, output rate or filtering named for a second consumer. Behaviour when no valid temperature figure or no current sample is available is also unstated.",
       "score": 1,
-      "suggestion": "State whether the element publishes a percentage or an absolute power, where the 100 % base comes from, on what cycle it publishes, and that the ramp input is the highest VALID cell temperature from ARCH_THERMAL_STATE_EVALUATOR."
+      "suggestion": "Pin the interface on both sides: name the signal consumed from ARCH_CURRENT_PATH_MONITOR (value, update rate, sign convention) and record this calculator as its second consumer in the body of the monitor or in the cell-protection diagram; state the averaging window; and say what the calculator publishes when the temperature figure or the current signal is unavailable."
     },
     "parent_fit": {
-      "reason": "Substantively addresses both parents: REQ_POWER_DERATING's linear 55-60 degC ramp and REQ_THERMAL_ACTUATOR_FAILSAFE's 30 % fallback, and it owns the published permitted discharge power that both requirements speak about.",
+      "reason": "All three parents are engaged by distinct design content, not just linked. The linear ramp from 100 % at 55 °C to 0 % at 60 °C on the highest cell temperature realises REQ_POWER_DERATING. The flat 30 % applied while the actuator interface reports an unconfirmed request realises the cap in REQ_THERMAL_ACTUATOR_FAILSAFE, and the 2 s timer behind that verdict is explicitly owned by sibling ARCH_COOLANT_ACTUATOR_IF. A separate sustained-load path fed by the pack discharge current, merged by the minimum, is the mechanism for REQ_SUSTAINED_DISCHARGE_LIMIT. How thin that third path is gets scored under design_clarity and completeness, not here.",
       "score": 2
     }
   },
   "criteria": "arch",
   "criteria_fingerprint": "48337dfa0b294b1882460a938500fa11eb3e8fd873d5cd9afa31ff1f7923f377",
-  "model": "claude-opus-5[1m]",
+  "model": "claude-sonnet-5-5",
   "need": "ARCH_POWER_LIMIT_CALCULATOR",
-  "reviewed_fingerprint": "e680f14870a764a27c9d600d8d230f24ff0c75ea4a1f7baba4f7eba3fd871c10",
+  "reviewed_fingerprint": "40560c71fdf22af6592319f0fe3d6401c75776cf5d2f98595488df80972b9483",
   "schema": 2,
-  "summary": "Strong element: both derating causes are specified at their own numbers and the min-of-two combination rule is stated with its rationale. The only softness is the published quantity itself - percentages of an unnamed 'full permitted discharge power', with no publication cycle."
+  "summary": "The element designs the temperature ramp, the flat 30 % actuator cap and the minimum-of-three combination concretely for all three parents, but the new sustained-load limit is named without its 10 s window, 250 A bound or share rule, and the pack-current input it takes from the Pack Current Path Monitor has no matching output on the side of that monitor."
 }

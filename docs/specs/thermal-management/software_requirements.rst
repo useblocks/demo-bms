@@ -61,12 +61,22 @@ Thermal Management — Software Requirements
    as 0 % at or above 60 °C, and as the linear interpolation between those two
    points in between.
 
-.. swreq:: The power limit component shall publish the minimum of the temperature-driven and actuator-driven power limits
+.. swreq:: The power limit component shall publish the minimum of the temperature-driven, actuator-driven and sustained-load power limits
    :id: SWREQ_LIMIT_MINIMUM
    :status: draft
    :refines: ARCH_POWER_LIMIT_CALCULATOR
 
    The power limit component shall publish, as the permitted discharge power, the
-   smaller of the temperature-driven share and the actuator-driven share, where
-   the actuator-driven share is 30 % while the actuator interface reports an
-   unconfirmed request and 100 % otherwise.
+   smallest of the temperature-driven share, the actuator-driven share and the
+   sustained-load share, where the actuator-driven share is 30 % while the
+   actuator interface reports an unconfirmed request and 100 % otherwise.
+
+.. swreq:: The power limit component shall compute the sustained-load share so the 10 s average pack discharge current stays at or below 250 A
+   :id: SWREQ_SUSTAINED_LOAD_LIMIT
+   :status: draft
+   :refines: ARCH_POWER_LIMIT_CALCULATOR
+
+   The power limit component shall compute the sustained-load share of the
+   permitted discharge power as 100 % while the pack discharge current averaged
+   over the trailing 10 s is at or below 250 A, and otherwise as the percentage
+   that scales that average back to 250 A.

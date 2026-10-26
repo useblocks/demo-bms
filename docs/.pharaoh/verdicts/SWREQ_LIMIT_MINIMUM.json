@@ -2,39 +2,39 @@
   "agent": "claude-code",
   "axes": {
     "atomicity": {
-      "reason": "Two obligations: publish the minimum of two shares, and define the actuator-driven share as 30 % / 100 % - the latter is a complete requirement in its own right, and the parent treats it as a distinct computation.",
+      "reason": "The main obligation is single (publish the smallest of three shares), but the where clause adds a second, separately testable rule: how the actuator-driven share is computed (30 % while unconfirmed, 100 % otherwise). The sibling swreqs give the other two operands their own requirement (SWREQ_TEMP_DERATE_RAMP, SWREQ_SUSTAINED_LOAD_LIMIT) and the repo verifies this operand separately (TEST_LIMIT_ACTUATOR_SHARE versus TEST_LIMIT_MINIMUM). These are closely related facets of one output, not independent obligations, so 1 rather than 0.",
       "score": 1,
-      "suggestion": "Move the actuator-driven share definition into its own requirement (mirroring SWREQ_TEMP_DERATE_RAMP for the temperature-driven share) and keep only the minimum-selection obligation here."
+      "suggestion": "Move the actuator-share rule into its own swreq refining ARCH_POWER_LIMIT_CALCULATOR, as for the other two operands, leave this need as the smallest of the three shares, and re-point TEST_LIMIT_ACTUATOR_SHARE to the new need."
     },
     "comprehensibility": {
-      "reason": "The temperature-driven share cannot be determined from this requirement at all - the reader must find SWREQ_TEMP_DERATE_RAMP to know what is being compared.",
+      "reason": "Intelligible as a combiner, but only the actuator-driven share is defined here: the temperature-driven share lives in the previous sibling (SWREQ_TEMP_DERATE_RAMP) and the sustained-load share in a later one (SWREQ_SUSTAINED_LOAD_LIMIT) with no cross-reference, share has no stated base or glossary entry, and the title says power limits where the body says shares. A reader must infer these from adjacent needs or the prose of the parent; each point is minor.",
       "score": 1,
-      "suggestion": "Name the source of the temperature-driven share (reference SWREQ_TEMP_DERATE_RAMP or restate 'the ramp from 100 % at 55 degC to 0 % at 60 degC')."
+      "suggestion": "Use one term in title and body, say once that a share is a percentage of the full permitted discharge power, and name the defining needs of the other two operands or restate each in a few words."
     },
     "feasibility": {
-      "reason": "Taking the minimum of two derating factors is trivial and consistent with the parent's rationale of not letting the two causes cancel.",
+      "reason": "A minimum of three values is trivially implementable (publish in power_limit.py does it), the 30 % and 100 % constants match ARCH_POWER_LIMIT_CALCULATOR and REQ_THERMAL_ACTUATOR_FAILSAFE, and the operands agree with SWREQ_TEMP_DERATE_RAMP and SWREQ_SUSTAINED_LOAD_LIMIT; no contradiction with another stated requirement found.",
       "score": 2
     },
     "parent_fit": {
-      "reason": "ARCH_POWER_LIMIT_CALCULATOR owns publishing the minimum of the temperature-driven and actuator-driven limits; this requirement states that selection substantively.",
+      "reason": "Pins the combining rule the parent names (it publishes the minimum of the three) over exactly the three operands of the parent, and repeats its flat 30 % on an unconfirmed request; the ramp and sustained-load computations sit in sibling swreqs, so this is a distinct, clearly addressed part of the obligation of ARCH_POWER_LIMIT_CALCULATOR, and the wording now matches its three-way minimum.",
       "score": 2
     },
     "unambiguity": {
-      "reason": "'publish, as the permitted discharge power, the smaller of the ... shares' conflates a percentage with a power, so the output reads either as a percentage or as an absolute power value.",
+      "reason": "The core reading is unique (smallest of three), but two edge cases are open: SWREQ_TEMP_EXTREMA can report the thermal picture as unavailable, so the temperature-driven share may not exist, and the sustained-load share has no input before any current sample exists; the body does not say what is published then. The core meaning is unchanged, so 1.",
       "score": 1,
-      "suggestion": "Fix the output's type and unit explicitly, e.g. 'shall publish the permitted discharge power as the smaller share expressed in percent of rated discharge power'."
+      "suggestion": "Add a clause fixing the published value when an operand is unavailable (for example treat an unavailable temperature-driven share as 0 %, or publish the smallest of the available shares) so the fail-safe direction is set by the spec."
     },
     "verifiability": {
-      "reason": "The percentages have no stated reference quantity and no publication period is given, so a test cannot compute the expected permitted discharge power or its required update rate.",
+      "reason": "The rule is deterministic with exact constants and the repo tests TEST_LIMIT_MINIMUM and TEST_LIMIT_ACTUATOR_SHARE assert exact values, but two measurable details are missing: the unit and base of the published value (it publishes a share given in % as the permitted discharge power, without saying whether the bus value is a percentage or a power, or a percentage of what) and any publication cadence or maximum latency (the evaluator swreqs state once per 100 ms cycle or in every cycle).",
       "score": 1,
-      "suggestion": "State the base the percentage applies to (e.g. '% of the rated discharge power') and the publication period of the permitted discharge power."
+      "suggestion": "State the unit and base of the published signal (for example a percentage of the full permitted discharge power, the base used in REQ_THERMAL_ACTUATOR_FAILSAFE) and the evaluation cadence or maximum delay from an operand change to the published value."
     }
   },
   "criteria": "requirement",
   "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
-  "model": "claude-opus-5[1m]",
+  "model": "claude-sonnet-5-5",
   "need": "SWREQ_LIMIT_MINIMUM",
-  "reviewed_fingerprint": "3b4030d73f3cd5da01d4c0efdd54a283772292630d3a7fea1808b792879d2d10",
+  "reviewed_fingerprint": "1c221aa0d80e3119092bed283d410ef4793dd5a2e4f886cc7dcfb942a60097e6",
   "schema": 2,
-  "summary": "The weakest requirement of the set: it states the min-selection the parent owns, but also defines the actuator share in passing, never says what the percentages are a percentage of, and cannot be evaluated without its sibling ramp requirement."
+  "summary": "A feasible three-way minimum that is faithful to its parent and clear in its core rule, but it bundles the actuator-share definition into the combiner, leaves the unit, base, cadence and unavailable-operand behaviour of the published value unstated, and relies on sibling needs for two of its three operands."
 }

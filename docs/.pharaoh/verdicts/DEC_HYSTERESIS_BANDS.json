@@ -2,28 +2,29 @@
   "agent": "claude-code",
   "axes": {
     "alternatives_listed": {
-      "reason": "Two rejected options (one shared hysteresis band for both outputs; one shared linear ramp for both) are each described with the concrete symptom they leave behind (power jump felt as the pack cutting in and out; pump switching around the threshold), alongside the chosen split of two Schmitt bands plus a separate ramp.",
+      "reason": "Three distinguishable options: one shared hysteresis band and one shared linear ramp (both rejected), and the chosen split of two Schmitt-trigger bands plus a ramp (title and Consequences). Each rejected option gives its mechanism and a concrete failure (power step the driver feels as the pack cutting in and out; pump chatter around the threshold) that matches the Context constraints and the US_THERMAL_MANAGEMENT / REQ_POWER_DERATING wording.",
       "score": 2
     },
     "consequences_present": {
-      "reason": "States what changes (evaluator owns the two Schmitt bands, limit calculator owns the ramp, each independently tunable) and the trade-off with its follow-on obligation (the same temperature figure is now interpreted in two places, so any future sensor-set change must be reflected in both elements).",
-      "score": 2
+      "reason": "Says what changes (evaluator owns two bands, calculator owns the ramp, independently tunable) and names one cost, but that cost conflicts with the architecture: ARCH_THERMAL_STATE_EVALUATOR is the only element that reads temperature sensors and hands the calculator a single highest-temperature figure, so a sensor-set change lands in the evaluator and does not have to be reflected in both elements. The real coupling (the thresholds of two elements calibrated against one figure) and any concrete follow-on work are not named.",
+      "score": 1,
+      "suggestion": "Restate the cost as the real coupling: the 35/30 °C band and the 55-60 °C ramp are calibrated against the same highest-temperature figure and must be re-validated together if its definition changes. Add concrete follow-on work, for example independent tests for both transfer functions, and note that the ramp has no hysteresis so sensor noise passes straight into the published power."
     },
     "context_present": {
-      "reason": "The problem (one highest-cell-temperature figure feeding two outputs that need different shaping) and qualitative constraints (no actuator chatter, no power step) are named, but the 'opposite behaviour at the threshold' framing implies one shared switching point, while the affected elements place the Schmitt bands at 35/30 degC and 5/10 degC and the derating ramp at 55-60 degC, and no quantified constraint (tolerable chatter rate or step size, or the requirement imposing them) is given.",
+      "reason": "The problem (one temperature figure feeding two outputs) and both behavioural constraints (request must not chatter, power must not step) are stated, but the premise is wrong for part of the scope: heating is driven by the LOWEST cell temperature (REQ_HEATING_REQUEST, SWREQ_HEATING_HYSTERESIS, ARCH_THERMAL_STATE_EVALUATOR), so only the cooling band shares an input with the ramp, yet the title bundles the heating band in. The constraints are not tied to the requirements that fix the two shapes (REQ_COOLING_REQUEST 35/30 °C, REQ_POWER_DERATING 55-60 °C), and the permitted discharge power is now a minimum of three limits (ARCH_POWER_LIMIT_CALCULATOR) of which only the temperature-driven share uses the highest cell temperature. Fail-closed: a verified premise error plus unanchored constraints, so not full marks.",
       "score": 1,
-      "suggestion": "Restate the Context in terms of the actual temperature regions and quantified limits -- e.g. that the cooling/heating requests switch at 35/30 degC and 5/10 degC while the derating ramp spans 55-60 degC, and name the requirement or driveability limit that forbids chatter and forbids a power step -- so the reader can see what the shared-transfer-function option would actually have had to satisfy."
+      "suggestion": "State that only the cooling request and the temperature-driven power share use the highest cell temperature; either explain why the heating band (lowest temperature) belongs to this decision or drop it from the title; cite REQ_COOLING_REQUEST (5 K band against oscillation) and REQ_POWER_DERATING (no single cut-off threshold) as the constraints."
     },
     "rationale_quality": {
-      "reason": "The rationale explicitly weighs the duplicated interpretation against the two named alternative outcomes (chatter or power step) and follows from the no-chatter/no-step constraints stated in Context, without circularity.",
+      "reason": "Explicit and coherent: the two outputs have different failure modes at the threshold, so a separate transfer function per output beats accepting either chatter (shared ramp) or a power step (shared band), reusing the failure modes the Alternatives section already described. The word cheaper is qualitative and weighs the cost that the Consequences still need to correct, but the argument stands once that is fixed.",
       "score": 2
     }
   },
   "criteria": "decision",
   "criteria_fingerprint": "acde53ac62d0cfe944e6386d68e527c7fa5d3bb77a28dbc43b53d9f34a092293",
-  "model": "claude-opus-5[1m]",
+  "model": "claude-sonnet-5-5",
   "need": "DEC_HYSTERESIS_BANDS",
-  "reviewed_fingerprint": "bd8a9b69e8e1c8eacf0b66ec457ea67ac874147fd42950b7ccbc920af85d165e",
+  "reviewed_fingerprint": "88f2968ad5e06315521b5618f15b59310ab5162d77b7faed12a926ba4805d208",
   "schema": 2,
-  "summary": "The alternatives, consequences and rationale are clean and mutually consistent, but the Context's framing of a single shared threshold does not survive comparison with the elements it constrains, which place the two behaviours in different temperature regions."
+  "summary": "Structurally complete and technically sound (hysteresis bands for the actuator requests, a linear ramp for the power limit), but the Context mis-states the input of the heating request (lowest, not highest cell temperature) and the sensor-set cost named in the Consequences contradicts the architecture, so Context and Consequences each lose a point."
 }
