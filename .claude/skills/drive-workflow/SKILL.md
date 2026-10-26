@@ -51,8 +51,16 @@ you install yourself. With no path given, use the `ubc` on your PATH.
    gives you FROM the directory that second line names, and resolve every
    relative path it gives you AGAINST that same directory.
 3. Follow the instruction as written. It is already resolved to ONE arm (author
-   a need, review the needs a stage produced, or fix needs that failed their
-   review), so do not re-derive which arm applies and do not widen the task.
+   a need, review the needs a stage produced, fix needs that failed their
+   review, or fix the diagnostics `ubc` reports on a stage's needs), so do not
+   re-derive which arm applies and do not widen the task. A
+   `FIX (diagnostics):` instruction lists each finding with its file and line:
+   edit the need, its option or the code marker in place. Never delete a need
+   to silence a finding, and never author a new need or review on that pass. A
+   fix that needs a value or a decision you cannot take from the need, its
+   links or the code (an owner, a safety level, which of two needs keeps a
+   duplicate id) is not yours to invent: stop and ask the user, and never make
+   one up to clear the gate.
    When you genuinely need one more need's detail, run
    `ubc agent audit --id <ID> -p <project path>`, and for its neighbourhood run
    `ubc agent context --id <ID> --no-code -p <project path>`. Prefer those over
@@ -98,8 +106,8 @@ you install yourself. With no path given, use the `ubc` on your PATH.
 6. Confirm. Run `ubc agent gaps --scope <need_id> -p <project path>` (the same
    anchor need id) to check the stage closed its trace obligations for that
    stream, then run `ubc agent next --id <need_id> -p <project path>` again.
-   `gaps` is the trace gate only and does not read verdicts, so a green `gaps`
-   alone does not mean the stage advances. For a review-required stage the
+   `gaps` gates trace coverage and the diagnostics on workflow needs, and does
+   not read verdicts, so a green `gaps` alone does not mean the stage advances. For a review-required stage the
    engine holds the stage until the independent verdict is fresh and passing,
    so this re-run of `next` is what confirms the advance.
 7. **STOP. Do not start the next stage.** Report to the user: what you produced,
@@ -115,7 +123,8 @@ Before ending, run this hard-stop check:
   by piping it to `ubc agent verdict-submit` rather than writing a file? If no,
   do it now. A verdict written straight to disk never turns the gate green.
 - Did I run `gaps` for confirmation? If no, do it now. A green `gaps` is
-  necessary but not sufficient: it is the trace gate and does not read verdicts.
+  necessary but not sufficient: it gates trace coverage and diagnostics, and
+  does not read verdicts.
   The authoritative advance condition is a fresh passing verdict plus the final
   `next` read.
 - Did I avoid starting the next stage? If no, stop immediately.
@@ -131,9 +140,9 @@ only when your harness reads the JSON of
 `review`, `route`, `gates_to_pass` and `verdicts_dir` are ALWAYS present, so
 test their VALUE (`== null`, or `""` for `$.stage.verdicts_dir`, whose resolved value
 is then `$.stage.review_brief.verdicts_dir`). `gate`, `id_prefix`, `authoring`,
-`review_needs`, `fingerprints` and `review_brief` are omitted when they have no
-content, so a missing key reads as empty, never as a payload you failed to
-understand. `default_status` is omitted on the same rule but does NOT read as
+`review_needs`, `fingerprints`, `review_brief`, `diagnostics` and
+`diagnostics_omitted` are omitted when they have no content, so a missing key
+reads as empty, never as a payload you failed to understand. `default_status` is omitted on the same rule but does NOT read as
 empty: it names the `:status:` a brand-new need of this stage's type opens in,
 and on an anchored call (every call here carries `--id`) it is absent only when
 the project declares no lifecycle states, where that status is `draft`. An empty
@@ -146,9 +155,11 @@ skill as `$.stage.review`.
 | --- | --- |
 | `$.stage` is `null`, `$.reason` is `"empty"` | The workflow configuration derives no stages. Define `[[workflow.stages]]`. NOT "author the first artefact": a fully populated project reports `empty` too. |
 | `$.stage` is `null`, `$.reason` is `"done"` | No open stage remains on THIS stream. Every call here carries `--id`, and an ANCHORED call reports `done`, never `empty`, so `done` also covers a project that derives no stages at all. Before reporting a green finish, run the whole-graph census `ubc agent status -p <project path>`: if it lists NO stages, define `[[workflow.stages]]` instead. A non-empty `$.open_streams` means other roots still carry gaps, so report those roots and STOP. Resuming one of them is the NEXT step, run as `ubc agent prompt --id <root> -p <project path>`. |
+| `$.stage` is `null`, `$.reason` is `"gaps"` | The stream carries gaps that NO workflow stage owns, because no stage produces those needs' type. `$.unattributed_gaps` lists them, each with the `gap` record and the `gate` it fails. No stage clears them, so authoring is not the answer: close each one on the need itself (answer a clarification marker in the need body, add a missing link to it), or declare a `[[workflow.stages]]` entry producing that type. Never read this as `done`. |
 | `$.stage` is `null`, `$.reason` is `"blocked"` | Resolve the dependency stage first. Inspect the stream with `ubc agent gaps --scope <anchor_id> -p <project path>` and the whole graph with `ubc agent status -p <project path>`. |
 | `$.ok` is `false`, or a non-zero exit | Fix the id or the stage name. Do NOT infer progress. |
-| `$.stage` is set, and `$.stage.gates_to_pass` is empty OR holds any entry other than `"review"` | AUTHOR, structural gates first. Invoke the skill named by `$.stage.skill`, however your harness loads skills, and hand it `$.stage.route.resolved_path`, `$.stage.id_prefix`, `$.stage.authoring` and `$.stage.gate.link`, each when the payload carries it, because the authoring skills are told NOT to re-discover the project. Hand it the new need's `:status:` too: `$.stage.default_status`, or `draft` when the payload carries no such key. The skills ask for the status they were TOLD to open the need in, and you are the only thing telling them on this route. Copy the trace link field name from `$.stage.gate.link` verbatim, never a synonym. A `null` `$.stage.skill` names no skill: author from the payload's own route and gate, and invent no skill name. |
+| `$.stage` is set, and `$.stage.gates_to_pass` holds `"diagnostics"` | FIX the findings in `$.stage.diagnostics`, do NOT author or review. `$.stage.diagnostics` lists at most 50 findings and `$.stage.diagnostics_omitted` counts the rest, so fix the listed ones and re-run `next` for the next batch. Each entry names the finding's `path` and `line`, its code in `link`, its `message`, and the need in `id` (for a need that failed to build, such as a code marker that failed to parse, `id` is the file). Edit the need, its option or the code marker in place, and never delete a need to silence a finding. Then run `ubc check` until none of them remain. If a fix needs a value or a decision you cannot take from the need, its links or the code (an owner, a safety level, which of two needs keeps a duplicate id), stop and ask the user; never make one up to clear the gate. A finding that is intended is the user's call: stop and ask them to allow its code under `[workflow.diagnostics]` or to ignore it under `[lint]`. |
+| `$.stage` is set, `$.stage.gates_to_pass` does not hold `"diagnostics"`, and `$.stage.gates_to_pass` is empty OR holds any entry other than `"review"` | AUTHOR, structural gates first. Invoke the skill named by `$.stage.skill`, however your harness loads skills, and hand it `$.stage.route.resolved_path`, `$.stage.id_prefix`, `$.stage.authoring` and `$.stage.gate.link`, each when the payload carries it, because the authoring skills are told NOT to re-discover the project. Hand it the new need's `:status:` too: `$.stage.default_status`, or `draft` when the payload carries no such key. The skills ask for the status they were TOLD to open the need in, and you are the only thing telling them on this route. Copy the trace link field name from `$.stage.gate.link` verbatim, never a synonym. A `null` `$.stage.skill` names no skill: author from the payload's own route and gate, and invent no skill name. |
 | `$.stage` is set, `$.stage.gates_to_pass` is NON-EMPTY, every entry is `"review"`, and `$.stage.review_needs` is non-empty | REVIEW exactly the ids it lists, do NOT author. Their content fingerprints are in `$.stage.fingerprints`, and step 4 above already carries the submit rules for this JSON route, `$.stage.review_brief.submit_command` among them. |
 | `$.stage` is set, `$.stage.gates_to_pass` is NON-EMPTY, every entry is `"review"`, and `$.stage.review_needs` is absent or empty | The verdicts exist and are FAILING. RE-AUTHOR those needs. Their ids are in `$.stage.review_brief.fresh_skipped` while the verdicts are still fresh, and in `$.stage.review_brief.review_needs` once the need changed after it failed. Each id's verdict under `$.stage.review_brief.verdicts_dir` says why, in the `reason` and optional `suggestion` on each entry of its `axes` map, plus an optional top-level `summary`. Re-authoring invokes the same skill as the AUTHOR row, so hand it the same facts, `$.stage.default_status` (or `draft`) among them: this stage's payload carries that key exactly as an authoring stage's does, and the skill asks for the status whether it is writing the need for the first time or rewriting it. |
 
@@ -173,8 +184,9 @@ and never chains into a second stage.
   verbatim, do not build a `review-<stage>` name. It is `null` on a stage that
   carries no review, and that null value is the test.
 - `ubc agent gaps -p <project path>` is the whole-graph gate. It exits non-zero
-  while gaps remain. It is the trace gate and does not read verdicts, so on a
-  review-required stage a green `gaps` is necessary but not sufficient. The
+  while gaps remain. It gates trace coverage and the diagnostics on workflow
+  needs, and does not read verdicts, so on a review-required stage a green
+  `gaps` is necessary but not sufficient. The
   `next` re-run after a fresh passing verdict is the authoritative advance
   signal.
 - Flags follow the verb's job. `gaps` and `trace` gate the whole graph and

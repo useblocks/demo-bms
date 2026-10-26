@@ -523,6 +523,11 @@ sources and stamps the result on each generated `test_result` as `chain_reqs`.
 The template then reads a field, which it can see. Derived data, on a derived
 need, regenerated on every import — nothing hand-maintained.
 
+An **insight** is the way around the whole problem: it declares Cypher queries
+that the engine runs over the graph before the template, so the template renders
+the traversals as data instead of guessing at links it cannot follow. See
+[Three insights, three personas](#three-insights-three-personas).
+
 ### The whole V in one query
 
 The point of all of this is that the evidence chain closes inside the graph.
@@ -548,6 +553,67 @@ absence of evidence rather than as a special case anyone had to write down.
 > view. The link is real everywhere else: `ubc agent status` counts it (50 / 50
 > parents covered), `needs.json` carries it, the gates enforce it, and Cypher
 > traverses it. Use `status` or a query, not `audit`, to show that arm.
+
+### Three insights, three personas
+
+The coverage report above is a **plain** template, which is why it has to work
+around the link blindness with the `chain_reqs` field. An **insight** is the
+other half of the feature: it declares its Cypher queries in `ubproject.toml`,
+the engine runs them over the needs graph before the template renders, and the
+template receives the traversals as `queries.<name>`. The report can finally
+walk the graph.
+
+Three insights ship here, one per persona in the V-model workflow. They are
+the same graph read three ways:
+
+| Insight | Persona | Input | Render it |
+|---|---|---|---|
+| [`safety_case`](docs/reports/safety_case.html.j2) | Functional safety manager | one `req` | `ubc report safety_case --need REQ_CELL_OVERTEMPERATURE` |
+| [`verification_cockpit`](docs/reports/verification_cockpit.html.j2) | Verification lead | one `swreq` | `ubc report verification_cockpit --need SWREQ_LIMIT_EVALUATION` |
+| [`program_health`](docs/reports/program_health.html.j2) | Release manager | none | `ubc report program_health` |
+
+The queries live beside the templates in
+[`docs/reports/queries/`](docs/reports/queries/), one `.cypher` file per query,
+and the declarations are the `[reports.insights.*]` tables at the end of
+[`docs/ubproject.toml`](docs/ubproject.toml). In VS Code, the two `need`
+insights appear as an **Insights** CodeLens on every requirement and software
+requirement, and render in a panel beside the editor.
+
+**`safety_case`** answers the question a safety review actually asks. For one
+requirement it leads with a verdict — *argument complete*, *evidence at risk*,
+*argument incomplete*, *no argument yet* — and then shows the ASIL, the risk
+register entries that mitigate it (with their cause / effect / mitigation /
+residual sections), the **common-cause peers** (every other requirement the same
+risks mitigate, ordered worst ASIL first), the evidence chain rolled up per
+software requirement with a passing / failing / not-run pip per test, and the
+architecture decisions the design rests on. On `REQ_CELL_BALANCING_WINDOW` —
+the deliberate gap — it says *no argument yet* and points at the missing rung.
+
+**`verification_cockpit`** is for the level where the two lower arms meet. For
+one software requirement it shows the impl needs that implement it (each linked
+to its source line), the test needs that verify it with their last recorded
+outcome, a closure checklist (implemented → verified → run → passing), where the
+requirement sits in the V (user story → requirement → architecture → swreq), and
+its **sibling** software requirements on the same component — so a green page for
+one requirement cannot hide an unclosed sibling. On `SWREQ_IMBALANCE_WARNING` it
+leads with *failing evidence* and links the failing `TRES_IMBALANCE_WARNING`.
+
+**`program_health`** is the project-wide one, declared with `input = "none"` so
+it is not offered on a single need. It opens with a **GO / NO-GO** release gate
+— six checks, each with the count behind it — then the V-model funnel, the
+requirements by ASIL and evidence state, the failing evidence with the whole
+chain each operator reaches (the imbalance failure reaches three requirements
+through one architecture element, and the page shows the fan-out), the risks
+with their mitigation counts, the structural gaps, and the variant the index was
+built for. Right now it is a **NO-GO**: three of the six gates fail — the
+`REQ_CELL_BALANCING_WINDOW` gap leaves one requirement with no recorded evidence,
+the two deliberate defects are two failing results that reach four requirement
+chains, and the structural gate reports its one gap.
+
+Both the editor preview and the CLI render the same template: `theme_style()`
+gives the page the editor's theme inside VS Code and the browser's light or dark
+mode everywhere else, and `need_url()` links a need id to its source on the CLI
+and to the editor's go-to-source path in the preview.
 
 ## Workflow gaps, from the structural gate
 

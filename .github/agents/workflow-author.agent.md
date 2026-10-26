@@ -134,8 +134,8 @@ project finished, because `done` is vacuous for an anchor no stage produces.
 6. Run `ubc agent gaps --scope <ID> -p <project path>` (the same anchor need
    id) to confirm the stage closed its trace obligations for that stream.
 7. Run `ubc agent next --id <ID> -p <project path>` one time to observe
-   post-gate stage state. A green `gaps` is the trace gate only and does not
-   read verdicts, so for a
+   post-gate stage state. A green `gaps` gates trace coverage and the
+   diagnostics on workflow needs, and does not read verdicts, so for a
    review-required stage the engine keeps holding the stage until the independent
    verdict is fresh and passing. This final `next` read is what shows whether the
    stage advanced.
@@ -156,9 +156,9 @@ Before ending, run this hard-stop check:
   to `ubc agent verdict-submit`, never written to disk) for every need the
   stage produced? If no, do it now.
 - Did I run `gaps` for confirmation? If no, do it now. A green `gaps` is
-  necessary but not sufficient: it is the trace gate and does not read verdicts.
-  The authoritative advance condition is a fresh passing verdict plus the final
-  `next` read.
+  necessary but not sufficient: it gates trace coverage and diagnostics, and
+  does not read verdicts. The authoritative advance condition is a fresh passing
+  verdict plus the final `next` read.
 - Did I run one final `next` read after `gaps`? If no, do it now.
 - Did I avoid invoking the next stage's author skill? If no, stop immediately.
 - Did I stop immediately after that final `next` read and return control to the user? If no, do it now.

@@ -119,7 +119,14 @@ sphinx = "uv run --extra ubtrace sphinx-build -W --keep-going -b html . _build/h
 
 [needs]
 id_required = true
-id_regex = "^[A-Z]+_[A-Z][A-Z0-9_]*$"
+# The second branch is the id `ubc agent change plan` mints for a change request,
+# `CR_<YYYYMMDD>_<4 hex>` (e.g. `CR_20261021_A7F3`): a date plus entropy, so two
+# branches that each plan a change never mint the same id. The first branch cannot
+# match it (the `[A-Z]` after the underscore rejects a digit), and the second is
+# narrow on purpose: it admits that one shape and no numeric id of any other type.
+# An id chosen with `plan --cr-id`, a word such as `CR_CHARGE_DERATING`, passes the
+# first branch.
+id_regex = "^([A-Z]+_[A-Z][A-Z0-9_]*|CR_[0-9]{8}_[0-9A-F]{4})$"
 
 # Render the `needflow` diagrams on `traceability.rst` with the local graphviz
 # `dot` instead of PlantUML: no Java, no jar to vendor, and the graphviz engine
@@ -342,13 +349,14 @@ nullable = false
 # `gap_shortfall` is deliberately the string "0 of 1" rather than two numeric
 # `have` / `need` fields, which keeps it unmistakably text.
 
-# NO ENUM HERE, and that is the one deliberate omission in this file. The seven
-# categories the 0.34 engine emits are known (CATEGORIES in tools/import_gaps.py),
-# but that importer renders an UNKNOWN category generically rather than rejecting
-# it, on the explicit grounds that `ubc agent` is alpha and "a gate finding must
-# never be dropped because this table has not caught up with the engine". A global
-# enum would be a hard error and would invert exactly that decision: a newer engine
-# emitting an eighth category would fail the build instead of reporting the gap.
+# NO ENUM HERE, and that is the one deliberate omission in this file. The
+# categories are known: the seven the 0.34 engine emits, plus `change_incomplete`
+# from `ubc agent change` (CATEGORIES in tools/import_gaps.py). But that importer
+# renders an UNKNOWN category generically rather than rejecting it, on the explicit
+# grounds that `ubc agent` is alpha and "a gate finding must never be dropped
+# because this table has not caught up with the engine". A global enum would be a
+# hard error and would invert exactly that decision: a newer engine emitting a
+# category not listed would fail the build instead of reporting the gap.
 # The vocabulary is therefore checked at `warning` severity by `field-gap-category`
 # in schemas.json, which surfaces the drift without dropping the finding.
 [needs.fields.gap_category]
@@ -395,9 +403,9 @@ schema = { type = "string", pattern = "^$|^[0-9]+ of [0-9]+$" }
 description = "Id of the need the gap is attributed to — the same fact as the `gap_for` link, as a field a report template can read."
 default = ""
 nullable = false
-schema = { type = "string", pattern = "^$|^[A-Z]+_[A-Z][A-Z0-9_]*$" }
+schema = { type = "string", pattern = "^$|^([A-Z]+_[A-Z][A-Z0-9_]*|CR_[0-9]{8}_[0-9A-F]{4})$" }
 
-# The ten directives declared under `[[needs.types]]` below. Adding a type there
+# The eleven directives declared under `[[needs.types]]` below. Adding a type there
 # means adding it here — the duplication is the price of letting a report group
 # gaps by V-model level from a plain field.
 [needs.fields.gap_need_type]
@@ -416,6 +424,7 @@ schema = { type = "string", enum = [
   "risk",
   "decision",
   "gap",
+  "change_request",
 ] }
 
 # --- STATUS (a CORE field, given a vocabulary) ---
@@ -617,6 +626,22 @@ prefix = "GAP_"
 color="#EF4444"
 style="rectangle"
 
+# The CHANGE-REQUEST need: one proposed change to the graph. `ubc agent change plan`
+# drafts it from the impact analysis of the need the change is aimed at and writes
+# it to a page of its own under `specs/_global/change_requests/`; assessing,
+# approving, executing and closing it are the other `ubc agent change` verbs, or the
+# Changes panel in VS Code. No stage produces it (a change is raised on demand, not
+# authored as a step of the V), so `[workflow.change_request]` below claims the type
+# and `orphan_exempt_types` lists it. Its fields and links are declared under
+# CHANGE REQUESTS below. `artifact` is a node style sphinx-needs maps onto graphviz
+# (a note), so it raises no "Unknown node style" warning.
+[[needs.types]]
+directive = "change_request"
+title = "Change Request"
+prefix = "CR_"
+color="#5EEAD4"
+style="artifact"
+
 # --- LINKS ---
 # Declare every link the [workflow] trace edges reference here.
 
@@ -694,6 +719,84 @@ outgoing = "mitigates"
 [needs.links.gap_for]
 incoming = "gaps"
 outgoing = "gap_for"
+
+# --- CHANGE REQUESTS: the fields and links a change request carries ---
+# Written by `ubc agent change`, never authored by hand except where the assessment
+# rules on the impact. `[needs.fields]` and `[needs.links]` are project-global, so
+# these names are legal on every type, which is why each one starts with `cr_`: none
+# can collide with a field of this project's own. What a change is FOR is written in
+# the record's body, under its **Purpose** heading, not in a field.
+#
+# `cr_status` is the change request's status LOG, one `state | at | by | rationale`
+# line per step (approved, executed, closed, ...), deliberately not the core `status`
+# field: that one carries the spec lifecycle and its enum above.
+#
+# Each says `nullable = true`: the field is absent until the engine writes it. That
+# is also what a field declaring nothing defaults to, but sphinx-needs warns about
+# such a field ("has no 'schema', 'nullable' or 'default' defined"), and `-W` makes
+# the warning an error.
+
+[needs.fields.cr_requester]
+description = "Who asked for the change"
+nullable = true
+
+[needs.fields.cr_external_id]
+description = "The id the change carries in an external tracker"
+nullable = true
+
+[needs.fields.cr_approval_decision]
+description = "The recorded decision: approved, rejected or deferred"
+nullable = true
+
+[needs.fields.cr_approval_by]
+description = "Who made the recorded decision"
+nullable = true
+
+[needs.fields.cr_approval_at]
+description = "When the recorded decision was made"
+nullable = true
+
+[needs.fields.cr_status]
+description = "The change request's status log, one transition per line"
+nullable = true
+
+# The six sets a change request carries are links: the need `plan` was seeded from,
+# the two tiers its impact analysis computed, and the assessment's ruling on each
+# need the change reaches. They are NOT trace links: no `[[workflow.stages.trace]]`
+# edge names them, the impact walks never step into or out of a change request, and
+# the orphan gate does not count them as wiring. A change request records what was
+# true when it was assessed, so each allows dead links: a need a later change removes
+# or renames raises no warning and no gap on the record that once named it.
+
+[needs.links.cr_anchor]
+incoming = "anchor_of"
+outgoing = "anchored_on"
+allow_dead_links = true
+
+[needs.links.cr_computed_impact]
+incoming = "impact_computed_by"
+outgoing = "reaches"
+allow_dead_links = true
+
+[needs.links.cr_potentially_affected]
+incoming = "potentially_affected_by"
+outgoing = "may_affect"
+allow_dead_links = true
+
+[needs.links.cr_impact_modify]
+incoming = "impact_modified_by"
+outgoing = "modifies"
+allow_dead_links = true
+
+[needs.links.cr_impact_remove]
+incoming = "impact_removed_by"
+outgoing = "removes"
+allow_dead_links = true
+
+[needs.links.cr_impact_excluded]
+incoming = "impact_excluded_by"
+outgoing = "excludes"
+allow_dead_links = true
 
 # --- CODELINKS (consumed by `ubc build`) ---
 # Two projects, one per arm of the lower V — SYMMETRIC: each scans a source tree for
@@ -829,8 +932,13 @@ needs_fields = [
 # and the gate must not grade its own findings. No stage `produces` it either, for
 # the same reason `test_results` has no `author_skill`, taken one step further: there
 # is nothing for an agent to author here at all.
+#
+# `change_request` is exempt because no stage produces it: a change is raised on
+# demand, so it owes no trace link UP to anything and the orphan gate has nothing
+# to hold it to. Its own gate is `change_incomplete`, which reports an approved or
+# executed change request until it is closed.
 [workflow]
-orphan_exempt_types = ["user_story", "req", "arch", "swreq", "gap"]
+orphan_exempt_types = ["user_story", "req", "arch", "swreq", "gap", "change_request"]
 
 # `[workflow.lifecycle] states` IS DELIBERATELY NOT SET, and the reason is worth
 # recording so it is not "fixed" later.
@@ -859,6 +967,21 @@ orphan_exempt_types = ["user_story", "req", "arch", "swreq", "gap"]
 [workflow.diagram]
 enabled = false
 format = "needuml"
+
+# --- CHANGE REQUESTS (consumed by `ubc agent change`) ---
+# Where `ubc agent change plan` writes a change request: one page per request, beside
+# the other project-wide records under `specs/_global/`. This table also CLAIMS the
+# `change_request` type, which no stage produces, so `ubc agent doctor` does not
+# report it as unproduced. Each page is a titled `:orphan:` page, so it needs no
+# toctree entry in index.rst.
+#
+# NOTE: `[workflow]` refuses keys it does not know, so a ubc without `ubc agent
+# change` refuses this whole project. The CI's UBC_VERSION has to be a release that
+# carries it.
+[workflow.change_request.route]
+granularity = "per-need"
+path = "specs/_global/change_requests/{id}.rst"
+scope = "global"
 
 # The route names `.rst`; the `isolation-monitoring` stream is authored in
 # Markdown and is complete, so no stage ever resolves an authoring route into it.
@@ -1122,3 +1245,80 @@ parent_fit = 1
 
 [quality.type_configs.decision.required]
 context_present = 1
+
+# --- REPORTS AND INSIGHTS (consumed by `ubc report` / the VS Code Reports view) ---
+# A plain report is a `.html.j2` template rendered from the needs index; an
+# INSIGHT is a template plus a declaration here, and its declared Cypher
+# queries run against the needs graph before the template renders.
+#
+# That is the whole reason these three exist as insights and not as plain
+# reports. A plain template CANNOT walk links: `ubc report` builds each need in
+# the Jinja context from its scalar FIELDS, so `satisfies`, `refines`,
+# `verifies`, `results_for` and the other link fields are absent, and a
+# link-based view silently reports zero everywhere. An insight's queries run
+# in the engine first, so the template receives the traversals as data. The
+# three below are the same fact three ways: a `need` insight for a system
+# requirement, a `need` insight for a software requirement, and a project-wide
+# `none` insight. Their queries live in `reports/queries/` beside the
+# templates.
+#
+# This table is ubCode-only; Sphinx and sphinx-needs ignore it, and editing a
+# declaration changes no parsing or indexing, so the warm index cache survives
+# a template or query edit.
+[reports]
+directory = "reports"
+
+# Persona: the functional safety manager. For ONE requirement: its ASIL, the
+# risk register entries that mitigate it, the common-cause peers that share
+# those risks, the evidence chain below it, and the architecture decisions its
+# design rests on.
+[reports.insights.safety_case]
+title = "Safety Case"
+description = "ASIL, risk mitigations and the evidence chain of one requirement."
+template = "safety_case.html.j2"
+input = "need"
+types = ["req"]
+
+[reports.insights.safety_case.queries]
+risks = { file = "queries/safety_risks.cypher" }
+peers = { file = "queries/safety_peers.cypher" }
+evidence = { file = "queries/safety_evidence.cypher" }
+decisions = { file = "queries/safety_decisions.cypher" }
+
+# Persona: the verification lead. For ONE software requirement: the impl needs
+# that implement it, the test needs that verify it with their last recorded
+# outcomes, the closure checklist, where it sits in the V, and its sibling
+# software requirements on the same component.
+[reports.insights.verification_cockpit]
+title = "Verification Cockpit"
+description = "Implementation and recorded test evidence of one software requirement."
+template = "verification_cockpit.html.j2"
+input = "need"
+types = ["swreq"]
+
+[reports.insights.verification_cockpit.queries]
+impls = { file = "queries/verif_impls.cypher" }
+results = { file = "queries/verif_results.cypher" }
+upstream = { file = "queries/verif_upstream.cypher" }
+siblings = { file = "queries/verif_siblings.cypher" }
+
+# Persona: the release manager / chief engineer. Project-wide (input = "none"),
+# so it is not offered on a single need: render it with
+# `ubc report program_health`. A GO / NO-GO release gate, the V-model funnel,
+# requirements by ASIL and evidence state, the failing evidence with its
+# fan-out, the risks, the structural gaps and the variant the index was built
+# for.
+[reports.insights.program_health]
+title = "Program Health"
+description = "Release gate, V-model coverage and failing evidence across the whole graph."
+template = "program_health.html.j2"
+input = "none"
+
+[reports.insights.program_health.queries]
+rungs = { file = "queries/health_rungs.cypher" }
+swreq = { file = "queries/health_swreq.cypher" }
+reqs = { file = "queries/health_reqs.cypher" }
+risks = { file = "queries/health_risks.cypher" }
+gaps = { file = "queries/health_gaps.cypher" }
+failing = { file = "queries/health_failing.cypher" }
+variant = { file = "queries/health_variant.cypher" }
