@@ -5,7 +5,7 @@ The structural gate is NOT re-run on every build. ``docs/reports/gaps/gaps.json`
 committed snapshot of one real ``ubc agent gaps`` run, and this script turns it
 into needs so the gate's findings are part of the graph rather than an
 untraceable file next to it — the same arrangement as the JUnit snapshot on the
-other side of the V (see ``tools/import_test_results.py``).
+other side of the V (read by ``docs/specs/_global/test_run.rst``).
 
 Why put the gate's output back INTO the graph at all: because a gap is only
 useful where the reader already is. A JSON file says
