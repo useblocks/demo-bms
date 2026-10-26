@@ -7,14 +7,39 @@
       "have": 0,
       "need": 1,
       "category": "trace_backward"
+    },
+    {
+      "id": "ARCH_POWER_LIMIT_CALCULATOR",
+      "type": "arch",
+      "link": "review",
+      "have": 0,
+      "need": 1,
+      "category": "review"
+    },
+    {
+      "id": "REQ_SUSTAINED_DISCHARGE_LIMIT",
+      "type": "req",
+      "link": "review",
+      "have": 0,
+      "need": 1,
+      "category": "review"
+    },
+    {
+      "id": "SWREQ_SUSTAINED_LOAD_LIMIT",
+      "type": "swreq",
+      "link": "review",
+      "have": 0,
+      "need": 1,
+      "category": "review"
     }
   ],
   "by_category": {
-    "trace_backward": 1
+    "trace_backward": 1,
+    "review": 3
   },
   "summary": {
-    "total_needs": 210,
-    "total_gaps": 1
+    "total_needs": 211,
+    "total_gaps": 4
   },
   "ok": false
 }

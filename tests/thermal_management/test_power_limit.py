@@ -58,18 +58,18 @@ def test_actuator_share_is_flat_and_conditional() -> None:
     assert calc.actuator_share_pct(unconfirmed=False) == 100.0
 
 
-# @The sustained-load share draws 250 A while the 10 s average current is at or above 250 A, TEST_SUSTAINED_LOAD_LIMIT, [SWREQ_SUSTAINED_LOAD_LIMIT]
+# @The sustained-load share draws 200 A while the 10 s average current is at or above 200 A, TEST_SUSTAINED_LOAD_LIMIT, [SWREQ_SUSTAINED_LOAD_LIMIT]
 def test_sustained_load_share_holds_the_current_at_the_limit() -> None:
-    """Full power below a 250 A average; at or above it the share draws 250 A."""
+    """Full power below a 200 A average; at or above it the share draws 200 A."""
     calc = PowerLimitCalculator()
 
     # Below the limit, full power stays available for a short peak.
-    calc.observe_current(200.0, 0)
+    calc.observe_current(150.0, 0)
     assert calc.sustained_load_share_pct() == 100.0
 
-    # At or above the limit, the share is 250 A of the 320 A full power draws.
+    # At or above the limit, the share is 200 A of the 320 A full power draws.
     calc.observe_current(320.0, 1000)
-    assert calc.sustained_load_share_pct() == 78.125
+    assert calc.sustained_load_share_pct() == 62.5
 
     # A peak older than 10 s leaves the trailing average.
     windowed = PowerLimitCalculator()
@@ -78,10 +78,10 @@ def test_sustained_load_share_holds_the_current_at_the_limit() -> None:
     windowed.observe_current(100.0, 11000)
     assert windowed.sustained_load_share_pct() == 100.0
 
-    # A sustained full-power demand settles at 250 A instead of above it.
+    # A sustained full-power demand settles at 200 A instead of above it.
     held = PowerLimitCalculator()
     currents: list[float] = []
     for tick in range(600):
         currents.append(held.sustained_load_share_pct() / 100.0 * 320.0)
         held.observe_current(currents[-1], tick * 100)
-    assert currents[-101:] == [250.0] * 101
+    assert currents[-101:] == [200.0] * 101

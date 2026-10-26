@@ -71,12 +71,12 @@ Thermal Management — Software Requirements
    sustained-load share, where the actuator-driven share is 30 % while the
    actuator interface reports an unconfirmed request and 100 % otherwise.
 
-.. swreq:: The power limit component shall cap the sustained-load share at the share that draws 250 A while the 10 s average pack discharge current is at or above 250 A
+.. swreq:: The power limit component shall cap the sustained-load share at the share that draws 200 A while the 10 s average pack discharge current is at or above 200 A
    :id: SWREQ_SUSTAINED_LOAD_LIMIT
    :status: draft
    :refines: ARCH_POWER_LIMIT_CALCULATOR
 
    The power limit component shall compute the sustained-load share of the
    permitted discharge power as 100 % while the pack discharge current averaged
-   over the trailing 10 s is below 250 A, and as 250 A divided by the 320 A that
-   full permitted power draws while that average is at or above 250 A.
+   over the trailing 10 s is below 200 A, and as 200 A divided by the 320 A that
+   full permitted power draws (62.5 %) while that average is at or above 200 A.
