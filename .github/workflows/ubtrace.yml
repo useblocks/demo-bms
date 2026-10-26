@@ -13,6 +13,10 @@
 #   push to demo**  -> builds only, no upload. A demo branch gets the full gate
 #                       and build treatment, but nothing it produces reaches
 #                       team.useblocks.com.
+#   push to trailer-test* -> builds and publishes under the branch name, so each
+#                       state of the demo (trailer-test at 250 A,
+#                       trailer-test-200a after the change request) is its own
+#                       ubTrace version and stays current on every push.
 #   pull request     -> builds only, no upload: the gate that a change keeps the
 #                       ubTrace export building warning-free before it lands.
 #   workflow_dispatch -> republish "main", or re-publish an old tag by name.
@@ -36,6 +40,9 @@ on:
       # `**`, not `*`: a single star stops at a slash, so it would match
       # `demo-cell-balancing` but miss `demo/cell-balancing`.
       - "demo**"
+      # A single star on purpose: a slash in the name would nest the built
+      # version one level deeper than upload_ubtrace.sh looks for it.
+      - "trailer-test*"
     tags:
       - "v[0-9]+.[0-9]+.[0-9]+*"
   pull_request:
@@ -43,7 +50,7 @@ on:
   workflow_dispatch:
     inputs:
       ref:
-        description: 'Git ref to build (tag name, "main", or a demo branch — a demo branch builds but does not publish)'
+        description: 'Git ref to build (tag name, "main", a trailer-test branch, or a demo branch — a demo branch builds but does not publish)'
         required: true
         default: "main"
 
@@ -281,6 +288,10 @@ jobs:
             # for demo branches, so the version only names the build directory,
             # and naming it after the branch keeps a run log self-explanatory.
             ref="$GITHUB_REF_NAME"
+          elif [[ "$GITHUB_REF_NAME" == trailer-test* ]]; then
+            # Published under its own name, like a tag: each demo state
+            # is a separate ubTrace version, so it is never collapsed into "main".
+            ref="$GITHUB_REF_NAME"
           else
             ref="main"
           fi
@@ -309,10 +320,12 @@ jobs:
             fi
           elif [[ "$ref" == "main" ]]; then
             :
+          elif [[ "$ref" =~ ^trailer-test[A-Za-z0-9._-]*$ ]]; then
+            :
           elif [[ "$ref" =~ ^v[0-9]+\.[0-9]+\.[0-9]+[A-Za-z0-9.+-]*$ ]]; then
             release=true
           else
-            echo "::error::Refusing to publish: ref '$ref' is neither 'main', a demo branch, nor v<MAJOR>.<MINOR>.<PATCH>[suffix]" >&2
+            echo "::error::Refusing to publish: ref '$ref' is neither 'main', a trailer-test branch, a demo branch, nor v<MAJOR>.<MINOR>.<PATCH>[suffix]" >&2
             exit 1
           fi
           # 7 days for everything that is not a tag. main and the demo branches are
@@ -430,7 +443,8 @@ jobs:
 
       - name: Upload to team.useblocks.com
         # Pull requests and demo branches build the artefact but never publish
-        # it. `steps.vars.outputs.publish` carries the demo half of that rule so
+        # it; trailer-test branches publish under their own name.
+        # `steps.vars.outputs.publish` carries the demo half of that rule so
         # it holds however the demo branch was reached — a push, or a dispatch
         # naming it. To start publishing demo versions later, flip that flag —
         # but note a slashed branch name (`demo/foo`) then needs handling too:
