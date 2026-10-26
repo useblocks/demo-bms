@@ -8,6 +8,7 @@ DERATE_START_DC = 550  # 55.0 °C
 DERATE_END_DC = 600  # 60.0 °C
 ACTUATOR_FALLBACK_SHARE_PCT = 30.0
 CONTINUOUS_DISCHARGE_LIMIT_A = 250.0
+FULL_POWER_DISCHARGE_A = 320.0
 AVERAGING_WINDOW_S = 10.0
 
 
@@ -52,22 +53,23 @@ class PowerLimitCalculator:
         while self._current_samples and self._current_samples[0][0] < cutoff_ms:
             self._current_samples.popleft()
 
-    # @Compute the sustained-load share that holds the 10 s average current at or below 250 A, IMPL_SUSTAINED_LOAD_LIMIT, [SWREQ_SUSTAINED_LOAD_LIMIT]
+    # @Cap the sustained-load share at the share that draws 250 A while the 10 s average current is at or above 250 A, IMPL_SUSTAINED_LOAD_LIMIT, [SWREQ_SUSTAINED_LOAD_LIMIT]
     def sustained_load_share_pct(self) -> float:
-        """The share that holds the 10 s average pack current at the limit.
+        """The share that limits the pack current once its 10 s average is at the limit.
 
-        A sustained current at or below the continuous discharge limit needs no
-        derating, so the share is 100 %; above it the share is the fraction that
-        scales the average back to the limit.
+        Below the continuous discharge limit full power stays available, so a
+        short peak can use it. Once the average reaches the limit, the share drops
+        to the fraction of full power that draws exactly the limit, which holds
+        the current there for as long as the load is sustained.
         """
         if not self._current_samples:
             return 100.0
         average_a = sum(current for _, current in self._current_samples) / len(
             self._current_samples
         )
-        if average_a <= CONTINUOUS_DISCHARGE_LIMIT_A:
+        if average_a < CONTINUOUS_DISCHARGE_LIMIT_A:
             return 100.0
-        return CONTINUOUS_DISCHARGE_LIMIT_A / average_a * 100.0
+        return CONTINUOUS_DISCHARGE_LIMIT_A / FULL_POWER_DISCHARGE_A * 100.0
 
     # @Publish the minimum of the temperature actuator and sustained-load power shares, IMPL_LIMIT_MINIMUM, [SWREQ_LIMIT_MINIMUM]
     def publish(

@@ -58,18 +58,18 @@ def test_actuator_share_is_flat_and_conditional() -> None:
     assert calc.actuator_share_pct(unconfirmed=False) == 100.0
 
 
-# @The sustained-load share holds the 10 s average current at or below 250 A, TEST_SUSTAINED_LOAD_LIMIT, [SWREQ_SUSTAINED_LOAD_LIMIT]
-def test_sustained_load_share_holds_the_average_at_the_limit() -> None:
-    """Only the trailing 10 s counts, and an average of 250 A needs no derating."""
+# @The sustained-load share draws 250 A while the 10 s average current is at or above 250 A, TEST_SUSTAINED_LOAD_LIMIT, [SWREQ_SUSTAINED_LOAD_LIMIT]
+def test_sustained_load_share_holds_the_current_at_the_limit() -> None:
+    """Full power below a 250 A average; at or above it the share draws 250 A."""
     calc = PowerLimitCalculator()
 
-    # A sustained current at the limit needs no derating.
-    calc.observe_current(250.0, 0)
+    # Below the limit, full power stays available for a short peak.
+    calc.observe_current(200.0, 0)
     assert calc.sustained_load_share_pct() == 100.0
 
-    # Above the limit, the share scales the trailing average back to 250 A.
-    calc.observe_current(750.0, 1000)
-    assert calc.sustained_load_share_pct() == 50.0
+    # At or above the limit, the share is 250 A of the 320 A full power draws.
+    calc.observe_current(320.0, 1000)
+    assert calc.sustained_load_share_pct() == 78.125
 
     # A peak older than 10 s leaves the trailing average.
     windowed = PowerLimitCalculator()
@@ -77,3 +77,11 @@ def test_sustained_load_share_holds_the_average_at_the_limit() -> None:
     windowed.observe_current(100.0, 1000)
     windowed.observe_current(100.0, 11000)
     assert windowed.sustained_load_share_pct() == 100.0
+
+    # A sustained full-power demand settles at 250 A instead of above it.
+    held = PowerLimitCalculator()
+    currents: list[float] = []
+    for tick in range(600):
+        currents.append(held.sustained_load_share_pct() / 100.0 * 320.0)
+        held.observe_current(currents[-1], tick * 100)
+    assert currents[-101:] == [250.0] * 101

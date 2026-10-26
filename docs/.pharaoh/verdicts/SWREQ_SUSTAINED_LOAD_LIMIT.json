@@ -2,38 +2,38 @@
   "agent": "claude-code",
   "axes": {
     "atomicity": {
-      "reason": "One obligation: compute a single quantity, the sustained-load share, as a piecewise function of the trailing 10 s average current (100 % at or below 250 A, otherwise 250 A divided by the average). The two branches are cases of one function and neither is a complete requirement alone; the purpose clause in the title (so the average stays at or below 250 A) is not a second shall.",
+      "reason": "One shall-clause computing one quantity (the sustained-load share) as a two-level function of one condition (10 s average below vs at or above 250 A); the \"and\" joins the complementary arms of that single function, not independent obligations, in the same style as the sibling swreqs.",
       "score": 2
     },
     "comprehensibility": {
-      "reason": "Self-contained: it names the quantity (sustained-load share of the permitted discharge power), the signal (pack discharge current averaged over the trailing 10 s), the 250 A threshold and both branches, with no undefined abbreviation and no forward reference; the phrasing matches SWREQ_TEMP_DERATE_RAMP and SWREQ_LIMIT_MINIMUM.",
+      "reason": "Intelligible on its own: it defines the sustained-load share in the same sentence, gives both branches with their numbers and explains 320 A inline as the current drawn at full permitted power; \"power limit component\", \"permitted discharge power\" and \"full permitted power\" are used as in the sibling swreqs and in REQ_POWER_DERATING and REQ_THERMAL_ACTUATOR_FAILSAFE.",
       "score": 2
     },
     "feasibility": {
-      "reason": "Trivially implementable (a trailing mean and a division) and no direct conflict with the sibling requirements, but the rule cannot deliver the outcome the title and the parent demand. The share is a fraction of the full permitted discharge power while the formula scales the already-measured average, so a sustained draw is only reduced once it exceeds about sqrt(250 A x I_full), where I_full is the current at full permitted power: with an illustrative I_full of 400 A, a sustained 300 A draw gives a share of 83 % (333 A permitted) and is never reduced, and a constant full-power demand settles at about 316 A (checked with a closed-loop simulation assuming the vehicle draws what it is permitted). That is the towing case the parent names, so the stated outcome is not met.",
+      "reason": "Implementable (a windowed mean plus a two-level share) and consistent with REQ_PACK_OVERCURRENT (the 250 A cap is below the 320 A full-power draw, which is below the 350 A trip) and with the 250 A continuous rating, but it holds the current at 250 A only through a fixed power-to-current anchor (320 A at full power) that appears nowhere upstream: current for a given power varies with pack voltage (I = P/V), so at a lower pack voltage the 78.125 % share draws more than 250 A and the 30 A (about 9 %) margin to the 350 A trip shrinks.",
       "score": 1,
-      "suggestion": "Make the rule able to deliver the outcome: define the share from what the pack may still draw, for example the remaining 10 s current budget (250 A x 10 s minus the charge already drawn in the trailing window) expressed as a fraction of the current at full permitted power, or, whenever the trailing average exceeds 250 A, the percentage of full permitted power at which the pack current equals 250 A. If a reactive proportional rule is deliberately intended, drop the promise that the average stays at or below 250 A from the title and state the accepted steady-state excess. Add a closed-loop test of the outcome beside the formula test."
+      "suggestion": "Record the 320 A as a sourced assumption or parameter (the pack voltage or operating point it holds at, linked to its source), and either derive the cap from the measured pack voltage or close the loop on the measured current, or add an explicit margin so the requirement to never exceed 250 A holds over the pack voltage range."
     },
     "parent_fit": {
-      "reason": "On topic and substantive: it takes the quantities of REQ_SUSTAINED_DISCHARGE_LIMIT itself (10 s trailing average, 250 A) and specifies the sustained-load share that ARCH_POWER_LIMIT_CALCULATOR is charged with computing, leaving the minimum-combination to SWREQ_LIMIT_MINIMUM, so it is a distinct, correctly scoped part of the parent obligation. Whether the stated rule actually delivers the parent guarantee that the average does not exceed 250 A is a separate defect, scored under feasibility so it is not counted twice.",
+      "reason": "Defines exactly the sustained-load limit that ARCH_POWER_LIMIT_CALCULATOR says it computes from the pack discharge current, with the figures of REQ_SUSTAINED_DISCHARGE_LIMIT (250 A, trailing 10 s average, engaged when the average \"reaches\" 250 A = at or above, released when it \"falls below\"); it covers the distinct sustained-load part and leaves the ramp and the minimum to SWREQ_TEMP_DERATE_RAMP and SWREQ_LIMIT_MINIMUM.",
       "score": 2
     },
     "unambiguity": {
-      "reason": "The branch rule has one reading (share = 250 A / average x 100 %), but edge cases change the result and are not specified: the pack current is signed with discharge positive in ARCH_CURRENT_PATH_MONITOR, so charge-direction samples may enter the average as negative values or as 0 A, and the average (and so the share) is undefined while fewer than 10 s of samples, or none, exist. The title also promises that the average stays at or below 250 A, whereas the body only scales it back to 250 A after it has exceeded it; these are not the same statement.",
+      "reason": "Core meaning is clear, but \"the pack discharge current averaged over the trailing 10 s\" has underspecified edge cases that change the outcome: charge-direction (regeneration) current as 0 A or as negative (8 s at 330 A plus 2 s at -100 A averages 264 A one way and 244 A the other, i.e. 78.125 % vs 100 %), the average with less than 10 s of samples at start-up, and a missing or invalid current.",
       "score": 1,
-      "suggestion": "Say how charge-direction samples enter the average (signed or clamped to 0 A), how the average is formed and what share applies before 10 s of samples exist or when no valid sample arrives, and reword the title to match the body (or change the body so the title is true)."
+      "suggestion": "Say whether charge-direction samples count as 0 A or as negative, what the average and the share are until 10 s of valid samples exist, and which share applies while the current is invalid or unavailable."
     },
     "verifiability": {
-      "reason": "The core is concrete and testable (a trailing average of 250 A gives 100 %, 500 A gives 50 %), but measurable details are left open: the tolerance or resolution of the published percentage, how quickly the share must follow a change in the average, and the success condition itself. The condition in the title (the 10 s average stays at or below 250 A) is not what a test of the formula in the body checks, so a closed-loop test of the title can fail while the formula test passes.",
+      "reason": "Every threshold is explicit (250 A, 10 s, 320 A, 100 %, \"below\" vs \"at or above\"), so constant-current tests decide cleanly, but boundary tests have no unique oracle: no evaluation cadence or response time for the share to follow the average, no definition of the window edge (N vs N+1 samples, sample- vs time-weighted mean), and no tolerance or rounding direction for 78.125 % (rounding up would exceed the 250 A cap).",
       "score": 1,
-      "suggestion": "State the tolerance or resolution of the share (for example within 0.5 % of 250 A / average) and the update cadence or maximum latency, and add one observable acceptance condition for the outcome (for example, under a constant demand above 250 A the trailing 10 s average settles at or below 250 A within a stated time), so the title and the formula are tested against the same criterion."
+      "suggestion": "State the averaging as a sliding arithmetic mean over a named sample period, state that the share is re-evaluated every named cycle (e.g. 100 ms) and follows the average within one cycle, and give the capped share as 78.125 % with a tolerance or \"rounded down\"."
     }
   },
   "criteria": "requirement",
   "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
   "model": "claude-sonnet-5-5",
   "need": "SWREQ_SUSTAINED_LOAD_LIMIT",
-  "reviewed_fingerprint": "8cb27c59dfb34af546422c96dab6716f9dbe602b2cec2dd7bd979fb6223d12ee",
+  "reviewed_fingerprint": "350b5906994a82681446beb10c2f93dc0aee1efd40a2af37b5391c04f2f502ae",
   "schema": 2,
-  "summary": "Well traced, atomic and clearly worded, but the stated rule (share = 250 A / trailing average, applied to the full permitted power) cannot deliver the title promise that the 10 s average stays at or below 250 A (with a full-power current of 400 A a sustained 300 A draw is never reduced), and the start-up, charge-direction and tolerance details of the averaging window are left open."
+  "summary": "A crisp, well-traced piecewise limit (100 % below, 250 A / 320 A = 78.125 % at or above a 10 s average of 250 A) that matches ARCH_POWER_LIMIT_CALCULATOR, REQ_SUSTAINED_DISCHARGE_LIMIT and REQ_PACK_OVERCURRENT, but it leaves the averaging edge cases, response time and tolerance open and rests on an unsourced, voltage-dependent 320 A anchor."
 }

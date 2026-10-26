@@ -2,37 +2,38 @@
   "agent": "claude-code",
   "axes": {
     "atomicity": {
-      "reason": "One shall-clause and one obligation: cap the published permitted discharge power so the 10 s average pack discharge current stays at or below 250 A. The sentence that a short peak stays available is the negative case of that limit and the so-it-does-not-heat-up clause is its rationale (same pattern as the inrush sentence of REQ_PACK_OVERCURRENT), so neither is a second obligation.",
+      "reason": "One shall: cap the published discharge power so the current stays at 250 A while the 10 s average is at or above 250 A. The sentence on full power staying available below that average is the complement of the same condition and the closing so-clause is rationale, the same main-shall, complement, rationale shape as REQ_PACK_OVERCURRENT.",
       "score": 2
     },
     "comprehensibility": {
-      "reason": "Self-contained: the published quantity, the measured quantity, the window, the threshold and the purpose are all stated in plain domain terms, and permitted discharge power and the derating range are used as in the story and REQ_POWER_DERATING, so no adjacent requirement has to be read to follow it.",
-      "score": 2
+      "reason": "No undefined abbreviations and the numbers are explicit, but read alone it suggests the vehicle sees 100 % power below the average. That full means the pre-limit value that is still subject to the 55-60 °C temperature derating and the 30 % actuator fallback, and that the range where drive power has to be cut back is the band of REQ_POWER_DERATING, can only be learned from sibling requirements and the architecture (minimum of three limits).",
+      "score": 1,
+      "suggestion": "Name the sibling concepts in the text (for example the full permitted discharge power as used in REQ_POWER_DERATING) and state in one sentence that the published power is the lowest of the temperature, actuator and sustained-load limits."
     },
     "feasibility": {
-      "reason": "A windowed current budget on the 1 ms shunt measurement feeding a published power cap is standard BMS practice and needs no new technology. Nothing stated contradicts it: 250 A averaged over 10 s sits below the 350 A for 100 ms trip of REQ_PACK_OVERCURRENT, so the peak it leaves available is bounded by that trip, and as a cap it composes with REQ_POWER_DERATING and REQ_THERMAL_ACTUATOR_FAILSAFE by taking the lower value (which is what the architecture does). That the actual current follows the limit depends on the vehicle honouring it; that is the standard allocation for a published limit and is scored under verifiability, not here.",
+      "reason": "A moving-average current limiter that lowers the published permitted discharge power is standard BMS practice and implementable with known technology. It contradicts neither a sibling nor REQ_PACK_OVERCURRENT: the 250 A hold sits below the 350 A for 100 ms trip, and the full-power current is also below 350 A (320 A per SWREQ_SUSTAINED_LOAD_LIMIT, though this need never states it). It assumes the vehicle honours the published limit, with the 350 A trip as the hard backstop.",
       "score": 2
     },
     "parent_fit": {
-      "reason": "Directly implements the towing sentence of the story: even under sustained full load the pack never draws more than its cells are rated to deliver continuously, so it does not heat into the range where drive power is cut back. It turns that into a concrete bound (10 s average at or below 250 A) and covers a distinct part of the story; the cooling and heating requests, the temperature ramp, the actuator fail-safe and the spread warning belong to siblings.",
+      "reason": "US_THERMAL_MANAGEMENT says that under sustained full load (towing up a pass) the pack never draws more than its cells are rated to deliver continuously, so it does not heat into the derating range; this need holds the published power so the current stays at 250 A, the stated continuous rating, once the 10 s average shows the load is sustained. No sibling covers that clause (REQ_POWER_DERATING is temperature-driven only).",
       "score": 2
     },
     "unambiguity": {
-      "reason": "The core reading is single: a sliding 10 s window and a 250 A ceiling applied as a cap on the published power, so it composes with the temperature ramp and the 30 % fall-back by the lower value without a precedence clash. Open points that do not change that core: short peak is undefined (an instantaneous 250 A cap would satisfy the shall-clause yet contradict the sentence that a short peak stays available) and the real ceiling on a peak is the 350 A for 100 ms trip of REQ_PACK_OVERCURRENT, which this text never mentions; the sign convention for regenerative current is unstated; and the clause that the pack does not heat up into the range where its drive power has to be cut back reads as an outcome the BMS ensures although a current limit alone cannot guarantee a temperature (ambient, cooling), so its normative status is unclear.",
+      "reason": "The core rule reads one way, but four points are open: (1) engage and release share the 250 A value and, under a sustained load, the average of the capped current converges to exactly 250 A, i.e. onto the release boundary, so hold versus toggle is decided by noise or rounding; (2) it is not said how charge-direction (regen) samples enter the average, which matters on a descent after a climb; (3) the title says the BMS limits the current whereas the body limits the published power so that the current cannot exceed 250 A; (4) the sentence saying the full discharge power stays available could be misread as overriding the temperature and actuator limits.",
       "score": 1,
-      "suggestion": "Define short peak numerically (or mark that sentence as non-normative), name the averaging convention (net or discharge-only), and phrase the heat-up clause as the reason for the limit rather than as a result it guarantees."
+      "suggestion": "Add a release margin, as REQ_COOLING_REQUEST and REQ_HEATING_REQUEST do with their hysteresis, or state that engage and release deliberately share one threshold. Define how charge-direction samples count, align the title with the body (limit the permitted discharge power), and say the sustained-load limit is combined with the other limits by taking the minimum."
     },
     "verifiability": {
-      "reason": "Threshold (250 A), unit and window (any 10 s interval, i.e. sliding) are explicit, so a recorded shunt trace gives an objective pass/fail. Three details a test needs are missing: the sentence that a short peak stays available gives no magnitude or duration (and a pure cap is trivially met by publishing 0 %, so the stays-available half is untestable); the success condition is the actual pack current, which the BMS only influences through the published limit, yet the condition under which it must hold (a consumer that follows the limit, and how quickly) is not stated; and whether regenerative current is netted in the average is not stated.",
+      "reason": "The numbers (250 A, 10 s) and the start and end conditions are explicit, but the pass criterion is on the pack current while the BMS only publishes a power, and the need gives no reference for converting one to the other (the 320 A full-power current appears only in SWREQ_SUSTAINED_LOAD_LIMIT). The phrase “from the moment” has no latency bound, the averaging method (window type, sample period, treatment of charge-direction samples) is not defined, behaviour exactly at the 250 A boundary is not defined, “short peak” is unquantified, and the clause about the pack not heating up is not testable.",
       "score": 1,
-      "suggestion": "State the test condition (for example while the vehicle draws no more than the published permitted discharge power); quantify the peak that must remain available (current and duration, bounded by the 350 A for 100 ms trip of REQ_PACK_OVERCURRENT) or relabel that sentence as rationale; state the sign convention for the average."
+      "suggestion": "State the oracle explicitly: published permitted discharge power at most 250 A times the present pack voltage (or give the ampere value of full power), in force within a stated maximum latency (for example one publishing cycle) of the average reaching 250 A. Define the average as the arithmetic mean of the measured pack current in the discharge direction (the quantity REQ_PACK_OVERCURRENT uses) over a sliding 10 s window, and mark the clause about the pack not heating up as rationale rather than acceptance criterion."
     }
   },
   "criteria": "requirement",
   "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
   "model": "claude-sonnet-5-5",
   "need": "REQ_SUSTAINED_DISCHARGE_LIMIT",
-  "reviewed_fingerprint": "705f04b1b11d2c78ab370c9cd43c07b2590dcc22046979e0d46db9340dfffb29",
+  "reviewed_fingerprint": "5c0fc9cb0a479ebdb1ecf394fe378df79b85cb76cc78a32f41e909b2724d1852",
   "schema": 2,
-  "summary": "A well-targeted single-obligation requirement that implements the towing case of the story with an explicit 250 A / 10 s bound, held back by an unquantified sentence on short peaks, an unstated condition under which the actual-current outcome must hold, and an unstated averaging convention for regenerative current."
+  "summary": "Faithful to its parent and atomic, but the need leaves the current-to-power conversion, the averaging details, the engage/release boundary and its combination with the other power limits unspecified, so it is only partly verifiable, unambiguous and self-contained."
 }
