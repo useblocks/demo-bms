@@ -13,7 +13,7 @@ Read the diagrams as the V, seen from the top of each stream: the arrows point
 story, an architecture element ``satisfies`` a requirement, a software
 requirement ``refines`` an element, and the two lower arms attach to the
 software requirement, ``implements`` from the production source and ``verifies``
-from the test source, with a ``test_result`` recording what the last run of that
+from the test source, with a ``testcase`` recording what the last run of that
 test actually did.
 
 **A red node is a gap.** ``ubc agent gaps`` runs the structural gate over the
@@ -150,13 +150,13 @@ Verification arm
 Recorded outcomes
 ~~~~~~~~~~~~~~~~~
 
-``test_result`` needs are imported from a committed JUnit snapshot, so these are
-the outcomes of one real run, not of this build. ``chain_reqs`` is the resolved
-``test -> swreq -> arch -> req`` roll-up each one carries as a field.
+``testcase`` needs are read from a committed JUnit snapshot on :doc:`test_run`,
+so these are the outcomes of one real run, not of this build. Each links
+``results_for`` to the test it ran.
 
 .. needtable::
-   :types: test_result
-   :columns: id;outcome;runtime_s;results_for;chain_reqs
+   :types: testcase
+   :columns: id;title;result;time;results_for
    :style: table
 
 Gaps
@@ -164,7 +164,7 @@ Gaps
 
 The structural gate's own output, imported back into the graph by
 ``tools/import_gaps.py`` from a committed ``ubc agent gaps`` snapshot. This is the
-same arrangement as ``test_result`` on the other arm of the V: a ``test_result``
+same arrangement as ``testcase`` on the other arm of the V: a ``testcase``
 records what *happened* when a test ran, a ``gap`` records what the *gate* found
 when it last ran, and neither is authored by hand.
 

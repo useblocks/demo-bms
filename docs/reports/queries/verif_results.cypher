@@ -6,10 +6,10 @@
 // disappears. `local-url` is the test source location from the codelinks
 // marker.
 MATCH (c:swreq {id: $current_id})<-[:verifies]-(t:test)
-OPTIONAL MATCH (t)<-[:results_for]-(tr:test_result)
+OPTIONAL MATCH (t)<-[:results_for]-(tr:testcase)
 RETURN t.id AS test, t.title AS title,
        coalesce(t.`local-url`, '') AS url,
-       CASE WHEN tr IS NULL THEN '' ELSE tr.outcome END AS outcome,
-       CASE WHEN tr IS NULL THEN '' ELSE tr.runtime_s END AS runtime,
+       CASE WHEN tr IS NULL THEN '' ELSE tr.result END AS outcome,
+       CASE WHEN tr IS NULL THEN '' ELSE tr.time END AS runtime,
        CASE WHEN tr IS NULL THEN '' ELSE tr.id END AS result
 ORDER BY t.id

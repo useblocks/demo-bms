@@ -5,7 +5,7 @@ The structural gate is NOT re-run on every build. ``docs/reports/gaps/gaps.json`
 committed snapshot of one real ``ubc agent gaps`` run, and this script turns it
 into needs so the gate's findings are part of the graph rather than an
 untraceable file next to it — the same arrangement as the JUnit snapshot on the
-other side of the V (see ``tools/import_test_results.py``).
+other side of the V (read by ``docs/specs/_global/test_run.rst``).
 
 Why put the gate's output back INTO the graph at all: because a gap is only
 useful where the reader already is. A JSON file says
@@ -70,6 +70,12 @@ MARKER = re.compile(
     r"^\s*#\s*@(?P<title>[^,]+),\s*(?P<id>[A-Z][A-Z0-9_]*),\s*"
     r"\[(?P<links>[^\]]*)\](?:\s*,\s*(?P<type>[a-z_]+))?\s*$"
 )
+
+#: The multi-line form (`get_multiline_needs`): `# @need[<markup>] <type>: <title>`,
+#: then a `# :id: <ID>` option line. Its type is written on the open line.
+BLOCK_OPEN = re.compile(r"^\s*#\s*@need(?:\[[A-Za-z0-9_-]+\])?\s+(?P<type>[a-z_]+):")
+BLOCK_ID = re.compile(r"^\s*#\s*:id:\s+(?P<id>[A-Z][A-Z0-9_]*)\s*$")
+BLOCK_CLOSE = re.compile(r"^\s*#\s*@endneed\s*$")
 
 #: `category` -> the phrase that completes "<NEED_ID> — ...", and the id suffix
 #: that keeps two gaps on the same need apart. `{link}` is substituted where the
@@ -147,8 +153,8 @@ def collect_need_types(
     """Return `need id -> type` for every need authored in the sources.
 
     Every authoring form is read: the RST directives and the MyST fences under
-    ``specs/``, and the one-line codelinks markers under ``src/`` and ``tests/``
-    that materialise the ``impl`` and ``test`` needs. A gap can be attributed to
+    ``specs/``, and the codelinks one-line markers and multi-line blocks under
+    ``src/`` and ``tests/`` that materialise the ``impl`` and ``test`` needs. A gap can be attributed to
     any of them.
     """
     types: dict[str, str] = {}
@@ -168,7 +174,19 @@ def collect_need_types(
         if not code_dir.is_dir():
             continue
         for source in sorted(code_dir.rglob("*.py")):
+            block_type: str | None = None
             for line in source.read_text().splitlines():
+                if block_type is not None:
+                    found = BLOCK_ID.match(line)
+                    if found is not None:
+                        types.setdefault(found.group("id"), block_type)
+                    elif BLOCK_CLOSE.match(line):
+                        block_type = None
+                    continue
+                opened = BLOCK_OPEN.match(line)
+                if opened is not None:
+                    block_type = opened.group("type")
+                    continue
                 marker = MARKER.match(line)
                 if marker is not None:
                     types[marker.group("id")] = marker.group("type") or default_type
@@ -317,8 +335,6 @@ def render(gaps: list[Gap], by_category: dict[str, int], report: Path) -> str:
         if gap.shortfall and counts_links:
             lines.append(f"   :gap_shortfall: {gap.shortfall}")
         lines += [
-            f"   :gap_need_id: {gap.need_id}",
-            f"   :gap_need_type: {gap.need_type}",
             # sphinx-needs CSS class, NOT the graphviz shape (that is `style` on the
             # type in ubproject.toml). It paints the need's own rendered block red.
             "   :style: red_bar",

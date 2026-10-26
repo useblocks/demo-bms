@@ -12,10 +12,11 @@
     `results_for`, …) is absent. Reading `n.verifies` yields undefined, and the
     usual `(n.verifies or [])` guard turns that into an empty list — so a
     link-based coverage report renders clean and reports 0 % everywhere.
-    This template therefore reads the `chain_reqs` extra field that
-    `tools/import_test_results.py` stamps on every generated `test_result`: the
-    requirement ids that result is evidence for, already resolved through
-    `test -> swreq -> arch -> req`. Fields are visible to a template; links are not.
+    This template therefore reads three DERIVED fields of every `test`, which both
+    tools compute from the links (see ubproject.toml): `chain_reqs`, the requirement
+    ids it is evidence for (`test -> swreq -> arch -> req`), and `result_count` /
+    `all_passed`, its recorded runs (`testcase -> test`).
+    Fields are visible to a template; links are not.
 
     Script-free by design — pure inline SVG with native <title> tooltips — so it
     renders identically in the editor preview, a browser, and print.
@@ -30,7 +31,7 @@
     evidence for either reason, which is why both halves are here.
     The gap half reads the `gap_*` fields for the same reason the evidence half
     reads `chain_reqs`: a template can read fields but cannot follow the `gap_for`
-    link.
+    link (`gap_need_id` and `gap_need_type` are derived from it).
 
     Colour: the three requirement states, the two test outcomes and the gap rows are
     STATUS, not categories, so they use a fixed status palette and are never themed.
@@ -125,7 +126,9 @@
 
 {#- ── Inputs ──────────────────────────────────────────────────────────────── -#}
 {% set reqs = needs_list | selectattr('type', 'equalto', 'req') | list %}
-{% set results = needs_list | selectattr('type', 'equalto', 'test_result') | list %}
+{% set tests = needs_list | selectattr('type', 'equalto', 'test') | list %}
+{% set results = needs_list | selectattr('type', 'equalto', 'testcase') | list %}
+{% set suites = needs_list | selectattr('type', 'equalto', 'testsuite') | list %}
 {% set req_total = reqs | length %}
 {#- The structural gate's findings, imported as needs. Sorted worst-first is not
     meaningful here — every gap is a gap — so they are ordered by the need they are
@@ -150,9 +153,9 @@
 {% set agg = namespace(rows=[], verified=0, failing=0, no_evidence=0) %}
 {% for r in reqs %}
   {% set row = namespace(passed=0, failed=0, failing_ids=[]) %}
-  {% for t in results %}
-    {% if r.id in (t.chain_reqs | default('') | split(', ') | list) %}
-      {% if t.outcome == 'passed' %}
+  {% for t in tests %}
+    {% if r.id in (t.chain_reqs or []) and t.result_count %}
+      {% if t.all_passed %}
         {% set row.passed = row.passed + 1 %}
       {% else %}
         {% set row.failed = row.failed + 1 %}
@@ -176,7 +179,7 @@
 {% set with_chain = agg.verified + agg.failing %}
 
 {#- ── Test-level tally, for comparison ────────────────────────────────────── -#}
-{% set tests_passed = results | selectattr('outcome', 'equalto', 'passed') | list | length %}
+{% set tests_passed = results | selectattr('result', 'equalto', 'passed') | list | length %}
 {% set tests_other = (results | length) - tests_passed %}
 {% set test_defs = [
   {'key': 'passed',     'label': 'Passed',     'status': 'good',     'glyph': '✓',
@@ -229,8 +232,8 @@
 <h1>Traceability Coverage</h1>
 <p class="sub">
   {{ req_total }} system requirements &middot; {{ needs | length }} needs in the graph
-  {% if results | length > 0 %}
-  &middot; test evidence from run <code>{{ (results | first).test_run_label }}</code>
+  {% if suites | length > 0 %}
+  &middot; test evidence from run <code>{{ (suites | first).test_run_label }}</code>
   {% endif %}
 </p>
 
@@ -340,7 +343,7 @@
   {{ stacked_bar(test_defs, results | length, 'clip-test', 'Recorded test outcomes') }}
   {{ legend(test_defs, results | length) }}
   {% else %}
-  <p><em>No test results imported. Run <code>tools/import_test_results.py</code>.</em></p>
+  <p><em>No test results recorded. Record a run into <code>reports/junit/testresults.xml</code>.</em></p>
   {% endif %}
 </figure>
 
@@ -349,10 +352,11 @@
   <dt>Full chain to a test</dt>
   <dd>
     A recorded test outcome reaches the requirement through
-    <span class="chain">req &larr;satisfies&mdash; arch &larr;refines&mdash; swreq &larr;verifies&mdash; test &larr;results_for&mdash; test_result</span>.
-    That chain is resolved by <code>tools/import_test_results.py</code> and stamped on
-    each <code>test_result</code> as its <code>chain_reqs</code> field, because a report
-    template can read fields but cannot follow links.
+    <span class="chain">req &larr;satisfies&mdash; arch &larr;refines&mdash; swreq &larr;verifies&mdash; test &larr;results_for&mdash; testcase</span>.
+    That chain is derived from the links and held on each <code>test</code> as its
+    <code>chain_reqs</code>, <code>result_count</code> and <code>all_passed</code> fields,
+    because a report template can read fields but cannot follow links. The counts
+    below are tests with a recorded run, one run per test.
   </dd>
   <dt>Why “no test evidence” merges two cases</dt>
   <dd>
@@ -406,9 +410,8 @@
 
 <p class="muted" style="margin-top: 2rem">
   Rendered from <code>needs.json</code>. Rebuild the graph with <code>ubc build needs</code>;
-  refresh the test evidence with
-  <code>python3 -m pytest -q --junitxml=reports/junit/testresults.xml</code> followed by
-  <code>python3 tools/import_test_results.py</code>; refresh the structural gaps with
+  record a new test run with
+  <code>uv run pytest -q --junitxml=docs/reports/junit/testresults.xml</code>; refresh the structural gaps with
   <code>ubc agent gaps &gt; reports/gaps/gaps.json</code> followed by
   <code>python3 tools/import_gaps.py</code>.
 </p>
