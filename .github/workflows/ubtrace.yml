@@ -70,12 +70,13 @@ jobs:
   # graphviz and no PlantUML — it is the cheap, fast half of the pipeline and it
   # fails before the expensive build starts.
   #
-  # What it is actually defending. This project carries two IMPORTED artefacts,
-  # `test_result` and `gap`, and each is a three-link chain:
+  # What it is actually defending. This project carries one IMPORTED artefact,
+  # `gap`, as a three-link chain:
   #
   #     reality -> committed snapshot -> generated RST -> published artefact
   #
-  # The importers' `--check` modes have always been able to gate the second link
+  # (The test evidence has no generated link: `test_run.rst` reads the committed
+  # JUnit report itself.) The importer's `--check` mode gates the second link
   # (snapshot -> RST). The FIRST link had nothing gating it until this job: nothing
   # in CI could tell whether `docs/reports/gaps/gaps.json` still matched what the engine
   # actually reports, because there was no `ubc` on the runner. That is exactly the
@@ -103,7 +104,7 @@ jobs:
           version: ${{ env.UBC_VERSION }}
 
       - name: Set up Python
-        # Only for the two importers, which are standard-library-only by design.
+        # Only for the gaps importer, which is standard-library-only by design.
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version-file: ".python-version"
@@ -152,13 +153,10 @@ jobs:
           fi
           echo "gap snapshot is current"
 
-      - name: The generated specs still match their snapshots
+      - name: The generated gaps page still matches its snapshot
         id: generated
-        # The second link of both chains. These are the same `--check` modes the
-        # README documents; they were never wired into CI.
-        run: |
-          python3 tools/import_gaps.py --check
-          python3 tools/import_test_results.py --check
+        # The second link of the chain: the `--check` mode the README documents.
+        run: python3 tools/import_gaps.py --check
 
       - name: Report the trace matrix and the substance gate
         # INFORMATIONAL, never blocking, and both for the same reason: this repo is a
@@ -194,7 +192,7 @@ jobs:
             --ubc-version "$UBC_VERSION" \
             --result "Sources parse=${{ steps.parse.outcome }}" \
             --result "Gap snapshot matches reality=${{ steps.snapshot.outcome }}" \
-            --result "Generated specs match snapshots=${{ steps.generated.outcome }}" \
+            --result "Generated gaps page matches snapshot=${{ steps.generated.outcome }}" \
             --gaps "$RUNNER_TEMP/gaps.json" \
             --trace "$RUNNER_TEMP/trace.json" \
             --verdicts "$RUNNER_TEMP/verdicts.json" \

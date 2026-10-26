@@ -51,7 +51,7 @@ Every need of the cell-protection stream, by type
 
 A stream is a directory, ``specs/cell-protection/``, and nothing on a need says
 which stream it belongs to. The authored needs carry it in their document name;
-the ``impl``, ``test`` and ``test_result`` needs of the stream live in ``src/``,
+the ``impl``, ``test`` and ``testcase`` needs of the stream live in ``src/``,
 ``tests/`` and ``specs/_global/``, and belong to it only through the chain.
 
 Filter string — the authored needs alone:
@@ -82,29 +82,30 @@ it one comparison.
 Failed test results and the requirements they are evidence for
 ---------------------------------------------------------------
 
-Filter string — the results, with the requirements each one's chain reaches
-(``chain_reqs``, derived from the links):
+Filter string — the tests whose recorded result did not pass, with that result
+(``results``) and the requirements each one's chain reaches (``chain_reqs``), both
+derived from the links:
 
 .. code-block:: text
 
-   type == 'test_result' and outcome == 'failed'
+   type == 'test' and not all_passed
 
 .. needtable::
-   :filter: type == 'test_result' and outcome == 'failed'
-   :columns: id;outcome;results_for;chain_reqs
+   :filter: type == 'test' and not all_passed
+   :columns: id;results;chain_reqs
    :style: table
 
-Cypher — the same chain walked in the query rather than read from a stamped field:
+Cypher — the same chain walked in the query, up from the recorded test case:
 
 .. code-block:: cypher
 
-   MATCH (tr:test_result)-[:trace_up*]->(r:req)
-   WHERE tr.outcome = 'failed'
-   RETURN tr.id AS result, collect(DISTINCT r.id) AS reqs
+   MATCH (tc:testcase)-[:trace_up*]->(r:req)
+   WHERE tc.result = 'failed'
+   RETURN tc.id AS result, collect(DISTINCT r.id) AS reqs
    ORDER BY result
 
-Two failures reach four requirements: ``TRES_IMBALANCE_WARNING`` reaches three
-through one architecture element.
+Two failures reach four requirements: the failing case of
+``TEST_IMBALANCE_WARNING`` reaches three through one architecture element.
 
 One level down, the same verdict is a field of the software requirement:
 ``all_tests_passed`` (every test verifying it passed its last run), derived from
@@ -121,7 +122,7 @@ filter:
    :style: table
 
 .. needflow:: One failure, followed up the V
-   :root_id: TRES_IMBALANCE_WARNING
+   :root_id: TF_RUN_0EA_BC926
    :root_direction: outgoing
    :link_types: trace_up
    :direction: LR

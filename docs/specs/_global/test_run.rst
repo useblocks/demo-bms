@@ -1,10 +1,16 @@
-Test run, read from the JUnit report
-====================================
+Test run
+========
 
-This page reads the same committed pytest run the importer reads,
-``reports/junit/testresults.xml``, with a ``test-file`` directive: one need for
-the file, one for its suite and one per test case, beside the ``test_result``
-needs on :doc:`test_results`. Replacing the importer with it is the next commit.
+The recorded outcomes of one real pytest run, read straight from the committed
+JUnit report ``reports/junit/testresults.xml``. The suite is not re-run on every
+build, so these are the outcomes of the run named on the suite below, not of
+this build.
+
+Each test case links ``results_for`` to the ``test`` need whose run it records:
+the root ``conftest.py`` writes that id into the report from the marker above
+the test function.
+
+.. test-results:: reports/junit/testresults.xml
 
 .. test-file:: Committed pytest run
    :file: reports/junit/testresults.xml

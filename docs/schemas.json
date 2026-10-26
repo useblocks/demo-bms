@@ -21,6 +21,8 @@
         "                     trace edges. An entry on a back link (`traces_to_back`) is",
         "                     refused by both tools; `network_back` is the only construct",
         "                     that reaches incoming links. `warning` -- see below.",
+        "  trace-testcase-*   the `results_for` link of `testcase`, a type sphinx-test-reports",
+        "                     adds and a project cannot declare (sphinx-needs#2371).",
         "  field-gap-category the gate's category vocabulary at `warning`: a declared enum",
         "                     is a violation, and a need type's entry has no severity.",
         "  field-req-asil     ASIL presence on `req` at `warning`: `nullable = false` would",
@@ -145,13 +147,6 @@
       "validate": { "local": { "properties": { "id": { "pattern": "^TEST_" } } } }
     },
     {
-      "id": "id-prefix-test_result",
-      "severity": "violation",
-      "message": "DECLARED: [needs.types.test_result] gives test_result the prefix TRES_, which only seeds generated ids; a need type cannot declare its `id`, so the prefix is checked here.",
-      "select": { "properties": { "type": { "const": "test_result" } } },
-      "validate": { "local": { "properties": { "id": { "pattern": "^TRES_" } } } }
-    },
-    {
       "id": "id-prefix-risk",
       "severity": "violation",
       "message": "DECLARED: [needs.types.risk] gives risk the prefix RISK_, which only seeds generated ids; a need type cannot declare its `id`, so the prefix is checked here.",
@@ -178,6 +173,22 @@
       "message": "DECLARED: [[needs.types]] gives change_request the prefix CR_, and `ubc agent change plan` refuses a chosen id without it.",
       "select": { "properties": { "type": { "const": "change_request" } } },
       "validate": { "local": { "properties": { "id": { "pattern": "^CR_" } } } }
+    },
+
+    {
+      "id": "trace-testcase-results_for",
+      "severity": "violation",
+      "message": "A recorded case links `results_for` to exactly one `test` need, from the JUnit property conftest.py writes. A case without it is evidence for nothing, and `ubc agent gaps` cannot see that: the report expansion links every case to its suite through `links`.",
+      "select": { "properties": { "type": { "const": "testcase" } } },
+      "validate": {
+        "local": {
+          "properties": { "results_for": { "minItems": 1, "maxItems": 1 } },
+          "required": ["results_for"]
+        },
+        "network": {
+          "results_for": { "items": { "local": { "$ref": "#/$defs/type-test" } } }
+        }
+      }
     },
 
     {

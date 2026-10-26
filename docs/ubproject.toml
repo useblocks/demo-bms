@@ -209,18 +209,19 @@ dimensions = { chemistry = "LFP" }
 # `[needs.types.<type>.fields.<name>]` under NEED TYPES below, with that type's
 # vocabulary, pattern and whether it is required. On a need of any other type the
 # field holds null, not "", and a value written there is ignored with a
-# `needs.undeclared_for_type` warning. So the two IMPORTED types carry their own
-# fields — four on `test_result` (what a JUnit `<testcase>` reports), five on `gap`
-# (what one `ubc agent gaps` record reports) — and `asil` lives on `req`.
+# `needs.undeclared_for_type` warning. So the IMPORTED type carries its own
+# fields — five on `gap` (what one `ubc agent gaps` record reports) — and `asil`
+# lives on `req`. The test-report types bring theirs from `[test_reports]`.
 #
 # `nullable = false` with no default makes a field REQUIRED on the type that
 # declares it: a need without it is not created (`needs.create_need`), in ubc and
 # in the Sphinx build alike. That is the declared form of "the importer must have
 # written it".
 #
-# Two fields stay declared here, for every type: `status`, a CORE field that every
-# need has, given its one vocabulary below; and `chemistry`, which needs
-# `parse_variants`, a key a need type's entry cannot set.
+# Three fields stay declared here, for every type: `status`, a CORE field that every
+# need has, given its one vocabulary below; `chemistry`, which needs
+# `parse_variants`, a key a need type's entry cannot set; and `test_run_label`, which
+# belongs to a type the project cannot declare.
 #
 # SPELLING: `[needs.fields.<name>]`, not the older `[[needs.extra_options]]`, which
 # sphinx-needs maps onto its deprecated `needs_extra_options` with a deprecation
@@ -228,9 +229,10 @@ dimensions = { chemistry = "LFP" }
 
 # --- STATUS (a CORE field, given a vocabulary) ---
 # The spec lifecycle, written once. The six AUTHORED types (user_story, req, arch,
-# swreq, risk, decision) each REQUIRE a status in their own entry below; the four
-# DERIVED types (impl, test, test_result, gap) declare none and their needs carry
-# none — their state is the source file or the import, not a lifecycle.
+# swreq, risk, decision) each REQUIRE a status in their own entry below; the
+# DERIVED types (impl, test, gap and the test-report types) declare none and their
+# needs carry none — their state is the source file, the report or the import, not a
+# lifecycle.
 #
 # This is the ONLY place the vocabulary is enforced. `[workflow.lifecycle] states`
 # looks like it should carry it too, and does not: see the comment at `[workflow]`
@@ -254,6 +256,14 @@ lfp = "var.pack.chemistry == 'LFP'"
 description = "Pack cell chemistry a chemistry-specific need is resolved for: NMC or LFP, from the variant data."
 parse_variants = true
 schema = { type = "string", enum = ["NMC", "LFP"] }
+
+# The run a `testsuite` need records, from the suite property conftest.py writes
+# (`[test_reports] extra_options`). Declared for every type because a project cannot
+# declare the extension's types (sphinx-needs#2371). The pattern refuses the ISO `T`,
+# which would make ubTrace's Elasticsearch map the field as a date.
+[needs.fields.test_run_label]
+description = "Identifier of the test run a test suite records: its start time, as a label."
+schema = { type = "string", pattern = "^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}" }
 
 # BATTERY MANAGEMENT SYSTEM (BMS) — everything-as-code, MINIMIZED V-MODEL.
 #
@@ -430,56 +440,20 @@ derive = { kind = "collect", field = "chain_reqs", over = "verifies" }
 [needs.types.test.fields.all_passed]
 description = "Every recorded result of this test passed; true when it has none."
 schema = { type = "boolean" }
-derive = { kind = "all", test = "outcome == 'passed'", over = "results_for_back" }
+derive = { kind = "all", test = "result == 'passed'", over = "results_for_back" }
 
-# The EXECUTION-EVIDENCE need: the recorded outcome of ONE test case in ONE test
-# run, imported from a JUnit XML report rather than authored by hand. It is
-# deliberately a separate type from `test`: a `test` need is the test case that
-# EXISTS (the marker in the test source, part of the spec), whereas a
-# `test_result` is what HAPPENED when that case last ran. Keeping them apart is
-# what lets the report be replaced by a newer run without touching the spec, and
-# what lets a `test` need legitimately exist with no result yet.
-#
-# Generated into `specs/_global/test_results.rst` by
-# `../tools/import_test_results.py` from `reports/junit/testresults.xml`. The XML is
-# a COMMITTED SNAPSHOT: the suite is not re-run on every build.
-[needs.types.test_result]
-title = "Test Result"
-prefix = "TRES_"
-color="#4ADE80"
-style="database"
+# How many recorded results the test has, so a template can tell "passed" from the
+# `true` that `all_passed` holds for a test that never ran.
+[needs.types.test.fields.result_count]
+description = "Recorded results of this test."
+schema = { type = "integer" }
+derive = { kind = "count", over = "results_for_back" }
 
-# The three fields of the execution evidence, on `test_result` alone and REQUIRED
-# there: `tools/import_test_results.py` stamps every one on every generated result,
-# so a result missing one is a half-written import and is not created. Its
-# `chain_reqs` is derived (below), not stamped.
-#
-# The four words are exactly OUTCOME_BY_TAG plus the `passed` default in
-# tools/import_test_results.py. `outcome` is the one worth filtering on
-# (`type == "test_result" and outcome != "passed"`).
-[needs.types.test_result.fields.outcome]
-description = "Recorded outcome of one test case in one run: passed, failed, error or skipped."
-schema = { type = "string", enum = ["passed", "failed", "error", "skipped"] }
-nullable = false
-
-# DELIBERATELY UNCONSTRAINED beyond non-empty: it is the JUnit `time` attribute
-# passed through verbatim from a report this repository does not generate, and a
-# numeric format would fail on a legitimate report (a runner emitting `1e-05`).
-[needs.types.test_result.fields.runtime_s]
-description = "Wall-clock runtime of that test case, in seconds, as the report recorded it."
-schema = { type = "string", minLength = 1 }
-nullable = false
-
-# The importer's run label, date SPACE time (`_run_label` in
-# tools/import_test_results.py); the pattern pins that form, so the ISO `T` form
-# cannot be written.
-[needs.types.test_result.fields.test_run_label]
-description = "Identifier of the test run the outcome came from: the report's timestamp, as a label."
-schema = { type = "string", pattern = "^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}" }
-nullable = false
-
-[needs.types.test_result.fields.chain_reqs]
-derive = { kind = "collect", field = "chain_reqs", over = "results_for" }
+# The EXECUTION EVIDENCE is not a type of this project: each recorded case is a
+# `testcase` need read from the committed JUnit report (`[test_reports]` below),
+# linking `results_for` to its `test`. A `test` is the case that EXISTS, a `testcase`
+# what HAPPENED when it last ran, so a newer run replaces the evidence without
+# touching the spec, and a new test may exist with no result yet.
 
 [needs.types.risk]
 title = "Risk"
@@ -500,11 +474,11 @@ style="frame"
 nullable = false
 
 # The WORKFLOW-GATE need: one structural gap that `ubc agent gaps` reports, imported
-# from a committed JSON snapshot rather than authored by hand. It is the same idea as
-# `test_result` on the other side of the V — a `test_result` records what HAPPENED
-# when a test ran, a `gap` records what the STRUCTURAL GATE found when it last ran —
-# and it is imported for the same reason: a gap an agent could rewrite would not be
-# a gate.
+# from a committed JSON snapshot rather than authored by hand. It is the counterpart
+# of the `testcase` evidence on the other side of the V — a `testcase` records what
+# HAPPENED when a test ran, a `gap` records what the STRUCTURAL GATE found when it
+# last ran — and neither is authored: a gap an agent could rewrite would not be a
+# gate.
 #
 # Generated into `specs/_global/gaps.rst` by `../tools/import_gaps.py` from
 # `reports/gaps/gaps.json`, which is a COMMITTED SNAPSHOT of `ubc agent gaps`: the
@@ -677,17 +651,16 @@ outgoing = "verifies"
 target_types = ["swreq"]
 schema = { minItems = 1, maxItems = 1 }
 
-# The execution-evidence link: a `test_result` need's outgoing `results_for`
-# points at the ONE `test` need whose run it records — a second target would make
-# the evidence unattributable; the test's incoming `results` is how a query gets
-# from a test case to its last recorded outcome.
+# The execution-evidence link: a `testcase` need's outgoing `results_for` points at
+# the ONE `test` need whose run it records — a second target would make the evidence
+# unattributable; the test's incoming `results` is how a query gets from a test case
+# to its last recorded outcome. Written from the JUnit property
+# (`[test_reports] property_link_types`). A project cannot narrow the extension's
+# type here (sphinx-needs#2371), so `trace-testcase-results_for` in schemas.json
+# bounds it.
 [needs.links.results_for]
 incoming = "results"
 outgoing = "results_for"
-
-[needs.types.test_result.links.results_for]
-target_types = ["test"]
-schema = { minItems = 1, maxItems = 1 }
 
 # The risk link: a `risk` need's outgoing `mitigates` points at the `req` it bears on.
 [needs.links.mitigates]
@@ -917,14 +890,14 @@ needs_fields = [
 ]
 
 # --- TEST REPORTS (sphinx-test-reports and ubCode's `[test_reports]`) ---
-# The committed JUnit run, read a second way: `specs/_global/test_run.rst` reads
-# `reports/junit/testresults.xml` with a `test-file` directive, one need per file,
-# suite and case, beside the `test_result` needs `tools/import_test_results.py`
-# writes from the same file. An empty table is enough: it gives ubCode, Sphinx (with
-# `sphinx_test_reports` in `extensions`) and the converter the `testfile` /
-# `testsuite` / `testcase` types and their fields. Additive for now; replacing the
-# importer with it is the next step.
+# `specs/_global/test_run.rst` reads the committed JUnit run with one `test-file`
+# directive: one need per file, suite and case, of the `testfile` / `testsuite` /
+# `testcase` types this table adds in ubCode and Sphinx alike. The root conftest.py
+# writes the two properties read here: `results_for` on each case becomes its link
+# to the `test` need that ran, and `test_run_label` becomes a field of the suite.
 [test_reports]
+property_link_types = { results_for = "results_for" }
+extra_options = ["test_run_label"]
 
 # --- AGENT RUNNER (consumed by `ubc agent run`) ---
 # `ubc agent run` spawns an AI runner to author the next-stage artefact. The
@@ -991,10 +964,10 @@ orphan_exempt_types = ["user_story", "req", "arch", "swreq", "gap", "change_requ
 # A non-empty `states` list turns on the deterministic `status_undeclared` gate. That
 # gate fires on a need whose status is UNSET — not on one whose status is outside the
 # vocabulary. This project has 124 needs that legitimately carry no status at all:
-# `impl` and `test` are materialised from one-line source markers, `test_result` and
-# `gap` are imported, and none of the four is in a lifecycle — their state is the
+# `impl` and `test` are materialised from source markers, the recorded test results
+# and `gap` are imported, and none of them is in a lifecycle — their state is the
 # source file or the import. Measured: enabling it produced 124 `status_undeclared`
-# gaps (every impl, test, test_result and the gap itself) and did NOT flag a req
+# gaps (every impl, test, test result and the gap itself) and did NOT flag a req
 # carrying the bogus status `draft2`, which is the case the vocabulary exists to
 # catch. The sub-table accepts only `states` and `transitions`, so the gate cannot be
 # scoped to the six authored types, and `[workflow] exempt_status` filters by status
@@ -1158,34 +1131,36 @@ link = "verifies"
 min = 1
 up = "swreq"
 
-# --- TEST RESULTS STAGE (optional, IMPORTED not authored) ---
-# A `test_result` need `results_for` the `test` need whose run it records. This
+# --- TEST RESULTS STAGE (optional, RECORDED not authored) ---
+# A `testcase` need `results_for` the `test` need whose run it records. This
 # stage is unusual in two ways and both are deliberate.
 #
-# It is IMPORTED, not authored: there is no `author_skill`, because the artefact
-# is generated by `tools/import_test_results.py` from the committed JUnit XML
-# under `reports/junit/`. An agent has nothing to decide here — an imported
-# outcome that a model could rewrite would not be evidence.
+# It is RECORDED, not authored: there is no `author_skill`, because the needs are
+# read by the `test-file` directive on `specs/_global/test_run.rst` from the
+# committed JUnit XML under `reports/junit/`. An agent has nothing to decide here —
+# an outcome that a model could rewrite would not be evidence.
 #
 # It carries no `review_skill` either, for the same reason: a recorded outcome is
 # a measurement, and scoring a measurement against a prose rubric would be
 # meaningless.
 #
 # `direction = "outgoing"`, NOT `both`, exactly as for `risks` and `decisions`
-# below: the forward leg is what names `results_for` and makes the generated link
-# real coverage that closes the orphan gate. A BACKWARD leg would additionally
-# require every `test` need to carry an incoming `results`, so a project whose
-# report predates a newly added test case could never reach a clean
-# `ubc agent gaps` — and "this test has no recorded result yet" is a legitimate
-# state, not a gap.
+# below: the forward leg is what names `results_for` and counts the recorded link
+# as coverage. A BACKWARD leg would additionally require every `test` need to carry
+# an incoming `results`, so a project whose report predates a newly added test case
+# could never reach a clean `ubc agent gaps` — and "this test has no recorded
+# result yet" is a legitimate state, not a gap.
+#
+# `ubc agent config-validate` / `doctor` report `testcase` as undeclared until
+# useblocks/ubcode#4107; `status`, `gaps` and `next` read the stage correctly.
 [[workflow.stages]]
 id = "test_results"
 optional = true
-produces = "test_result"
+produces = "testcase"
 
 [workflow.stages.route]
 granularity = "single"
-path = "specs/_global/test_results.rst"
+path = "specs/_global/test_run.rst"
 scope = "global"
 
 [[workflow.stages.trace]]
