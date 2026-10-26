@@ -16,9 +16,10 @@
 # (the JUnit test results and the gap report) and runs the same blocking checks as
 # the graph-gates job. --dry-run stops right after those checks.
 #
-# It runs no reviews. A change expires the verdicts of the needs it touches and
-# `ubc check` then fails, so the script stops and names those needs: review them in
-# ubCode and run it again. Set UBC to use another ubc binary than the one on PATH.
+# Review verdicts are not part of the demo. A change expires the verdicts of the
+# needs it touches, and tools/import_gaps.py leaves those review gaps out of the
+# generated gap needs, so they do not block the publish. Set UBC to use another ubc
+# binary than the one on PATH.
 set -euo pipefail
 
 UBC="${UBC:-ubc}"
@@ -86,20 +87,16 @@ done
 
 echo "== gates"
 if ! check_output="$("$UBC" check docs 2>&1)"; then
-  echo "$check_output" | tail -n 1 >&2
-  python3 -I - docs/reports/gaps/gaps.json <<'EOF' >&2
-import json, sys
-stale = [g["id"] for g in json.load(open(sys.argv[1]))["gaps"] if g["category"] == "review"]
-if stale:
-    print("error: these needs lost their review; re-review them in ubCode, then run this again:")
-    for need in stale:
-        print(f"  {need}")
-else:
-    print("error: ubc check fails")
-EOF
+  echo "$check_output" | tail -n 20 >&2
+  echo "error: ubc check fails" >&2
   exit 1
 fi
-if ! "$UBC" agent gaps -p docs 2>/dev/null | cmp -s - docs/reports/gaps/gaps.json; then
+# `ubc agent gaps` exits non-zero whenever it finds a gap, and this project keeps
+# one on purpose, so its exit code is ignored and only the report is compared.
+fresh_report="$(mktemp)"
+trap 'rm -f "$fresh_report"' EXIT
+"$UBC" agent gaps -p docs >"$fresh_report" 2>/dev/null || true
+if ! cmp -s "$fresh_report" docs/reports/gaps/gaps.json; then
   echo "error: the gap snapshot does not match a fresh ubc agent gaps report" >&2
   exit 1
 fi

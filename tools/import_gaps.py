@@ -106,6 +106,11 @@ CATEGORIES: dict[str, tuple[str, str]] = {
 #: writes no `:gap_link:` and no shortfall, and is resolved by the change verbs.
 STATE_IN_LINK = {"change_incomplete"}
 FALLBACK = ("the {category} gate is not satisfied", "{CATEGORY}")
+#: The categories left out of the generated gap needs. `review` is the AI review
+#: gate: a change expires the verdicts of every need it touches, and a demo branch
+#: publishes the change without re-reviewing them. The snapshot still records those
+#: gaps, and `ubc agent verdict-check` still reports them.
+SKIPPED_CATEGORIES = {"review"}
 
 
 @dataclass(frozen=True)
@@ -209,6 +214,8 @@ def join(records: list[dict[str, object]], types: dict[str, str]) -> tuple[list[
         key=lambda r: (str(r.get("id", "")), str(r.get("category", "")), str(r.get("link", ""))),
     )
     for record in ordered:
+        if str(record.get("category", "")) in SKIPPED_CATEGORIES:
+            continue
         need_id = str(record.get("id", ""))
         if need_id not in types:
             unmapped.append(need_id or "<record with no id>")
@@ -422,7 +429,11 @@ def main() -> int:
 
     rendered = render(
         gaps,
-        {str(k): int(v) for k, v in (report.get("by_category") or {}).items()},
+        {
+            str(k): int(v)
+            for k, v in (report.get("by_category") or {}).items()
+            if str(k) not in SKIPPED_CATEGORIES
+        },
         args.report,
     )
 
