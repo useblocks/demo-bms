@@ -150,7 +150,7 @@
   <p class="sub">
     {{ needs_total }} needs across {{ rungs | length }} types
     {% for v in variant %} · variant chemistry <span class="badge plain">{{ v.chemistry }}</span>{% endfor %}
-    {% if failing %} · test run <span class="mono">{{ needs_list | selectattr('type', 'equalto', 'test_result') | list | first | attr('test_run_label') }}</span>{% endif %}
+    {% if failing %} · test report <span class="mono">{{ needs_list | selectattr('type', 'equalto', 'testfile') | list | first | attr('file') }}</span>{% endif %}
   </p>
 
   <div class="verdict">

@@ -107,7 +107,8 @@ html = "ubc build html --deny none -o _build/ubc-html"
 # No `--deny` override, unlike `html` above: the one code the PDF builder trips
 # on this project is ignored by name under [lint], so the bar stays at "warning".
 pdf = "ubc build pdf -o _build/pdf/bms-specs.pdf"
-report = "ubc report traceability_coverage.html.j2"
+report = "ubc report traceability_coverage"
+"report:tests" = "ubc report test_coverage"
 # The release gate: new structural gaps and missing, failing or outdated AI review
 # verdicts fail it; the gaps in `.pharaoh/gap-baseline.json` are accepted debt.
 release-check = "ubc agent release-check --with-verdicts --baseline .pharaoh/gap-baseline.json"
@@ -222,17 +223,15 @@ variant_data_file = "variants/lfp.json"
 dimensions = { chemistry = "LFP" }
 
 # --- FIELDS ---
-# Fields the built-in need schema does not carry, in two groups, one per IMPORTED
+# Fields the built-in need schema does not carry: one group for the IMPORTED `gap`
 # type, plus a vocabulary for the built-in `status`.
 #
-# The first four exist for the `test_result` type: they hold what a JUnit
-# `<testcase>` element reports, so the imported evidence is queryable as need FIELDS
-# rather than buried in prose. `outcome` is the one worth filtering on
-# (`type == "test_result" and outcome != "passed"`); `runtime_s` and
-# `test_run_label` give the reader the run it came from.
+# The `gap_*` group holds what one record of `ubc agent gaps` reports, so the
+# imported finding is queryable as need FIELDS rather than buried in prose.
 #
-# The `gap_*` group does the same job for the `gap` type: it holds what one record
-# of `ubc agent gaps` reports.
+# The `test_result` type needs no group here: `[test_reports]` below adds its
+# fields (`result`, `time`, `classname`, ...) and declares them on the test-report
+# types alone.
 #
 # SPELLING: `[needs.fields.<name>]`, not the older `[[needs.extra_options]]`.
 # sphinx-needs maps the deprecated spelling onto `needs_extra_options` and emits a
@@ -247,105 +246,27 @@ dimensions = { chemistry = "LFP" }
 # imported fields means the empty string has to be admissible, because that is what
 # the ~190 needs outside the owning type carry. Narrowing a field on the one type
 # that owns it is schemas.json's job, keyed by `select`. Neither file repeats the
-# other: `outcome` is `"" | passed | failed | error | skipped` here and exactly the
-# four words there.
-
-# The GLOBAL enum carries the empty string because the field is global: it is
-# written as "" on the 144 needs that are not test_results (see the note above),
-# and a global schema sees all of them. Dropping "" is the per-type job, and
-# `field-test_result-run-evidence` in schemas.json does it with `minLength: 1` —
-# NOT by listing the four words a second time. Admitting "" here and excluding it
-# there yields exactly `passed | failed | error | skipped` on a test_result, so the
-# vocabulary exists in ONE place and there is no second copy to drift.
-#
-# The four words are not a guess: they are exactly OUTCOME_BY_TAG plus the `passed`
-# default in tools/import_test_results.py.
-[needs.fields.outcome]
-description = "Recorded outcome of one test case in one run: passed, failed, error or skipped."
-default = ""
-nullable = false
-schema = { type = "string", enum = ["", "passed", "failed", "error", "skipped"] }
-
-# DELIBERATELY UNCONSTRAINED. `runtime_s` is `case.get("time", "0.000")` — the
-# JUnit `time` attribute passed through verbatim from a report this repository
-# does not generate. Pinning a numeric format here would fail on a legitimate
-# report (a runner emitting `1e-05`, say) rather than catch a project error, so
-# the only thing asserted about it is that the importer populated it, which
-# `field-test_result-run-evidence` in schemas.json does per-type.
-[needs.fields.runtime_s]
-description = "Wall-clock runtime of that test case, in seconds, as the report recorded it."
-default = ""
-nullable = false
-
-# NAMED `test_run_label`, not `test_run`, and holding a NON-ISO timestamp. Both
-# details are load-bearing for the ubTrace export:
-#
-# Extra options are global, so this field is also written as "" on every need
-# that is not a `test_result`. ubTrace indexes needs into Elasticsearch with
-# dynamic mapping and date detection on, so an ISO-8601 value types the field
-# as `date` for the whole index and every need carrying "" is then rejected
-# ("cannot parse empty datetime"). Elasticsearch mappings are IMMUTABLE, so
-# once an index has learned `test_run: date` it keeps rejecting, and re-ingesting
-# corrected data cannot repair it — only deleting the index can. The rename to
-# a field the live index has never seen is what escapes that stuck mapping;
-# the space-instead-of-`T` format is what stops the new field being typed as a
-# date in turn. See `_run_label` in tools/import_test_results.py.
-# The pattern is the ES guard, and it belongs HERE rather than in schemas.json
-# because it is uniform: no need of any type may ever carry an ISO-8601 value in
-# this field. `^$|` admits the "" every non-test_result need carries; the
-# alternative branch pins date-SPACE-time, so the `T` form cannot be written at
-# all. Stated positively because sphinx-needs rejects `not` inside a field
-# constraint. With this global rule in place, `field-test_result-run-evidence`
-# (minLength 1) is all schemas.json needs to add: non-empty AND matching this
-# pattern means a real timestamp.
-[needs.fields.test_run_label]
-description = "Identifier of the test run the outcome came from: the report's timestamp, as a label."
-default = ""
-nullable = false
-schema = { type = "string", pattern = "^$|^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}" }
-
-# The chain roll-up, stamped on every generated `test_result`: the ids of the
-# system requirements this result is evidence for, resolved through
-# `test -> swreq -> arch -> req`.
-#
-# It exists because a REPORT TEMPLATE CANNOT WALK LINKS. `ubc report` builds each
-# need in its Jinja context from that need's scalar FIELDS only, so `id`, `type`,
-# `title`, `status`, `tags`, `doctype` and these extra options are reachable while
-# every LINK field (`satisfies`, `refines`, `verifies`, `results_for`, …) is
-# absent. A template that reads `n.verifies` gets undefined, and the usual
-# `(n.verifies or [])` guard silently turns that into an empty list — so a
-# link-based coverage report renders clean and reports 0 % everywhere.
-#
-# Stamping the resolved chain onto the generated artefact is what moves the answer
-# from a link (invisible to a template) into a field (visible), so
-# `reports/traceability_coverage.html.j2` is plain Jinja that `ubc report` and the
-# VS Code Reports view render with no extra tooling. It is DERIVED data on a
-# DERIVED need — `tools/import_test_results.py` resolves it from the spec sources
-# on every run, and nothing hand-maintains it.
-# No pattern: this is a SPACE-SEPARATED LIST of ids whose length varies with the
-# chain, so the only uniform statement about it is that it is a string. That it
-# is populated on every generated result is asserted per-type by
-# `field-test_result-run-evidence` in schemas.json.
-[needs.fields.chain_reqs]
-description = "System requirement ids this test result is evidence for, via test -> swreq -> arch -> req."
-default = ""
-nullable = false
+# other.
 
 # The five `gap` fields, stamped on every generated `gap` need by
 # `tools/import_gaps.py`. They hold what ONE record of `ubc agent gaps` reports, so
 # the workflow gate's output is queryable as need FIELDS rather than living only in
 # a JSON file next to the graph.
 #
-# They are FIELDS and not just links for the same reason `chain_reqs` is: a report
-# template cannot walk links. `ubc report` builds each need in its Jinja context
-# from that need's scalar fields only, so `gap_for` is invisible to
-# `reports/traceability_coverage.html.j2` while `gap_need_id` is not. The link and
-# the field carry the same fact on purpose — the link is what the graph, the
-# needflow diagrams and ubTrace traverse, the field is what a template can read.
+# They are FIELDS and not just links because a plain report template cannot walk
+# links. `ubc report` builds each need in its Jinja context from that need's scalar
+# fields only, so `gap_for` is invisible to a template while `gap_need_id` is not.
+# The link and the field carry the same fact on purpose — the link is what the
+# graph, the needflow diagrams and ubTrace traverse, the field is what a template
+# can read.
 #
-# NOTE the shapes, for the same Elasticsearch reason `test_run_label` documents
-# above: every one of these is written as "" on the ~190 needs that are not gaps,
-# so none of them may ever hold a value ES date-detection would type as a `date`.
+# NOTE the shapes, for the ubTrace export. Every one of these is written as "" on
+# the ~190 needs that are not gaps, and ubTrace indexes needs into Elasticsearch
+# with dynamic mapping and date detection on. A value that looks like an ISO-8601
+# date would type the field as `date` for the whole index, after which every need
+# carrying "" is rejected ("cannot parse empty datetime") — and an Elasticsearch
+# mapping cannot be changed in place, so only deleting the index recovers it. So
+# none of these may ever hold a value date detection would read as a date.
 # `gap_shortfall` is deliberately the string "0 of 1" rather than two numeric
 # `have` / `need` fields, which keeps it unmistakably text.
 
@@ -388,8 +309,8 @@ schema = { type = "string", enum = [
 ] }
 
 # The "<have> of <need>" shape the description promises, asserted rather than
-# merely documented. Deliberately text and never two numeric fields, for the same
-# Elasticsearch reason `test_run_label` carries a space instead of a `T`.
+# merely documented. Deliberately text and never two numeric fields, for the
+# Elasticsearch reason above.
 [needs.fields.gap_shortfall]
 description = "How far short the need fell, as a label: \"<have> of <need>\" links present."
 default = ""
@@ -405,9 +326,10 @@ default = ""
 nullable = false
 schema = { type = "string", pattern = "^$|^([A-Z]+_[A-Z][A-Z0-9_]*|CR_[0-9]{8}_[0-9A-F]{4})$" }
 
-# The eleven directives declared under `[[needs.types]]` below. Adding a type there
-# means adding it here — the duplication is the price of letting a report group
-# gaps by V-model level from a plain field.
+# The ten directives declared under `[[needs.types]]` below, plus `test_result`,
+# which `[test_reports]` adds. Adding a type there means adding it here — the
+# duplication is the price of letting a report group gaps by V-model level from a
+# plain field.
 [needs.fields.gap_need_type]
 description = "Type of the need the gap is attributed to (req, swreq, arch, ...), so a report can group gaps by V-model level."
 default = ""
@@ -563,23 +485,8 @@ prefix = "TEST_"
 color="#BBF7D0"
 style="hexagon"
 
-# The EXECUTION-EVIDENCE need: the recorded outcome of ONE test case in ONE test
-# run, imported from a JUnit XML report rather than authored by hand. It is
-# deliberately a separate type from `test`: a `test` need is the test case that
-# EXISTS (the marker in the test source, part of the spec), whereas a
-# `test_result` is what HAPPENED when that case last ran. Keeping them apart is
-# what lets the report be replaced by a newer run without touching the spec, and
-# what lets a `test` need legitimately exist with no result yet.
-#
-# Generated into `specs/_global/test_results.rst` by
-# `../tools/import_test_results.py` from `reports/junit/testresults.xml`. The XML is
-# a COMMITTED SNAPSHOT: the suite is not re-run on every build.
-[[needs.types]]
-directive = "test_result"
-title = "Test Result"
-prefix = "TRES_"
-color="#4ADE80"
-style="database"
+# The EXECUTION-EVIDENCE need, `test_result`, is NOT declared here: the
+# `[test_reports]` section below adds it. See TEST REPORTS.
 
 [[needs.types]]
 directive = "risk"
@@ -642,6 +549,46 @@ prefix = "CR_"
 color="#5EEAD4"
 style="artifact"
 
+# --- TEST REPORTS (read by ubc AND by sphinx-test-reports in the Sphinx build) ---
+# The EXECUTION-EVIDENCE need: the recorded outcome of ONE test case in ONE test
+# run, read straight from a JUnit XML report rather than authored by hand. It is
+# deliberately a separate type from `test`: a `test` need is the test case that
+# EXISTS (the marker in the test source, part of the spec), whereas a
+# `test_result` is what HAPPENED when that case last ran. Keeping them apart is
+# what lets the report be replaced by a newer run without touching the spec, and
+# what lets a `test` need legitimately exist with no result yet.
+#
+# The report is `reports/junit/testresults.xml`, a COMMITTED SNAPSHOT: the suite
+# is not re-run on every build. `specs/_global/test_results.rst` names it in one
+# `.. test-file::` directive with `:auto_suites:` and `:auto_cases:`, which makes
+# one need per suite and one `test_result` per test case. Nothing is generated:
+# replace the XML and the needs follow. Paths are read relative to this directory
+# (`rootdir` unset), which is also where conf.py sits, so ubc and Sphinx agree.
+#
+# The section's presence adds three need types and their fields (`result`,
+# `time`, `classname`, `case`, `suite`, the counters, ...). The test-case type is
+# renamed from the default `testcase` to this project's `test_result`, with the
+# title, prefix, colour and shape it always had; the file and suite types keep
+# their defaults (`testfile`, `testsuite`).
+#
+# The link to the `test` need comes from the report itself. The root conftest.py
+# writes the id of the marker above each test function into a `results_for`
+# property of its `<testcase>`, and `property_link_types` turns that property into
+# the `results_for` link below, so the chain `req -> ... -> test -> test_result`
+# is walkable without a generated file in between.
+[test_reports]
+property_link_types = { results_for = "results_for" }
+
+# All six keys, although `directive` is the default: sphinx-test-reports 2.0 refuses
+# a table that leaves any of them out, where ubc fills in the default.
+[test_reports.case]
+directive = "test-case"
+type = "test_result"
+name = "Test Result"
+prefix = "TRES_"
+color = "#4ADE80"
+style = "database"
+
 # --- LINKS ---
 # Declare every link the [workflow] trace edges reference here.
 
@@ -682,8 +629,8 @@ outgoing = "verifies"
 # The execution-evidence link: a `test_result` need's outgoing `results_for`
 # points at the `test` need whose run it records; the test's incoming `results`
 # is how a query gets from a test case to its last recorded outcome. The
-# `test_results` stage's trace edge names it, so this is the field the import
-# writes on every generated need.
+# `test_results` stage's trace edge names it, and `[test_reports]
+# property_link_types` fills it from the report's `results_for` property.
 [needs.links.results_for]
 incoming = "results"
 outgoing = "results_for"
@@ -1117,22 +1064,31 @@ up = "swreq"
 # A `test_result` need `results_for` the `test` need whose run it records. This
 # stage is unusual in two ways and both are deliberate.
 #
-# It is IMPORTED, not authored: there is no `author_skill`, because the artefact
-# is generated by `tools/import_test_results.py` from the committed JUnit XML
-# under `reports/junit/`. An agent has nothing to decide here — an imported
-# outcome that a model could rewrite would not be evidence.
+# It is IMPORTED, not authored: there is no `author_skill`, because the needs are
+# read from the committed JUnit XML under `reports/junit/` by the one
+# `.. test-file::` directive on the route's page (see TEST REPORTS above). An agent
+# has nothing to decide here — an imported outcome that a model could rewrite would
+# not be evidence.
 #
 # It carries no `review_skill` either, for the same reason: a recorded outcome is
 # a measurement, and scoring a measurement against a prose rubric would be
 # meaningless.
 #
 # `direction = "outgoing"`, NOT `both`, exactly as for `risks` and `decisions`
-# below: the forward leg is what names `results_for` and makes the generated link
+# below: the forward leg is what names `results_for` and makes the imported link
 # real coverage that closes the orphan gate. A BACKWARD leg would additionally
 # require every `test` need to carry an incoming `results`, so a project whose
 # report predates a newly added test case could never reach a clean
 # `ubc agent gaps` — and "this test has no recorded result yet" is a legitimate
 # state, not a gap.
+#
+# KNOWN FALSE POSITIVE (ubc 0.38): `ubc agent config-validate`, and so `ubc agent
+# doctor`, report `undeclared_type` for `test_result` here, because the type comes
+# from `[test_reports]` and not from `[[needs.types]]`. The ubc docs say a section
+# type counts as declared, and every gate that reads the stage (`status`, `next`,
+# `gaps`, `trace`) handles it correctly; the default `testcase` name trips it too.
+# Do not "fix" it by declaring `test_result` under `[[needs.types]]` as well: the
+# Sphinx build then fails, because sphinx-test-reports adds the type a second time.
 [[workflow.stages]]
 id = "test_results"
 optional = true
@@ -1251,16 +1207,16 @@ context_present = 1
 # INSIGHT is a template plus a declaration here, and its declared Cypher
 # queries run against the needs graph before the template renders.
 #
-# That is the whole reason these three exist as insights and not as plain
+# That is the whole reason these five exist as insights and not as plain
 # reports. A plain template CANNOT walk links: `ubc report` builds each need in
 # the Jinja context from its scalar FIELDS, so `satisfies`, `refines`,
 # `verifies`, `results_for` and the other link fields are absent, and a
 # link-based view silently reports zero everywhere. An insight's queries run
 # in the engine first, so the template receives the traversals as data. The
-# three below are the same fact three ways: a `need` insight for a system
+# first three below are the same fact three ways: a `need` insight for a system
 # requirement, a `need` insight for a software requirement, and a project-wide
-# `none` insight. Their queries live in `reports/queries/` beside the
-# templates.
+# `none` insight; the last two are project-wide coverage views. Their queries
+# live in `reports/queries/` beside the templates.
 #
 # This table is ubCode-only; Sphinx and sphinx-needs ignore it, and editing a
 # declaration changes no parsing or indexing, so the warm index cache survives
@@ -1322,3 +1278,29 @@ risks = { file = "queries/health_risks.cypher" }
 gaps = { file = "queries/health_gaps.cypher" }
 failing = { file = "queries/health_failing.cypher" }
 variant = { file = "queries/health_variant.cypher" }
+
+# Project-wide coverage: the structural gaps, and which system requirements a
+# recorded test outcome reaches and whether it passed. Render it with
+# `ubc report traceability_coverage` (= `ubc script report`).
+[reports.insights.traceability_coverage]
+title = "Traceability Coverage"
+description = "Structural gaps and the recorded test evidence reaching every system requirement."
+template = "traceability_coverage.html.j2"
+input = "none"
+
+[reports.insights.traceability_coverage.queries]
+evidence = { file = "queries/coverage_evidence.cypher" }
+
+# Project-wide test coverage, both ends of the chain: how many software
+# requirements have passing or non-passing tests, and how many system
+# requirements are covered by tests at the bottom of their chain. Render it with
+# `ubc report test_coverage` (= `ubc script report:tests`).
+[reports.insights.test_coverage]
+title = "Test Coverage"
+description = "Software requirements by test result, and system requirements covered by tests at the end of their chain."
+template = "test_coverage.html.j2"
+input = "none"
+
+[reports.insights.test_coverage.queries]
+swreqs = { file = "queries/testcov_swreqs.cypher" }
+reqs = { file = "queries/testcov_reqs.cypher" }

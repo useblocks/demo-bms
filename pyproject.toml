@@ -43,6 +43,8 @@ ubtrace = [
     "sphinx>=8.0,<9",
     "sphinx-needs>=8.3,<9",     # reads [needs] from ubproject.toml
     "sphinx-codelinks>=1.2",    # reads [codelinks] from ubproject.toml
+    # Reads [test_reports] from ubproject.toml. Held below 3: 3.x needs sphinx-needs 9.
+    "sphinx-test-reports>=2.0,<3",
     "myst-parser>=4.0",         # the Markdown (MyST) stream, specs/isolation-monitoring/
     "furo>=2024.8",
     "ubt-sphinx==0.8.1",        # the `ubtrace` builder itself

@@ -11,7 +11,7 @@ OPTIONAL MATCH (t)<-[:results_for]-(tr:test_result)
 RETURN a.id AS arch, a.title AS arch_title,
        s.id AS swreq, s.title AS swreq_title,
        coalesce(t.id, '') AS test, coalesce(t.title, '') AS test_title,
-       CASE WHEN tr IS NULL THEN '' ELSE tr.outcome END AS outcome,
+       CASE WHEN tr IS NULL THEN '' ELSE tr.result END AS outcome,
        CASE WHEN tr IS NULL THEN '' ELSE tr.id END AS result,
-       CASE WHEN tr IS NULL THEN '' ELSE tr.runtime_s END AS runtime
+       CASE WHEN tr IS NULL THEN '' ELSE tr.time END AS runtime
 ORDER BY a.id, s.id, test

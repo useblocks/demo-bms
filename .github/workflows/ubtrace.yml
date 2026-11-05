@@ -70,12 +70,14 @@ jobs:
   # graphviz and no PlantUML — it is the cheap, fast half of the pipeline and it
   # fails before the expensive build starts.
   #
-  # What it is actually defending. This project carries two IMPORTED artefacts,
-  # `test_result` and `gap`, and each is a three-link chain:
+  # What it is actually defending. This project carries two IMPORTED artefacts.
+  # `test_result` is read straight from the committed JUnit snapshot by the
+  # `[test_reports]` section, so nothing is generated and `ubc check` (with the
+  # schema rules on `test_result`) is its gate. `gap` is a three-link chain:
   #
   #     reality -> committed snapshot -> generated RST -> published artefact
   #
-  # The importers' `--check` modes have always been able to gate the second link
+  # The importer's `--check` mode has always been able to gate the second link
   # (snapshot -> RST). The FIRST link had nothing gating it until this job: nothing
   # in CI could tell whether `docs/reports/gaps/gaps.json` still matched what the engine
   # actually reports, because there was no `ubc` on the runner. That is exactly the
@@ -103,7 +105,8 @@ jobs:
           version: ${{ env.UBC_VERSION }}
 
       - name: Set up Python
-        # Only for the two importers, which are standard-library-only by design.
+        # Only for the gap importer and the job summary, which are
+        # standard-library-only by design.
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version-file: ".python-version"
@@ -154,11 +157,9 @@ jobs:
 
       - name: The generated specs still match their snapshots
         id: generated
-        # The second link of both chains. These are the same `--check` modes the
-        # README documents; they were never wired into CI.
-        run: |
-          python3 tools/import_gaps.py --check
-          python3 tools/import_test_results.py --check
+        # The second link of the gap chain: the same `--check` mode the README
+        # documents. The test results have no generated spec to check any more.
+        run: python3 tools/import_gaps.py --check
 
       - name: Report the trace matrix and the substance gate
         # INFORMATIONAL, never blocking, and both for the same reason: this repo is a

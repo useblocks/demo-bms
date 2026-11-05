@@ -1,0 +1,283 @@
+{#- Test Coverage — the project-wide insight on what the tests say, at both ends
+    of the chain.
+
+    Render it with `ubc report test_coverage` (= `ubc script report:tests`;
+    writes reports/_build/_insights/test_coverage.html), or from VS Code's
+    Reports view. Declared in ubproject.toml as [reports.insights.test_coverage]
+    (input = "none").
+
+    It answers two questions:
+      * the BOTTOM of the chain — how many software requirements have passing
+        tests, how many a failing one, and how many no test or no recorded run
+        (query `swreqs`, queries/testcov_swreqs.cypher);
+      * the TOP of the chain — how many system requirements are covered by tests
+        once the chain req <- arch <- swreq <- test is walked down to its end,
+        and whether those tests pass (query `reqs`, queries/testcov_reqs.cypher).
+
+    Both are insight queries because a template cannot walk links: `ubc report`
+    gives a template each need's scalar fields only.
+
+    Colour: every state is STATUS, so it uses the fixed status palette, never
+    the theme, and is always paired with a glyph and a label, so colour never
+    carries meaning alone. Script-free — inline SVG with native <title>
+    tooltips — so the editor preview, a browser and print look the same. The
+    chrome follows theme_style()'s --ub-* tokens. -#}
+{% set swreqs = queries.swreqs %}
+{% set reqs = queries.reqs %}
+{% set report_file = needs_list | selectattr('type', 'equalto', 'testfile') | list | first | attr('file') %}
+
+{#- ── Software requirements: one state each, worst first ──────────────────── -#}
+{% set sw_defs = [
+  {'key': 'failing',  'label': 'Failing test', 'status': 'critical', 'glyph': '✕',
+   'meaning': 'at least one test verifying it has a non-passing result'},
+  {'key': 'no_tests', 'label': 'No test',      'status': 'serious',  'glyph': '⊘',
+   'meaning': 'no test verifies it'},
+  {'key': 'not_run',  'label': 'Not run',      'status': 'warning',  'glyph': '◐',
+   'meaning': 'tested, but a test has no recorded result yet'},
+  {'key': 'passing',  'label': 'Passing',      'status': 'good',     'glyph': '✓',
+   'meaning': 'every test verifying it passed'}
+] %}
+{% set sw = namespace(rows=[], failing=0, no_tests=0, not_run=0, passing=0) %}
+{% for s in swreqs %}
+  {% if s.failed > 0 %}
+    {% set key = 'failing' %}{% set sw.failing = sw.failing + 1 %}
+  {% elif s.tests == 0 %}
+    {% set key = 'no_tests' %}{% set sw.no_tests = sw.no_tests + 1 %}
+  {% elif s.not_run > 0 %}
+    {% set key = 'not_run' %}{% set sw.not_run = sw.not_run + 1 %}
+  {% else %}
+    {% set key = 'passing' %}{% set sw.passing = sw.passing + 1 %}
+  {% endif %}
+  {% set sw.rows = sw.rows + [{'id': s.id, 'title': s.title, 'key': key, 'tests': s.tests,
+                               'passed': s.passed, 'failed': s.failed,
+                               'failing_tests': s.failing_tests}] %}
+{% endfor %}
+{% set sw_counts = {'failing': sw.failing, 'no_tests': sw.no_tests, 'not_run': sw.not_run, 'passing': sw.passing} %}
+{% set sw_total = swreqs | length %}
+
+{#- ── System requirements: one state each, worst first. "Covered" is the
+       structural half (every swreq below has a test); the state adds what the
+       tests said. ──────────────────────────────────────────────────────────── -#}
+{% set rq_defs = [
+  {'key': 'failing',     'label': 'Failing evidence',    'status': 'critical', 'glyph': '✕',
+   'meaning': 'a test at the end of its chain has a non-passing result'},
+  {'key': 'not_covered', 'label': 'Not covered',         'status': 'serious',  'glyph': '⊘',
+   'meaning': 'no test at the end of its chain: no software requirement below it, or none of them tested'},
+  {'key': 'partial',     'label': 'Partly covered',      'status': 'warning',  'glyph': '◐',
+   'meaning': 'a software requirement below it has no test, or a test has no recorded result; nothing failed'},
+  {'key': 'passing',     'label': 'Covered and passing', 'status': 'good',     'glyph': '✓',
+   'meaning': 'every software requirement below it is tested, and every test passed'}
+] %}
+{% set rq = namespace(rows=[], failing=0, not_covered=0, partial=0, passing=0, covered=0) %}
+{% for r in reqs %}
+  {% if r.swreqs > 0 and r.swreqs_tested == r.swreqs %}{% set rq.covered = rq.covered + 1 %}{% endif %}
+  {% if r.failed > 0 %}
+    {% set key = 'failing' %}{% set rq.failing = rq.failing + 1 %}
+  {% elif r.swreqs_tested == 0 %}
+    {% set key = 'not_covered' %}{% set rq.not_covered = rq.not_covered + 1 %}
+  {% elif r.swreqs_tested < r.swreqs or r.results < r.tests %}
+    {% set key = 'partial' %}{% set rq.partial = rq.partial + 1 %}
+  {% else %}
+    {% set key = 'passing' %}{% set rq.passing = rq.passing + 1 %}
+  {% endif %}
+  {% set rq.rows = rq.rows + [{'id': r.id, 'title': r.title, 'asil': r.asil, 'key': key,
+                               'swreqs': r.swreqs, 'swreqs_tested': r.swreqs_tested,
+                               'tests': r.tests, 'results': r.results, 'failed': r.failed}] %}
+{% endfor %}
+{% set rq_counts = {'failing': rq.failing, 'not_covered': rq.not_covered, 'partial': rq.partial, 'passing': rq.passing} %}
+{% set rq_total = reqs | length %}
+
+{% macro pct(n, total) %}{{ ((n / total * 100) if total else 0) | round(1) }} %{% endmacro %}
+
+{#- A tall segmented bar: 28px, a 2px surface gap between parts, rounded outer
+    ends, and a part at zero draws nothing. The count sits inside a part only
+    when it fits; the legend and the table carry it otherwise. -#}
+{% set BAR = 720 %}{% set GAP = 2 %}{% set LABEL_MIN = 34 %}
+{% macro stacked_bar(defs, counts, total, clip_id, aria) %}
+  {% set vis = namespace(list=[]) %}
+  {% for b in defs %}{% if counts[b.key] > 0 %}{% set vis.list = vis.list + [b] %}{% endif %}{% endfor %}
+  <svg viewBox="0 0 {{ BAR }} 28" role="img" aria-label="{{ aria }}">
+    <defs><clipPath id="{{ clip_id }}"><rect x="0" y="0" width="{{ BAR }}" height="28" rx="4"/></clipPath></defs>
+    {% set cur = namespace(x=0) %}
+    <g clip-path="url(#{{ clip_id }})">
+      {% for b in vis.list %}
+        {% set raw = counts[b.key] / total * BAR %}
+        {% set w = BAR - cur.x if loop.last else (raw - GAP if raw > GAP + 1 else 1) %}
+        <rect x="{{ cur.x | round(2) }}" y="0" width="{{ w | round(2) }}" height="28" fill="var(--st-{{ b.status }})">
+          <title>{{ b.label }}: {{ counts[b.key] }} of {{ total }} ({{ pct(counts[b.key], total) }})</title>
+        </rect>
+        {% if w >= LABEL_MIN %}
+        <text class="seg ink-{{ b.status }}" x="{{ (cur.x + w / 2) | round(2) }}" y="18.5" text-anchor="middle">{{ counts[b.key] }}</text>
+        {% endif %}
+        {% set cur.x = cur.x + raw %}
+      {% endfor %}
+    </g>
+  </svg>
+{% endmacro %}
+
+{% macro legend(defs, counts) %}
+  <ul class="legend">
+    {% for b in defs %}
+    <li{% if counts[b.key] == 0 %} class="zero"{% endif %}>
+      <span class="swatch" style="background: var(--st-{{ b.status }})" aria-hidden="true"></span>
+      <span class="glyph" style="color: var(--st-{{ b.status }})" aria-hidden="true">{{ b.glyph }}</span>
+      <span><span class="cnt">{{ counts[b.key] }}</span> {{ b.label }}</span>
+      <span class="why">&mdash; {{ b.meaning }}</span>
+    </li>
+    {% endfor %}
+  </ul>
+{% endmacro %}
+
+{% macro state_cell(defs, key) %}
+  {% set b = defs | selectattr('key', 'equalto', key) | list | first %}
+  <td class="state"><span style="color: var(--st-{{ b.status }})" aria-hidden="true">{{ b.glyph }}</span> {{ b.label }}</td>
+{% endmacro %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ insight.title }}</title>
+  <style>
+    {{ theme_style() }}
+    /* Status palette — fixed, never themed, the same steps in light and dark. */
+    :root { --st-good: #0ca30c; --st-warning: #fab219; --st-serious: #ec835a; --st-critical: #d03b3b; }
+    * { box-sizing: border-box; }
+    body { font-family: var(--ub-font); color: var(--ub-fg); background: var(--ub-bg);
+           max-width: 1040px; margin: 0 auto; padding: 2rem 1rem 4rem; line-height: 1.5; }
+    h1 { font-size: 1.5rem; margin: 0; }
+    h2 { font-size: 1.05rem; margin: 2.4rem 0 .3rem; border-bottom: 1px solid var(--ub-border); padding-bottom: .35rem; }
+    a { color: var(--ub-accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .muted { color: var(--ub-muted); }
+    .mono { font-family: var(--ub-font-mono); }
+    .sub { color: var(--ub-muted); font-size: .85rem; margin: .3rem 0 .8rem; }
+    code { font-family: var(--ub-font-mono); font-size: .85em; }
+
+    .tiles { display: flex; flex-wrap: wrap; gap: .75rem; margin-top: 1.4rem; }
+    .tile { flex: 1 1 210px; border: 1px solid var(--ub-border); border-radius: 10px; padding: .8rem 1rem; }
+    .tile .k { font-size: .72rem; color: var(--ub-muted); margin: 0; }
+    .tile .v { font-size: 1.7rem; font-weight: 650; line-height: 1.15; margin: .2rem 0 0; font-variant-numeric: tabular-nums; }
+    .tile .v small { font-size: 1rem; font-weight: 500; color: var(--ub-muted); }
+    .tile .n { font-size: .78rem; color: var(--ub-muted); margin: .15rem 0 0; }
+    .tile.alert { border-color: var(--st-critical); }
+
+    figure { margin: 0; }
+    svg { display: block; width: 100%; height: auto; }
+    .seg { font-size: 13px; font-weight: 620; }
+    .ink-good, .ink-critical { fill: #ffffff; }
+    .ink-warning, .ink-serious { fill: #0b0b0b; }
+
+    .legend { list-style: none; padding: 0; margin: .6rem 0 0; display: flex; flex-direction: column; gap: .2rem; }
+    .legend li { display: flex; align-items: baseline; gap: .4rem; font-size: .83rem; }
+    .legend li.zero { opacity: .55; }
+    .swatch { width: .7rem; height: .7rem; border-radius: 2px; flex: none; transform: translateY(1px); }
+    .glyph { font-weight: 700; width: 1em; text-align: center; flex: none; }
+    .cnt { font-variant-numeric: tabular-nums; font-weight: 650; }
+    .why { color: var(--ub-muted); }
+
+    table { border-collapse: collapse; width: 100%; font-size: .85rem; margin-top: 1rem; }
+    th, td { border-bottom: 1px solid var(--ub-border); padding: .45rem .5rem; text-align: left; vertical-align: top; }
+    th { background: var(--ub-surface); font-weight: 650; white-space: nowrap; }
+    th.num, td.num { text-align: right; font-variant-numeric: tabular-nums; }
+    td.state { white-space: nowrap; font-weight: 650; }
+    tr.bad td:first-child { border-left: 3px solid var(--st-critical); padding-left: .45rem; }
+    .chain { font-family: var(--ub-font-mono); font-size: .8rem; color: var(--ub-muted); }
+  </style>
+</head>
+<body>
+  <h1>{{ insight.title }}</h1>
+  <p class="sub">
+    {{ sw_total }} software requirements · {{ rq_total }} system requirements
+    {% if report_file %} · test evidence from <span class="mono">{{ report_file }}</span>{% endif %}
+  </p>
+
+  <div class="tiles">
+    <div class="tile">
+      <p class="k">Software requirements with passing tests</p>
+      <p class="v">{{ sw.passing }} <small>/ {{ sw_total }}</small></p>
+      <p class="n">{{ pct(sw.passing, sw_total) }} — every test verifying them passed</p>
+    </div>
+    <div class="tile{% if sw.failing or sw.no_tests or sw.not_run %} alert{% endif %}">
+      <p class="k">Software requirements without passing tests</p>
+      <p class="v">{{ sw_total - sw.passing }} <small>/ {{ sw_total }}</small></p>
+      <p class="n">{{ sw.failing }} failing · {{ sw.no_tests }} no test · {{ sw.not_run }} not run</p>
+    </div>
+    <div class="tile">
+      <p class="k">System requirements covered by tests</p>
+      <p class="v">{{ rq.covered }} <small>/ {{ rq_total }}</small></p>
+      <p class="n">{{ pct(rq.covered, rq_total) }} — every software requirement at the end of the chain has a test</p>
+    </div>
+    <div class="tile{% if rq.failing %} alert{% endif %}">
+      <p class="k">… and all of those tests pass</p>
+      <p class="v">{{ rq.passing }} <small>/ {{ rq_total }}</small></p>
+      <p class="n">{{ rq.failing }} covered requirement{{ 's' if rq.failing != 1 }} with failing evidence</p>
+    </div>
+  </div>
+
+  <h2>Software requirements by test result</h2>
+  <p class="sub">The bottom of the chain: <span class="chain">swreq ←verifies— test ←results_for— test_result</span>. Hover a segment for its share.</p>
+  <figure>
+    {% if sw_total %}{{ stacked_bar(sw_defs, sw_counts, sw_total, 'clip-sw', 'Software requirements by test result') }}{% endif %}
+    {{ legend(sw_defs, sw_counts) }}
+  </figure>
+
+  <h2>System requirements, covered at the end of the chain</h2>
+  <p class="sub">
+    The top of the chain, walked down to the tests:
+    <span class="chain">req ←satisfies— arch ←refines— swreq ←verifies— test ←results_for— test_result</span>.
+  </p>
+  <figure>
+    {% if rq_total %}{{ stacked_bar(rq_defs, rq_counts, rq_total, 'clip-rq', 'System requirements by test coverage') }}{% endif %}
+    {{ legend(rq_defs, rq_counts) }}
+  </figure>
+
+  <h2>Every software requirement</h2>
+  <p class="sub">Worst state first. Also the accessible view of the first chart.</p>
+  <table>
+    <thead>
+      <tr><th>State</th><th>Software requirement</th><th class="num">Tests</th><th class="num">Passed</th><th class="num">Failed</th><th>Failing tests</th></tr>
+    </thead>
+    <tbody>
+      {% for b in sw_defs %}{% for row in sw.rows if row.key == b.key %}
+      <tr{% if row.key == 'failing' %} class="bad"{% endif %}>
+        {{ state_cell(sw_defs, row.key) }}
+        <td><a class="mono" href="{{ need_url(row.id) }}">{{ row.id }}</a><br><span class="muted">{{ row.title }}</span></td>
+        <td class="num">{{ row.tests }}</td>
+        <td class="num">{{ row.passed }}</td>
+        <td class="num">{% if row.failed %}{{ row.failed }}{% endif %}</td>
+        <td>{% for t in row.failing_tests %}<a class="mono" href="{{ need_url(t) }}">{{ t }}</a>{% if not loop.last %}<br>{% endif %}{% endfor %}</td>
+      </tr>
+      {% endfor %}{% endfor %}
+    </tbody>
+  </table>
+
+  <h2>Every system requirement</h2>
+  <p class="sub">Worst state first. Also the accessible view of the second chart.</p>
+  <table>
+    <thead>
+      <tr><th>State</th><th>Requirement</th><th class="num">Tested swreqs</th><th class="num">Tests</th><th class="num">Passed runs</th><th class="num">Failed runs</th></tr>
+    </thead>
+    <tbody>
+      {% for b in rq_defs %}{% for row in rq.rows if row.key == b.key %}
+      <tr{% if row.key == 'failing' %} class="bad"{% endif %}>
+        {{ state_cell(rq_defs, row.key) }}
+        <td><a class="mono" href="{{ need_url(row.id) }}">{{ row.id }}</a>{% if row.asil %} <span class="muted">· ASIL {{ row.asil }}</span>{% endif %}<br><span class="muted">{{ row.title }}</span></td>
+        <td class="num">{{ row.swreqs_tested }} / {{ row.swreqs }}</td>
+        <td class="num">{{ row.tests }}</td>
+        <td class="num">{{ row.results - row.failed }}</td>
+        <td class="num">{% if row.failed %}{{ row.failed }}{% endif %}</td>
+      </tr>
+      {% endfor %}{% endfor %}
+    </tbody>
+  </table>
+
+  <p class="sub" style="margin-top: 2rem">
+    A software requirement counts its <em>tests</em>: a test passes when every result
+    recorded for it passed. A system requirement is <em>covered</em> when it has at least
+    one software requirement below it and every one of them has a test. Refresh the
+    evidence with <code>uv run pytest -q --junitxml=docs/reports/junit/testresults.xml</code>
+    from the repository root.
+  </p>
+</body>
+</html>

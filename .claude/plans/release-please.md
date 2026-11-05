@@ -31,8 +31,9 @@ Status: **shelved** (drafted 2026-09-09, decisions confirmed, nothing implemente
   gate wanted: it ratchets structural gaps against accepted debt and folds the
   verdict (substance) gate into the same pass.
 - The repo idiom for "is the analysis in sync with the code" is established:
-  committed snapshots (`reports/gaps/gaps.json`, `reports/junit/testresults.xml`)
-  plus `--check` staleness guards on both import tools.
+  committed snapshots (`reports/gaps/gaps.json`, `reports/junit/testresults.xml`);
+  the gaps have a `--check` staleness guard, and the JUnit report is read directly
+  by `[test_reports]` in ubproject.toml.
 - No git tags exist yet, so the release-please bootstrap is clean.
 
 ## Files to create
@@ -65,7 +66,7 @@ Status: **shelved** (drafted 2026-09-09, decisions confirmed, nothing implemente
 |---|---|---|
 | `ubc agent config-validate` / `doctor` | the process config still matches the ontology | no (advisory) |
 | `pytest --junitxml` | the code does what the specs say | **yes** |
-| `tools/import_test_results.py --check` | the committed test evidence matches what the code *actually* does now | **yes** |
+| fresh `--junitxml` vs the committed `reports/junit/testresults.xml` (result per case, timestamps ignored) | the committed test evidence matches what the code *actually* does now | **yes** |
 | `ubc agent gaps` | the structural gap list | no (advisory) |
 | `tools/import_gaps.py --check` | the committed gap needs match what the gate *actually* finds now | **yes** |
 | `ubc agent trace` | both directions of every trace edge are covered | no (advisory) |

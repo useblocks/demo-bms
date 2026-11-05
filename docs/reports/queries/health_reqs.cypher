@@ -11,7 +11,7 @@
 MATCH (r:req)
 OPTIONAL MATCH (r)<-[:satisfies]-(:arch)<-[:refines]-(:swreq)<-[:verifies]-(:test)<-[:results_for]-(tr:test_result)
 WITH r, count(tr) AS results,
-     sum(CASE WHEN tr IS NOT NULL AND tr.outcome <> 'passed' THEN 1 ELSE 0 END) AS failing
+     sum(CASE WHEN tr IS NOT NULL AND tr.result <> 'passed' THEN 1 ELSE 0 END) AS failing
 RETURN r.id AS id, r.title AS title, coalesce(r.asil, '') AS asil,
        results, failing,
        CASE r.asil WHEN 'D' THEN 0 WHEN 'C' THEN 1 WHEN 'B' THEN 2

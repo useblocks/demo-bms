@@ -45,6 +45,7 @@ extensions = [
     "myst_parser",  # the Markdown-authored stream, specs/isolation-monitoring/
     "sphinx_needs",
     "sphinx_codelinks",  # materialises the one-line markers in src/ and tests/
+    "sphinxcontrib.test_reports",  # the `test-file` on specs/_global/test_results.rst
     "sphinxcontrib.plantuml",  # renders the `.. needuml::` component diagrams
     "ubt_sphinx",  # the `ubtrace` builder
 ]
@@ -76,9 +77,9 @@ needs_show_link_title = False
 
 # NOTE: do NOT set `needs_json_remove_defaults = True` here.
 #
-# It looks like the right fix for the Elasticsearch problem described in
-# tools/import_test_results.py (the run label written as "" on every need that
-# has no test run), and it does close that hole — but it opens a worse one.
+# It looks like the right fix for the Elasticsearch problem described at the
+# `gap_*` fields in ubproject.toml (an imported field written as "" on every need
+# that does not own it), and it does close that hole — but it opens a worse one.
 # ubt-coverage discovers custom link types PER NEED, by looking for a
 # `<name>_back` key on the same need whose outgoing links it is counting
 # (`discover_custom_link_bases` in rust/ubt-coverage/src/needs.rs). Removing
@@ -97,9 +98,9 @@ needs_show_link_title = False
 # way — the relations extractor discovers link types corpus-wide — but the
 # coverage engine reports most of the project as orphaned.
 #
-# So the empty string is dealt with at the source instead: the run label is
-# formatted so Elasticsearch never types the field as a date. See
-# `_run_label` in tools/import_test_results.py.
+# So the empty string is dealt with at the source instead: no imported field
+# ever holds a value Elasticsearch would type as a date. See the `gap_*` fields
+# in ubproject.toml.
 
 # `needs.deprecated` USED TO BE SUPPRESSED HERE and no longer needs to be. It was
 # emitted because sphinx-needs mapped `[[needs.extra_options]]` onto its own

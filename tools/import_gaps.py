@@ -4,8 +4,8 @@
 The structural gate is NOT re-run on every build. ``docs/reports/gaps/gaps.json`` is a
 committed snapshot of one real ``ubc agent gaps`` run, and this script turns it
 into needs so the gate's findings are part of the graph rather than an
-untraceable file next to it — the same arrangement as the JUnit snapshot on the
-other side of the V (see ``tools/import_test_results.py``).
+untraceable file next to it — the same idea as the JUnit snapshot on the other
+side of the V, which ``[test_reports]`` in ``docs/ubproject.toml`` reads directly.
 
 Why put the gate's output back INTO the graph at all: because a gap is only
 useful where the reader already is. A JSON file says
@@ -131,8 +131,8 @@ class Gap:
 
         Deliberately not two numeric fields. Extra options are global in ubCode,
         so whatever shape this takes is also written as "" on the ~190 needs that
-        are not gaps, and the `test_run_label` comment in ubproject.toml records
-        what a type-detected empty field costs in the Elasticsearch index behind
+        are not gaps, and the `gap_*` comment in ubproject.toml records what a
+        type-detected empty field costs in the Elasticsearch index behind
         ubTrace. A string that can never be read as a number or a date is the
         cheap way to stay out of that failure mode.
         """

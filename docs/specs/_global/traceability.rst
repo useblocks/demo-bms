@@ -150,13 +150,13 @@ Verification arm
 Recorded outcomes
 ~~~~~~~~~~~~~~~~~
 
-``test_result`` needs are imported from a committed JUnit snapshot, so these are
-the outcomes of one real run, not of this build. ``chain_reqs`` is the resolved
-``test -> swreq -> arch -> req`` roll-up each one carries as a field.
+``test_result`` needs are read from a committed JUnit snapshot by the
+:doc:`test report page </specs/_global/test_results>`, so these are the outcomes
+of one real run, not of this build.
 
 .. needtable::
    :types: test_result
-   :columns: id;outcome;runtime_s;results_for;chain_reqs
+   :columns: id;case;result;time;results_for
    :style: table
 
 Gaps
@@ -164,9 +164,9 @@ Gaps
 
 The structural gate's own output, imported back into the graph by
 ``tools/import_gaps.py`` from a committed ``ubc agent gaps`` snapshot. This is the
-same arrangement as ``test_result`` on the other arm of the V: a ``test_result``
-records what *happened* when a test ran, a ``gap`` records what the *gate* found
-when it last ran, and neither is authored by hand.
+same idea as ``test_result`` on the other arm of the V: a ``test_result`` records
+what *happened* when a test ran, a ``gap`` records what the *gate* found when it
+last ran, and neither is authored by hand.
 
 The point of importing them rather than reading the JSON is that a gap then
 appears **where the reader already is** — on the need's own page, in the tables

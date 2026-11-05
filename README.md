@@ -118,8 +118,8 @@ deliberately not.
 
 Global, cross-stream artefacts live in [docs/specs/_global/](docs/specs/_global/):
 five [risks](docs/specs/_global/risks.rst), five
-[design decisions](docs/specs/_global/decisions.rst), the imported
-[test results](docs/specs/_global/test_results.rst) and the imported
+[design decisions](docs/specs/_global/decisions.rst), the
+[test results](docs/specs/_global/test_results.rst) read from the JUnit report, and the imported
 [workflow gaps](docs/specs/_global/gaps.rst).
 
 ### The deliberate gap
@@ -364,7 +364,7 @@ and put it on `PATH`:
 |---|---|---|
 | `ubc check` | yes | the specs parse — nothing validated them *as specs* before, the Sphinx build only proved they render |
 | gap snapshot vs. reality | yes | [docs/reports/gaps/gaps.json](docs/reports/gaps/gaps.json) still matches what `ubc agent gaps` actually reports |
-| `import_gaps.py --check` / `import_test_results.py --check` | yes | the generated RST still matches its snapshot |
+| `import_gaps.py --check` | yes | the generated gaps RST still matches its snapshot |
 | `ubc agent trace` / `verdict-check` | **no** | reported into the log only |
 
 Every run writes a **job summary** to the run page —
@@ -421,38 +421,56 @@ need links inside the SVG are not clickable. `plantuml` (and therefore Java) mus
 be on `PATH`; [docs/conf.py](docs/conf.py) fails the build with an explicit message when
 it is not, and the workflow installs a pinned release jar.
 
-a static XML report
+## Test results, from a JUnit report
 
 The suite is **not re-run on every build.**
 [docs/reports/junit/testresults.xml](docs/reports/junit/testresults.xml) is a committed
-snapshot of one real pytest run, and
-[tools/import_test_results.py](tools/import_test_results.py) turns it into one
-`test_result` need per JUnit `<testcase>`, each linking `results_for` up to the
-`test` need whose execution it records.
+snapshot of one real pytest run, and the graph reads it **directly** — no
+importer, no generated RST. The `[test_reports]` section of
+[docs/ubproject.toml](docs/ubproject.toml) switches on the
+[sphinx-test-reports](https://sphinx-test-reports.readthedocs.io) directives in
+ubc *and* in the Sphinx build (both read the same section), and
+[docs/specs/_global/test_results.rst](docs/specs/_global/test_results.rst) names
+the report once:
 
-```bash
-uv run python tools/import_test_results.py            # regenerate the needs from the XML
-uv run python tools/import_test_results.py --check    # CI guard: fail if it is stale
+```rst
+.. test-file:: BMS unit test run
+   :id: TRES_RUN
+   :file: reports/junit/testresults.xml
+   :auto_suites:
+   :auto_cases:
 ```
 
-The mapping is deterministic, not fuzzy. Every test function carries a marker
-above it, so the pair *(test module, function name)* identifies exactly one
-`test` need, and the importer joins that pairing against the report's
-`classname` / `name` attributes. A `<testcase>` it cannot resolve is a hard
-error, never a silent drop.
+That makes one `test_result` need per JUnit `<testcase>` (plus one need for the
+report and one for its suite). To refresh the evidence, re-run the suite and
+commit the XML:
+
+```bash
+uv run pytest -q --junitxml=docs/reports/junit/testresults.xml
+```
+
+The link to the `test` need is deterministic, not fuzzy, and it comes from the
+report itself. Every test function carries a marker above it, and the root
+[conftest.py](conftest.py) copies that marker's `TEST_…` id into a
+`results_for` property of the test case in the XML. `property_link_types` in
+`[test_reports]` turns that property into the `results_for` link. A test with no
+marker gets no property, and the `trace-test_result-results_for` schema rule
+fails `ubc check` on its result — never a silent drop.
 
 `test_result` is a separate type from `test` on purpose: a `test` need is the
 test case that **exists** (part of the spec, authored as a marker in the source),
 a `test_result` is what **happened** the last time it ran. That separation is
 what lets the report be replaced by a newer run without touching a single spec
 file, and what lets a newly added test legitimately exist with no result yet.
-The outcome, runtime and run id are need **fields** (`outcome`, `runtime_s`,
-`test_run_label`), so they are queryable rather than buried in prose.
+The result and runtime are need **fields** (`result`, `time`, plus `classname`
+and `case`), so they are queryable rather than buried in prose. The test-case
+need type is renamed from sphinx-test-reports' default `testcase` to
+`test_result` in `[test_reports.case]`, so the ontology reads the same as before.
 
 ### Two tests are red, on purpose
 
 `uv run pytest -q` reports **2 failed, 50 passed**, and the committed report
-records those two as `outcome: failed`. The failures are real — the report is not
+records those two as `result: failed`. The failures are real — the report is not
 hand-edited, so running the suite live during a demo tells the same story the
 graph does.
 
@@ -477,10 +495,10 @@ Ask the graph which requirements have failing evidence and who to blame:
 ```cypher
 MATCH (tr:test_result)-[:results_for]->(t:test)-[:verifies]->(s:swreq)
       -[:refines]->(:arch)-[:satisfies]->(r:req)-[:traces_to]->(u:user_story)
-WHERE tr.outcome <> 'passed'
+WHERE tr.result <> 'passed'
 OPTIONAL MATCH (i:impl)-[:implements]->(s)
 RETURN u.id AS story, r.id AS req, s.id AS swreq,
-       i.id AS impl, tr.outcome AS outcome
+       i.id AS impl, tr.result AS result
 ```
 
 Four requirements come back red from two failures — the imbalance defect sits
@@ -488,12 +506,12 @@ under an architecture element that three requirements share, so one operator
 reaches further than it looks. That fan-out is the argument for the graph.
 
 To make the repo fully green instead, flip `>=` back to `>` and `<=` back to
-`<`, then re-run the suite and the importer.
+`<`, then re-run the suite with the command above.
 
 ### The coverage report
 
 [docs/reports/traceability_coverage.html.j2](docs/reports/traceability_coverage.html.j2) —
-render it with `ubc report traceability_coverage.html.j2`, or from the VS Code
+render it with `ubc report traceability_coverage` (or `ubc script report`), or from the VS Code
 Reports view ("Generate & Preview" / "Open in Browser"). Script-free inline SVG,
 so the editor preview, a browser and print all look the same.
 
@@ -516,16 +534,14 @@ the idiomatic `(n.verifies or [])` guard turns that into an empty list — so a
 link-based coverage template renders perfectly cleanly and reports **0 %
 everywhere**. That failure is silent; nothing errors.
 
-This project works around it by moving the answer from a link into a field:
-`tools/import_test_results.py` resolves `test → swreq → arch → req` from the spec
-sources and stamps the result on each generated `test_result` as `chain_reqs`.
-The template then reads a field, which it can see. Derived data, on a derived
-need, regenerated on every import — nothing hand-maintained.
-
 An **insight** is the way around the whole problem: it declares Cypher queries
 that the engine runs over the graph before the template, so the template renders
-the traversals as data instead of guessing at links it cannot follow. See
-[Three insights, three personas](#three-insights-three-personas).
+the traversals as data instead of guessing at links it cannot follow. The
+coverage report is one: its `evidence` query
+([coverage_evidence.cypher](docs/reports/queries/coverage_evidence.cypher)) walks
+`test_result → test → swreq → arch → req` and hands the template the passed and
+failed counts per requirement. See
+[Insights, one per persona](#insights-one-per-persona).
 
 ### The whole V in one query
 
@@ -538,7 +554,7 @@ OPTIONAL MATCH (r)<-[:satisfies]-(:arch)<-[:refines]-(:swreq)
               <-[:verifies]-(:test)<-[:results_for]-(tr:test_result)
 RETURN u.id AS story, r.id AS req,
        count(tr) AS results,
-       sum(CASE WHEN tr.outcome = 'passed' THEN 1 ELSE 0 END) AS passed
+       sum(CASE WHEN tr.result = 'passed' THEN 1 ELSE 0 END) AS passed
 ORDER BY results, req
 ```
 
@@ -549,27 +565,25 @@ absence of evidence rather than as a special case anyone had to write down.
 > **One quirk worth knowing before you demo.** `ubc agent audit` does not render
 > trace edges that touch a codelinks-materialised need, so a `test_result`'s
 > `results_for` and a `test`'s incoming `results` both show as empty in that one
-> view. The link is real everywhere else: `ubc agent status` counts it (50 / 50
+> view. The link is real everywhere else: `ubc agent status` counts it (52 / 52
 > parents covered), `needs.json` carries it, the gates enforce it, and Cypher
 > traverses it. Use `status` or a query, not `audit`, to show that arm.
 
-### Three insights, three personas
+### Insights, one per persona
 
-The coverage report above is a **plain** template, which is why it has to work
-around the link blindness with the `chain_reqs` field. An **insight** is the
-other half of the feature: it declares its Cypher queries in `ubproject.toml`,
-the engine runs them over the needs graph before the template renders, and the
-template receives the traversals as `queries.<name>`. The report can finally
-walk the graph.
+An **insight** declares its Cypher queries in `ubproject.toml`, the engine runs
+them over the needs graph before the template renders, and the template receives
+the traversals as `queries.<name>`. The report can finally walk the graph.
 
-Three insights ship here, one per persona in the V-model workflow. They are
-the same graph read three ways:
+Besides the coverage report above, these insights ship here, one per persona in
+the V-model workflow. They are the same graph read several ways:
 
 | Insight | Persona | Input | Render it |
 |---|---|---|---|
 | [`safety_case`](docs/reports/safety_case.html.j2) | Functional safety manager | one `req` | `ubc report safety_case --need REQ_CELL_OVERTEMPERATURE` |
 | [`verification_cockpit`](docs/reports/verification_cockpit.html.j2) | Verification lead | one `swreq` | `ubc report verification_cockpit --need SWREQ_LIMIT_EVALUATION` |
 | [`program_health`](docs/reports/program_health.html.j2) | Release manager | none | `ubc report program_health` |
+| [`test_coverage`](docs/reports/test_coverage.html.j2) | Verification lead | none | `ubc report test_coverage` |
 
 The queries live beside the templates in
 [`docs/reports/queries/`](docs/reports/queries/), one `.cypher` file per query,
@@ -595,7 +609,8 @@ outcome, a closure checklist (implemented → verified → run → passing), whe
 requirement sits in the V (user story → requirement → architecture → swreq), and
 its **sibling** software requirements on the same component — so a green page for
 one requirement cannot hide an unclosed sibling. On `SWREQ_IMBALANCE_WARNING` it
-leads with *failing evidence* and links the failing `TRES_IMBALANCE_WARNING`.
+leads with *failing evidence* and links the failing `test_result` of
+`TEST_IMBALANCE_WARNING`.
 
 **`program_health`** is the project-wide one, declared with `input = "none"` so
 it is not offered on a single need. It opens with a **GO / NO-GO** release gate
@@ -633,14 +648,14 @@ uv run python tools/import_gaps.py            # -> docs/specs/_global/gaps.rst
 uv run python tools/import_gaps.py --check    # CI guard: fail if it is stale
 ```
 
-This is the **exact mirror of `test_result`** on the other arm of the V, and
+This is the **mirror of `test_result`** on the other arm of the V, and
 deliberately so:
 
 | | `test_result` | `gap` |
 |---|---|---|
 | records | what *happened* when a test ran | what the *gate* found when it ran |
 | imported from | `docs/reports/junit/testresults.xml` | `docs/reports/gaps/gaps.json` |
-| by | `tools/import_test_results.py` | `tools/import_gaps.py` |
+| by | `[test_reports]`, read directly (nothing generated) | `tools/import_gaps.py` |
 | links | `results_for` → the `test` | `gap_for` → the need with the gap |
 | authored by a human or an agent | never | never |
 
@@ -657,9 +672,9 @@ Once a gap is a need, it shows up everywhere the graph does — and it is **red*
 - in the ubTrace export, where the `gap_for` edge is traversable like any other.
 
 The five `gap_*` extra options (`gap_category`, `gap_link`, `gap_shortfall`,
-`gap_need_id`, `gap_need_type`) exist for the same reason `chain_reqs` does: a
-report template can read fields but cannot follow links, so the `gap_for` link and
-the `gap_need_id` field carry the same fact for two different consumers.
+`gap_need_id`, `gap_need_type`) exist because a plain report template can read
+fields but cannot follow links, so the `gap_for` link and the `gap_need_id` field
+carry the same fact for two different consumers.
 
 Three things about this arrangement are worth knowing before you demo it:
 
