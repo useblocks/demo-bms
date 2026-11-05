@@ -24,9 +24,10 @@
 # needs no team.useblocks.com account to read. Retention is 7 days, except for a
 # release tag, which keeps its PDF for 90.
 #
-# Required repository secret:
-#   UBTRACE_INGEST_TOKEN — a token with "Ingest" permission on the
-#   useblocks/rollout-demo-bms project at team.useblocks.com.
+# Required organization secret:
+#   UBT_TEAM_DEPLOY_GH_ORGA — a token with "Ingest" permission on the
+#   useblocks/rollout-demo-bms project at team.useblocks.com. The upload step
+#   hands it to upload_ubtrace.sh as UBTRACE_INGEST_TOKEN.
 name: ubTrace publish
 
 on:
@@ -441,7 +442,7 @@ jobs:
         # dimensions inside each artefact keep the uploads apart on the server.
         if: github.event_name != 'pull_request' && steps.vars.outputs.publish == 'true'
         env:
-          UBTRACE_INGEST_TOKEN: ${{ secrets.UBTRACE_INGEST_TOKEN }}
+          UBTRACE_INGEST_TOKEN: ${{ secrets.UBT_TEAM_DEPLOY_GH_ORGA }}
           UBTRACE_VERSION: ${{ steps.vars.outputs.version }}
           # Git provenance, recorded against the published version as metadata
           # (see the `Compute UBTRACE_VERSION` step for how the branch and commit

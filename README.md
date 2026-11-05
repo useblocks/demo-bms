@@ -348,7 +348,8 @@ on every push to `main` (publishing as `main`) and on every `v*.*.*` tag
 (publishing under the tag name, alongside `main`). A pull request builds the
 artefact but never uploads it, so a change that breaks the export is caught
 before it lands rather than after it publishes. The workflow needs one
-repository secret, `UBTRACE_INGEST_TOKEN`. It needs no ubCode licence secret:
+organization secret, `UBT_TEAM_DEPLOY_GH_ORGA`, which it passes to
+`upload_ubtrace.sh` as `UBTRACE_INGEST_TOKEN`. It needs no ubCode licence secret:
 this repository is public and MIT-licensed, so `ubc` runs in its free
 open-source mode (below).
 
