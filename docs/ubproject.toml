@@ -30,39 +30,10 @@ version = "0.1.0"
 # pinned to a need id precisely so that it stops being reachable and shows up as
 # dead config rather than quietly widening.
 [lint]
-# The PDF builder is ALPHA and does not typeset every construct yet. The ones it
-# cannot draw become a labelled placeholder box in the page and a
-# `build.pdf_diagram_unrendered` warning, and `[build.pdf] deny` defaults to
-# "warning", so `ubc build pdf` exits 1 on a project that is perfectly healthy.
-# This project trips it 5 times: the 5 `needflow` diagrams on traceability.rst.
-#
-# Silencing the CODE rather than lowering the bar. `[build.pdf] deny = "error"`
-# would also work and is what the CLI suggests first, but it is far too broad —
-# it retires the warning bar for the PDF build entirely, so a genuine future
-# build warning would land in the artefact unreported. This entry gives up
-# exactly one diagnostic and leaves the bar at "warning" for everything else.
-#
-# The warning against this form in the note above does not apply here: it is
-# about `needs.*` SCHEMA codes, which `ubc schema validate` shares with the
-# build, so blanking one there disarms the validator too. `build.pdf_*` is
-# emitted only by `ubc build pdf` — `ubc check`, `ubc schema validate` and
-# `ubc agent gaps` were verified byte-identical with and without this line.
-#
-# DELETE THIS ENTRY once the builder typesets needflow; the placeholders
-# disappear on their own and the line becomes dead config.
-ignore = ["build.pdf_diagram_unrendered"]
 
 [[lint.message-ignores]]
 codes = ["needs.schema_network_warning"]
 contains = "REQ_CELL_BALANCING_WINDOW:satisfies (incoming)"
-
-# The 3 `needuml` component diagrams under specs/*/architecture.rst hit the same
-# limitation under a different code: the PDF builder does not handle the directive
-# at all yet. Scoped to `needuml` so that any OTHER unhandled directive still fails
-# the build. DELETE once the builder typesets needuml.
-[[lint.message-ignores]]
-codes = ["build.pdf_directive_unhandled"]
-contains = "needuml:"
 
 # This file is the PROJECT ROOT, and it lives in docs/ on purpose: the source
 # root ubc discovers documents from is the directory holding this file, so with
@@ -77,6 +48,12 @@ contains = "needuml:"
 [source]
 # Skip framework-internal directories so they are not parsed as needs.
 extend_exclude = [".specify"]
+
+# The LFP build's one variant document (see VARIANTS below): every rule whose `if`
+# is false removes its `files` from the build.
+[[source.variant_sources]]
+if = "var.pack.chemistry == 'LFP'"
+files = ["specs/cell-protection/lfp_charging.rst"]
 
 # --- PARSERS: reStructuredText AND Markdown (MyST) ---
 # Declaring parsers switches ubCode into parser mode, where discovery follows
@@ -101,8 +78,8 @@ include = ["specs/*.md"]
 check = "ubc check"
 schema = "ubc schema validate"
 needs = "ubc build needs -o needs.json"
-"needs:lfp" = "ubc build needs -c \"needs.variant_data_file = 'variants/lfp.json'\" -o needs.lfp.json"
-variant-diff = "ubc diff -c \"needs.variant_data_file = 'variants/lfp.json'\""
+"needs:lfp" = "ubc build needs -c \"variants.data_file = 'variants/lfp.json'\" -o needs.lfp.json"
+variant-diff = "ubc diff -c \"variants.data_file = 'variants/lfp.json'\""
 html = "ubc build html --deny none -o _build/ubc-html"
 # No `--deny` override, unlike `html` above: the one code the PDF builder trips
 # on this project is ignored by name under [lint], so the bar stays at "warning".
@@ -137,21 +114,16 @@ id_regex = "^([A-Z]+_[A-Z][A-Z0-9_]*|CR_[0-9]{8}_[0-9A-F]{4})$"
 flow_engine = "graphviz"
 
 # --- ONTOLOGY SCHEMA ---
-# The structural rules the graph must hold to, checked by `ubc schema validate` and
-# by the sphinx-needs build. JSON carries no comments, so each rule in `schemas.json`
-# states its own rationale in its `message`, and the file's `$defs._readme` carries
-# the derivation.
-#
-# Two sources, two severities, and the split is deliberate:
-#
-# - `violation` for what THIS FILE ALREADY DECLARES — every `[[workflow.stages.trace]]`
-#   edge (link / direction / min / up) and every `[[needs.types]]` prefix. These are
-#   obligations the project has committed to, so breaking one is an error, and the
-#   schema is only restating them where a build can enforce them per-need.
-# - `warning` for what the graph merely SHOWS — conventions that hold unanimously
-#   across all 194 needs but that no config declares (single-parent cardinality, the
-#   presence of `status` on authored spec needs). Hard-failing a build on a rule the
-#   project never wrote down would turn an observation into a law by accident.
+# What a need type's own entry cannot declare, checked by `ubc schema validate` and
+# by the sphinx-needs build. Each type's fields and outgoing links — vocabularies,
+# patterns, required fields, target types, link counts — are DECLARATIONS under
+# NEED TYPES and LINKS below, checked by both tools from this file alone. What is
+# left for `schemas.json` is: each type's id prefix (`id-prefix-*`, violation;
+# `id` is not a field an entry may declare), the five INCOMING obligations
+# (`coverage-*-back`, warning; an entry on a back link is refused), the `gap`
+# category vocabulary at warning severity, and ASIL presence on `req` at warning
+# severity. JSON carries no comments, so each rule states its rationale in its
+# `message`, and the file's `$defs._readme` carries the derivation.
 #
 # THE FIVE `coverage-*-back` RULES ARE WARNINGS, AND A WARNING IS NOT FREE. Each
 # asserts an INCOMING link and is therefore owed by a stage that runs LATER than the
@@ -184,26 +156,37 @@ schema_definitions_from_json = "schemas.json"
 # voltage values are STRINGS on purpose: they are rendered into prose ("2.50 V"),
 # where a JSON number would print as 2.5.
 #
+# The data file is named in the shared `[variants]` table below, which ubCode,
+# Sphinx-Needs (through `needs_from_toml`) and sphinx-mounts all read; the older
+# `[needs] variant_data_file` key is ignored once `[variants]` is set.
+#
 # Switch the profile per build without editing a single need:
-#   ubc build needs -c "needs.variant_data_file = 'variants/lfp.json'"
-#   ubc diff       -c "needs.variant_data_file = 'variants/lfp.json'"   # = `ubc script variant-diff`
+#   ubc build needs -c "variants.data_file = 'variants/lfp.json'"
+#   ubc diff       -c "variants.data_file = 'variants/lfp.json'"   # = `ubc script variant-diff`
+# (A `-c "needs.variant_data_file = ..."` override is now ignored, with a
+# `config.variant_data_location` warning, and the build stays NMC.)
 # RUN THOSE FROM THIS DIRECTORY (or through `ubc script`, which does). A path given
 # with `-c` is resolved against the WORKING DIRECTORY, not against this file, and a
 # variant data file that is not found resolves SILENTLY: no warning, every `var.*`
 # value empty, `chemistry` "" (observed with ubc 0.33). From the repository root the
 # path has to be `docs/variants/lfp.json`.
-# Sphinx reads the same key through `needs_from_toml`, overridable with
+# Sphinx reads the same table through `needs_from_toml`, overridable with
 # `-D needs_variant_data_file=...` (see the README for the path to use there).
 #
-# `[[source.variant_sources]]` (per-variant FILE selection) is deliberately not
-# used: sphinx-build honours it only with sphinx-mounts installed, and without
-# that the `-W` publish would build a different document set than ubc does.
+# ONE variant document, `specs/cell-protection/lfp_charging.rst`, exists only in
+# the LFP build: `[[source.variant_sources]]` under `[source]` removes it from every
+# other build, so its page and its need are not read at all. ubc does that natively;
+# sphinx-build only with sphinx-mounts in `extensions` (ubc says so once, as
+# `info[config.variant_sources_sphinx_unsupported]`): without it the NMC publish
+# would read the LFP page too.
 # Quick switch for a live demo: comment the NMC line, uncomment the LFP one, save —
 # the IDE re-indexes on save and the cell-protection page reads 3.65 V, and every
 # command and the Sphinx build follow. The `-c` override above and the
 # `variant-diff` / `needs:lfp` scripts switch one command at a time instead.
-variant_data_file = "variants/nmc.json"
-# variant_data_file = "variants/lfp.json"
+
+[variants]
+data_file = "variants/nmc.json"
+# data_file = "variants/lfp.json"
 
 # --- ubTRACE VARIANTS ---
 # The variants published to ubTrace, one build each. ubTrace shows the variants of
@@ -222,222 +205,32 @@ variant_data_file = "variants/lfp.json"
 dimensions = { chemistry = "LFP" }
 
 # --- FIELDS ---
-# Fields the built-in need schema does not carry, in two groups, one per IMPORTED
-# type, plus a vocabulary for the built-in `status`.
+# A field the project adds is declared ON THE NEED TYPE THAT OWNS IT, as
+# `[needs.types.<type>.fields.<name>]` under NEED TYPES below, with that type's
+# vocabulary, pattern and whether it is required. On a need of any other type the
+# field holds null, not "", and a value written there is ignored with a
+# `needs.undeclared_for_type` warning. So the two IMPORTED types carry their own
+# fields — four on `test_result` (what a JUnit `<testcase>` reports), five on `gap`
+# (what one `ubc agent gaps` record reports) — and `asil` lives on `req`.
 #
-# The first four exist for the `test_result` type: they hold what a JUnit
-# `<testcase>` element reports, so the imported evidence is queryable as need FIELDS
-# rather than buried in prose. `outcome` is the one worth filtering on
-# (`type == "test_result" and outcome != "passed"`); `runtime_s` and
-# `test_run_label` give the reader the run it came from.
+# `nullable = false` with no default makes a field REQUIRED on the type that
+# declares it: a need without it is not created (`needs.create_need`), in ubc and
+# in the Sphinx build alike. That is the declared form of "the importer must have
+# written it".
 #
-# The `gap_*` group does the same job for the `gap` type: it holds what one record
-# of `ubc agent gaps` reports.
+# Two fields stay declared here, for every type: `status`, a CORE field that every
+# need has, given its one vocabulary below; and `chemistry`, which needs
+# `parse_variants`, a key a need type's entry cannot set.
 #
-# SPELLING: `[needs.fields.<name>]`, not the older `[[needs.extra_options]]`.
-# sphinx-needs maps the deprecated spelling onto `needs_extra_options` and emits a
-# deprecation warning for it, which conf.py used to have to suppress to keep `-W`
-# usable; that suppression is gone with this migration. The table form also reaches
-# the BUILT-IN fields — which is what lets `status` get a vocabulary below — and
-# carries a `schema` slot the list form has no room for.
-#
-# WHERE A CONSTRAINT BELONGS. A field is global in ubCode: declared once, present on
-# every type, and left at its `default` on the types that do not use it. So a
-# `schema` here states what is true of the field EVERYWHERE — which for these
-# imported fields means the empty string has to be admissible, because that is what
-# the ~190 needs outside the owning type carry. Narrowing a field on the one type
-# that owns it is schemas.json's job, keyed by `select`. Neither file repeats the
-# other: `outcome` is `"" | passed | failed | error | skipped` here and exactly the
-# four words there.
-
-# The GLOBAL enum carries the empty string because the field is global: it is
-# written as "" on the 144 needs that are not test_results (see the note above),
-# and a global schema sees all of them. Dropping "" is the per-type job, and
-# `field-test_result-run-evidence` in schemas.json does it with `minLength: 1` —
-# NOT by listing the four words a second time. Admitting "" here and excluding it
-# there yields exactly `passed | failed | error | skipped` on a test_result, so the
-# vocabulary exists in ONE place and there is no second copy to drift.
-#
-# The four words are not a guess: they are exactly OUTCOME_BY_TAG plus the `passed`
-# default in tools/import_test_results.py.
-[needs.fields.outcome]
-description = "Recorded outcome of one test case in one run: passed, failed, error or skipped."
-default = ""
-nullable = false
-schema = { type = "string", enum = ["", "passed", "failed", "error", "skipped"] }
-
-# DELIBERATELY UNCONSTRAINED. `runtime_s` is `case.get("time", "0.000")` — the
-# JUnit `time` attribute passed through verbatim from a report this repository
-# does not generate. Pinning a numeric format here would fail on a legitimate
-# report (a runner emitting `1e-05`, say) rather than catch a project error, so
-# the only thing asserted about it is that the importer populated it, which
-# `field-test_result-run-evidence` in schemas.json does per-type.
-[needs.fields.runtime_s]
-description = "Wall-clock runtime of that test case, in seconds, as the report recorded it."
-default = ""
-nullable = false
-
-# NAMED `test_run_label`, not `test_run`, and holding a NON-ISO timestamp. Both
-# details are load-bearing for the ubTrace export:
-#
-# Extra options are global, so this field is also written as "" on every need
-# that is not a `test_result`. ubTrace indexes needs into Elasticsearch with
-# dynamic mapping and date detection on, so an ISO-8601 value types the field
-# as `date` for the whole index and every need carrying "" is then rejected
-# ("cannot parse empty datetime"). Elasticsearch mappings are IMMUTABLE, so
-# once an index has learned `test_run: date` it keeps rejecting, and re-ingesting
-# corrected data cannot repair it — only deleting the index can. The rename to
-# a field the live index has never seen is what escapes that stuck mapping;
-# the space-instead-of-`T` format is what stops the new field being typed as a
-# date in turn. See `_run_label` in tools/import_test_results.py.
-# The pattern is the ES guard, and it belongs HERE rather than in schemas.json
-# because it is uniform: no need of any type may ever carry an ISO-8601 value in
-# this field. `^$|` admits the "" every non-test_result need carries; the
-# alternative branch pins date-SPACE-time, so the `T` form cannot be written at
-# all. Stated positively because sphinx-needs rejects `not` inside a field
-# constraint. With this global rule in place, `field-test_result-run-evidence`
-# (minLength 1) is all schemas.json needs to add: non-empty AND matching this
-# pattern means a real timestamp.
-[needs.fields.test_run_label]
-description = "Identifier of the test run the outcome came from: the report's timestamp, as a label."
-default = ""
-nullable = false
-schema = { type = "string", pattern = "^$|^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}" }
-
-# The chain roll-up, stamped on every generated `test_result`: the ids of the
-# system requirements this result is evidence for, resolved through
-# `test -> swreq -> arch -> req`.
-#
-# It exists because a REPORT TEMPLATE CANNOT WALK LINKS. `ubc report` builds each
-# need in its Jinja context from that need's scalar FIELDS only, so `id`, `type`,
-# `title`, `status`, `tags`, `doctype` and these extra options are reachable while
-# every LINK field (`satisfies`, `refines`, `verifies`, `results_for`, …) is
-# absent. A template that reads `n.verifies` gets undefined, and the usual
-# `(n.verifies or [])` guard silently turns that into an empty list — so a
-# link-based coverage report renders clean and reports 0 % everywhere.
-#
-# Stamping the resolved chain onto the generated artefact is what moves the answer
-# from a link (invisible to a template) into a field (visible), so
-# `reports/traceability_coverage.html.j2` is plain Jinja that `ubc report` and the
-# VS Code Reports view render with no extra tooling. It is DERIVED data on a
-# DERIVED need — `tools/import_test_results.py` resolves it from the spec sources
-# on every run, and nothing hand-maintains it.
-# No pattern: this is a SPACE-SEPARATED LIST of ids whose length varies with the
-# chain, so the only uniform statement about it is that it is a string. That it
-# is populated on every generated result is asserted per-type by
-# `field-test_result-run-evidence` in schemas.json.
-[needs.fields.chain_reqs]
-description = "System requirement ids this test result is evidence for, via test -> swreq -> arch -> req."
-default = ""
-nullable = false
-
-# The five `gap` fields, stamped on every generated `gap` need by
-# `tools/import_gaps.py`. They hold what ONE record of `ubc agent gaps` reports, so
-# the workflow gate's output is queryable as need FIELDS rather than living only in
-# a JSON file next to the graph.
-#
-# They are FIELDS and not just links for the same reason `chain_reqs` is: a report
-# template cannot walk links. `ubc report` builds each need in its Jinja context
-# from that need's scalar fields only, so `gap_for` is invisible to
-# `reports/traceability_coverage.html.j2` while `gap_need_id` is not. The link and
-# the field carry the same fact on purpose — the link is what the graph, the
-# needflow diagrams and ubTrace traverse, the field is what a template can read.
-#
-# NOTE the shapes, for the same Elasticsearch reason `test_run_label` documents
-# above: every one of these is written as "" on the ~190 needs that are not gaps,
-# so none of them may ever hold a value ES date-detection would type as a `date`.
-# `gap_shortfall` is deliberately the string "0 of 1" rather than two numeric
-# `have` / `need` fields, which keeps it unmistakably text.
-
-# NO ENUM HERE, and that is the one deliberate omission in this file. The
-# categories are known: the seven the 0.34 engine emits, plus `change_incomplete`
-# from `ubc agent change` (CATEGORIES in tools/import_gaps.py). But that importer
-# renders an UNKNOWN category generically rather than rejecting it, on the explicit
-# grounds that `ubc agent` is alpha and "a gate finding must never be dropped
-# because this table has not caught up with the engine". A global enum would be a
-# hard error and would invert exactly that decision: a newer engine emitting a
-# category not listed would fail the build instead of reporting the gap.
-# The vocabulary is therefore checked at `warning` severity by `field-gap-category`
-# in schemas.json, which surfaces the drift without dropping the finding.
-[needs.fields.gap_category]
-description = "Which gate reported this gap: trace_backward, trace_forward, orphan, status_disallowed, ..."
-default = ""
-nullable = false
-
-# Enumerable where gap_category is not: the gate names a link out of THIS file's
-# `[needs.links]`, so the vocabulary is bounded by config rather than by the
-# engine's version. "" covers both the 193 non-gap needs and an `orphan` record,
-# which carries no link at all.
-[needs.fields.gap_link]
-description = "The link name the reporting gate counted, when the gap is a trace gap; empty otherwise."
-default = ""
-nullable = false
-schema = { type = "string", enum = [
-  "",
-  "traces_to",
-  "satisfies",
-  "refines",
-  "implements",
-  "verifies",
-  "results_for",
-  "affects",
-  "motivates",
-  "mitigates",
-  "gap_for",
-  "links",
-] }
-
-# The "<have> of <need>" shape the description promises, asserted rather than
-# merely documented. Deliberately text and never two numeric fields, for the same
-# Elasticsearch reason `test_run_label` carries a space instead of a `T`.
-[needs.fields.gap_shortfall]
-description = "How far short the need fell, as a label: \"<have> of <need>\" links present."
-default = ""
-nullable = false
-schema = { type = "string", pattern = "^$|^[0-9]+ of [0-9]+$" }
-
-# Reuses the project's own `id_regex` as an alternative branch, so a malformed id
-# cannot reach a report template through this field even though it arrives as a
-# plain string rather than a link.
-[needs.fields.gap_need_id]
-description = "Id of the need the gap is attributed to — the same fact as the `gap_for` link, as a field a report template can read."
-default = ""
-nullable = false
-schema = { type = "string", pattern = "^$|^([A-Z]+_[A-Z][A-Z0-9_]*|CR_[0-9]{8}_[0-9A-F]{4})$" }
-
-# The eleven directives declared under `[[needs.types]]` below. Adding a type there
-# means adding it here — the duplication is the price of letting a report group
-# gaps by V-model level from a plain field.
-[needs.fields.gap_need_type]
-description = "Type of the need the gap is attributed to (req, swreq, arch, ...), so a report can group gaps by V-model level."
-default = ""
-nullable = false
-schema = { type = "string", enum = [
-  "",
-  "user_story",
-  "req",
-  "arch",
-  "swreq",
-  "impl",
-  "test",
-  "test_result",
-  "risk",
-  "decision",
-  "gap",
-  "change_request",
-] }
+# SPELLING: `[needs.fields.<name>]`, not the older `[[needs.extra_options]]`, which
+# sphinx-needs maps onto its deprecated `needs_extra_options` with a deprecation
+# warning that `-W` turns into a failed publish.
 
 # --- STATUS (a CORE field, given a vocabulary) ---
-# `[needs.fields]` reaches the built-in fields too, not just the project's own, so
-# the spec lifecycle is declared here rather than left implicit. Before this, every
-# authored need carried `draft` by convention and nothing checked it: a typo such
-# as `draft2` was accepted silently by every gate in the project.
-#
-# `status` is nullable and genuinely unset on the four DERIVED types (impl, test,
-# test_result, gap) — their state is the source file or the import, not a lifecycle —
-# so the enum must not force a value onto them. It constrains the value when one is
-# present; `status-present-on-spec-needs` in schemas.json is what additionally
-# REQUIRES one on the six authored spec types.
+# The spec lifecycle, written once. The six AUTHORED types (user_story, req, arch,
+# swreq, risk, decision) each REQUIRE a status in their own entry below; the four
+# DERIVED types (impl, test, test_result, gap) declare none and their needs carry
+# none — their state is the source file or the import, not a lifecycle.
 #
 # This is the ONLY place the vocabulary is enforced. `[workflow.lifecycle] states`
 # looks like it should carry it too, and does not: see the comment at `[workflow]`
@@ -446,30 +239,21 @@ schema = { type = "string", enum = [
 description = "Lifecycle state of an authored spec need: draft -> review -> approved."
 schema = { type = "string", enum = ["draft", "review", "approved"] }
 
-# Automotive Safety Integrity Level (ISO 26262) of a requirement. The VALUE is
-# constrained here, for every need that carries one; `field-req-asil` in
-# schemas.json REQUIRES one on each `req`. The values are fictional, like the
-# rest of this project: plausible for a BMS, not the result of a hazard analysis.
-[needs.fields.asil]
-description = "Automotive Safety Integrity Level (ISO 26262): QM or A to D."
-schema = { type = "string", enum = ["QM", "A", "B", "C", "D"] }
-
 # Named variant expressions, usable as `<<lfp: <value>, <fallback>>>` in any
 # field that sets `parse_variants = true`.
 [needs.variants]
 lfp = "var.pack.chemistry == 'LFP'"
 
 # The field the variant data is INJECTED into: REQ_CELL_VOLTAGE_LIMITS carries
-# `:chemistry: <{ var.pack.chemistry }>`. Global like every field, so "" is
-# admissible for the needs that are not chemistry-specific; the enum is the
-# vocabulary, written once here. `parse_variants` is what lets the value be a
-# `<{ }>` reference or a `<<...>>` function instead of a literal.
+# `:chemistry: <{ var.pack.chemistry }>`. `parse_variants` is what lets the value be a
+# `<{ }>` reference or a `<<...>>` function instead of a literal, and it is why this
+# field is declared for every type rather than on `req` alone: both tools refuse
+# `parse_variants` in a need type's entry. It is nullable with no default, so a need
+# that is not chemistry-specific holds null, and the enum is the two chemistries.
 [needs.fields.chemistry]
 description = "Pack cell chemistry a chemistry-specific need is resolved for: NMC or LFP, from the variant data."
-default = ""
-nullable = false
 parse_variants = true
-schema = { type = "string", enum = ["", "NMC", "LFP"] }
+schema = { type = "string", enum = ["NMC", "LFP"] }
 
 # BATTERY MANAGEMENT SYSTEM (BMS) — everything-as-code, MINIMIZED V-MODEL.
 #
@@ -507,47 +291,122 @@ schema = { type = "string", enum = ["", "NMC", "LFP"] }
 
 # --- NEED TYPES (the V-model ontology) ---
 # Rename, add, or remove types to match your project's V-model. Every type the
-# [workflow] stages produce or trace against is declared here.
+# [workflow] stages produce or trace against is declared here, one
+# `[needs.types.<directive>]` table each, followed by the fields its needs carry.
+#
+# `status` is REQUIRED on the six authored types (`nullable = false` in each entry);
+# its vocabulary is `[needs.fields.status]` above, written once.
+#
+# NO `inherits`. The one candidate the domain offers is `swreq inherits req`: both are
+# requirements. But a subtype only narrows what it inherits, so a swreq would carry
+# `req`'s `asil` and `traces_to` — no swreq states an ASIL (0 of 25) and none traces to
+# a story (it `refines` an arch) — and every link whose `target_types` names `req`
+# (`satisfies`, `mitigates`) would start accepting a swreq. Reusing one entry is not
+# worth that; the two types stay siblings.
 
-[[needs.types]]
-directive = "user_story"
+[needs.types.user_story]
 title = "User Story"
 prefix = "US_"
 color="#FDE68A"
 style="usecase"
 
-[[needs.types]]
-directive = "req"
+[needs.types.user_story.fields.status]
+nullable = false
+
+[needs.types.req]
 title = "Requirement"
 prefix = "REQ_"
 color="#FDBA74"
 style="file"
 
-[[needs.types]]
-directive = "arch"
+[needs.types.req.fields.status]
+nullable = false
+
+[needs.types.req.fields.test_count]
+derive = { kind = "sum", field = "test_count", over = "satisfies_back" }
+
+# Automotive Safety Integrity Level (ISO 26262), on `req` alone: no other type
+# states one (0 of 25 swreqs). The values are fictional, like the rest of this
+# project: plausible for a BMS, not the result of a hazard analysis.
+# NOT `nullable = false`: a requirement is often written before its safety
+# classification is known (the draft-requirement skill writes none), and a
+# required field would drop such a need rather than report it. Presence is
+# therefore still `field-req-asil` in schemas.json, at warning severity.
+[needs.types.req.fields.asil]
+description = "Automotive Safety Integrity Level (ISO 26262): QM or A to D."
+schema = { type = "string", enum = ["QM", "A", "B", "C", "D"] }
+
+[needs.types.arch]
 title = "Architecture"
 prefix = "ARCH_"
 color="#818CF8"
 style="node"
+
+[needs.types.arch.fields.status]
+nullable = false
+
+# DERIVED FIELDS, one name each, a rule per type. A plain report template cannot
+# walk links (`ubc report` gives it each need's scalar fields), so the facts a
+# report needs from up or down the chain are computed onto the need, by both
+# tools, from the links alone; no importer stamps them and no author writes them.
+# A rule reading its own field over a link type reads the value each linked need
+# computes, through any depth.
+#
+# `chain_reqs`: the system requirements a need is evidence for, up the V. The arch
+# rung copies the ids of the reqs it satisfies; every rung below collects the
+# rung above (`collect` flattens and keeps each id once).
+[needs.types.arch.fields.chain_reqs]
+description = "System requirement ids this need is evidence for, up the chain to req."
+schema = { type = "array", items = { type = "string" } }
+derive = { kind = "copy", field = "id", over = "satisfies", select = "list" }
+
+# `test_count`, rolled UP: a swreq counts the tests that verify it, an arch sums
+# its swreqs, a req its archs. Every test verifies one swreq and every swreq refines
+# one arch (`maxItems = 1` below), so the sum counts each test once.
+[needs.types.arch.fields.test_count]
+derive = { kind = "sum", field = "test_count", over = "refines_back" }
 
 # The BOTTOM of the decomposition arm. A software requirement states the testable
 # behaviour of ONE architecture element: what the component shall do, across which
 # interface, with which data, under which timing / resource / accuracy bound. It
 # `refines` the `arch` it details, and it is the level BOTH lower arms attach to —
 # `impl` implements a swreq, `test` verifies a swreq.
-[[needs.types]]
-directive = "swreq"
+[needs.types.swreq]
 title = "Software Requirement"
 prefix = "SWREQ_"
 color="#7DD3FC"
 style="card"
 
+[needs.types.swreq.fields.status]
+nullable = false
+
+[needs.types.swreq.fields.chain_reqs]
+derive = { kind = "collect", field = "chain_reqs", over = "refines" }
+
+# The verdict where both lower arms meet: how many tests verify it, how many impls
+# implement it, and whether every one of its tests passed its last recorded run
+# (`true` with no test, as `all` over nothing is — so "unverified or failing" is
+# `test_count == 0 or not all_tests_passed`).
+[needs.types.swreq.fields.test_count]
+description = "Tests that verify this need: on a swreq, its verifying tests; on an arch or a req, those below it."
+schema = { type = "integer" }
+derive = { kind = "count", over = "verifies_back" }
+
+[needs.types.swreq.fields.impl_count]
+description = "Implementations of this software requirement."
+schema = { type = "integer" }
+derive = { kind = "count", over = "implements_back" }
+
+[needs.types.swreq.fields.all_tests_passed]
+description = "Every test verifying this software requirement passed its last recorded run."
+schema = { type = "boolean" }
+derive = { kind = "all", field = "all_passed", over = "verifies_back" }
+
 # The implementation-arm need: an implementation element authored as a real need via
 # a one-line codelinks marker in production source. It `implements` the `swreq` it
 # realises, and the `code` stage's trace edge counts that incoming `implements_back`
 # for coverage.
-[[needs.types]]
-directive = "impl"
+[needs.types.impl]
 title = "Implementation"
 prefix = "IMPL_"
 color="#C084FC"
@@ -556,12 +415,22 @@ style="component"
 # The verification-arm need: a test case authored as a real need via a one-line
 # codelinks marker in test source. It `verifies` the `arch` it covers, and the
 # `tests` stage's trace edge counts that incoming `verifies_back` for coverage.
-[[needs.types]]
-directive = "test"
+[needs.types.test]
 title = "Test"
 prefix = "TEST_"
 color="#BBF7D0"
 style="hexagon"
+
+[needs.types.test.fields.chain_reqs]
+derive = { kind = "collect", field = "chain_reqs", over = "verifies" }
+
+# Every recorded result of this test passed (`true` when it has none yet). Read
+# over `results_for_back`: `over` names a link type or its back links, not the
+# `incoming` label (`results`), which both tools refuse there.
+[needs.types.test.fields.all_passed]
+description = "Every recorded result of this test passed; true when it has none."
+schema = { type = "boolean" }
+derive = { kind = "all", test = "outcome == 'passed'", over = "results_for_back" }
 
 # The EXECUTION-EVIDENCE need: the recorded outcome of ONE test case in ONE test
 # run, imported from a JUnit XML report rather than authored by hand. It is
@@ -574,26 +443,61 @@ style="hexagon"
 # Generated into `specs/_global/test_results.rst` by
 # `../tools/import_test_results.py` from `reports/junit/testresults.xml`. The XML is
 # a COMMITTED SNAPSHOT: the suite is not re-run on every build.
-[[needs.types]]
-directive = "test_result"
+[needs.types.test_result]
 title = "Test Result"
 prefix = "TRES_"
 color="#4ADE80"
 style="database"
 
-[[needs.types]]
-directive = "risk"
+# The three fields of the execution evidence, on `test_result` alone and REQUIRED
+# there: `tools/import_test_results.py` stamps every one on every generated result,
+# so a result missing one is a half-written import and is not created. Its
+# `chain_reqs` is derived (below), not stamped.
+#
+# The four words are exactly OUTCOME_BY_TAG plus the `passed` default in
+# tools/import_test_results.py. `outcome` is the one worth filtering on
+# (`type == "test_result" and outcome != "passed"`).
+[needs.types.test_result.fields.outcome]
+description = "Recorded outcome of one test case in one run: passed, failed, error or skipped."
+schema = { type = "string", enum = ["passed", "failed", "error", "skipped"] }
+nullable = false
+
+# DELIBERATELY UNCONSTRAINED beyond non-empty: it is the JUnit `time` attribute
+# passed through verbatim from a report this repository does not generate, and a
+# numeric format would fail on a legitimate report (a runner emitting `1e-05`).
+[needs.types.test_result.fields.runtime_s]
+description = "Wall-clock runtime of that test case, in seconds, as the report recorded it."
+schema = { type = "string", minLength = 1 }
+nullable = false
+
+# The importer's run label, date SPACE time (`_run_label` in
+# tools/import_test_results.py); the pattern pins that form, so the ISO `T` form
+# cannot be written.
+[needs.types.test_result.fields.test_run_label]
+description = "Identifier of the test run the outcome came from: the report's timestamp, as a label."
+schema = { type = "string", pattern = "^[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}" }
+nullable = false
+
+[needs.types.test_result.fields.chain_reqs]
+derive = { kind = "collect", field = "chain_reqs", over = "results_for" }
+
+[needs.types.risk]
 title = "Risk"
 prefix = "RISK_"
 color="#F87171"
 style="folder"
 
-[[needs.types]]
-directive = "decision"
+[needs.types.risk.fields.status]
+nullable = false
+
+[needs.types.decision]
 title = "Decision"
 prefix = "DEC_"
 color="#D1D5DB"
 style="frame"
+
+[needs.types.decision.fields.status]
+nullable = false
 
 # The WORKFLOW-GATE need: one structural gap that `ubc agent gaps` reports, imported
 # from a committed JSON snapshot rather than authored by hand. It is the same idea as
@@ -619,12 +523,64 @@ style="frame"
 # ("octagon", say) logs an "Unknown node style" warning — which `-W --keep-going` in
 # .github/workflows/ubtrace.yml turns into a failed publish. The fill colour carries
 # the signal instead.
-[[needs.types]]
-directive = "gap"
+[needs.types.gap]
 title = "Workflow Gap"
 prefix = "GAP_"
 color="#EF4444"
 style="rectangle"
+
+# The fields of one `ubc agent gaps` record, on `gap` alone. The gate's own
+# findings — `gap_category` (on every record, REQUIRED), `gap_link` and
+# `gap_shortfall` (absent from a record that carries no link, an `orphan`) — are
+# stamped by `tools/import_gaps.py`. `gap_need_id` and `gap_need_type` are DERIVED
+# from the `gap_for` link: a plain report template cannot walk links, so the
+# link's target id and type are copied onto the gap, by both tools, from the
+# link alone.
+
+# NO ENUM HERE, the one deliberate omission. The categories are known (the seven
+# the 0.34 engine emits plus `change_incomplete` from `ubc agent change`;
+# CATEGORIES in tools/import_gaps.py), but that importer renders an UNKNOWN
+# category rather than rejecting it, because `ubc agent` is alpha and "a gate
+# finding must never be dropped because this table has not caught up with the
+# engine". A declared enum is a violation and would invert that, so the vocabulary
+# is checked at `warning` by `field-gap-category` in schemas.json instead.
+[needs.types.gap.fields.gap_category]
+description = "Which gate reported this gap: trace_backward, trace_forward, orphan, status_disallowed, ..."
+schema = { type = "string", minLength = 1 }
+nullable = false
+
+# Bounded by config rather than by the engine's version: the gate names a link
+# out of this file's `[needs.links]`.
+[needs.types.gap.fields.gap_link]
+description = "The link name the reporting gate counted, when the gap is a trace gap; absent otherwise."
+schema = { type = "string", enum = [
+  "traces_to",
+  "satisfies",
+  "refines",
+  "implements",
+  "verifies",
+  "results_for",
+  "affects",
+  "motivates",
+  "mitigates",
+  "gap_for",
+  "links",
+] }
+
+# "<have> of <need>", deliberately one text label rather than two numbers.
+[needs.types.gap.fields.gap_shortfall]
+description = "How far short the need fell, as a label: \"<have> of <need>\" links present."
+schema = { type = "string", pattern = "^[0-9]+ of [0-9]+$" }
+
+[needs.types.gap.fields.gap_need_id]
+description = "Id of the need the gap is attributed to, copied from its `gap_for` link."
+schema = { type = "string" }
+derive = { kind = "copy", field = "id", over = "gap_for" }
+
+[needs.types.gap.fields.gap_need_type]
+description = "Type of the need the gap is attributed to, copied from its `gap_for` link, so a report can group gaps by V-model level."
+schema = { type = "string" }
+derive = { kind = "copy", field = "type", over = "gap_for" }
 
 # The CHANGE-REQUEST need: one proposed change to the graph. `ubc agent change plan`
 # drafts it from the impact analysis of the need the change is aimed at and writes
@@ -632,84 +588,130 @@ style="rectangle"
 # approving, executing and closing it are the other `ubc agent change` verbs, or the
 # Changes panel in VS Code. No stage produces it (a change is raised on demand, not
 # authored as a step of the V), so `[workflow.change_request]` below claims the type
-# and `orphan_exempt_types` lists it. Its fields and links are declared under
-# CHANGE REQUESTS below. `artifact` is a node style sphinx-needs maps onto graphviz
+# and `orphan_exempt_types` lists it. Its fields and links are declared on it alone,
+# under CHANGE REQUESTS below. `artifact` is a node style sphinx-needs maps onto graphviz
 # (a note), so it raises no "Unknown node style" warning.
-[[needs.types]]
-directive = "change_request"
+[needs.types.change_request]
 title = "Change Request"
 prefix = "CR_"
 color="#5EEAD4"
 style="artifact"
 
 # --- LINKS ---
-# Declare every link the [workflow] trace edges reference here.
+# Each link type has one table here, `[needs.links.<name>]`, with its labels; and
+# the need type that WRITES it narrows it in its own entry,
+# `[needs.types.<type>.links.<name>]`: the type its links may point to
+# (`target_types`) and how many a need holds (`minItems` / `maxItems`). A link to
+# a need of the wrong type is a `needs.link_target_type` warning at the line that
+# writes it; a count out of range is a schema violation.
+#
+# `minItems = 1` is the forward half of each `[[workflow.stages.trace]]` edge below
+# (`min = 1`, `up = <the target type>`); both stay, because the trace edge is the
+# agent workflow's (it names the stage that owes the link) and the declaration is
+# what a build checks per need. `maxItems = 1` is the single parent the graph has
+# always had (one story per req, one arch per swreq, one swreq per impl and per
+# test, one test per result, one need per gap): declared, it is a violation where
+# schemas.json used to report it as a warning, and a gate fails either way —
+# `ubc check` exits 1 on a warning and `-W` turns one into an error.
+#
+# WHY NOT ON THE TYPE ALONE. Both tools also take a link type declared on need
+# types alone (labels in the type's entry, no `[needs.links]` table), which would
+# additionally refuse the link on every other type. `ubc agent config-validate`
+# does not see such a link type yet and reports every trace edge naming one as
+# `undeclared_link`, so the link types keep their `[needs.links]` tables.
+#
+# What a declaration cannot say stays in schemas.json: the INCOMING obligations
+# (`coverage-*-back`; an entry on a back link such as `traces_to_back` is refused
+# by both tools) and each type's id prefix (`id-prefix-*`; `id` is not a field a
+# need type's entry may declare).
 
 [needs.links.traces_to]
 incoming = "traces_from"
 outgoing = "traces_to"
 
+[needs.types.req.links.traces_to]
+target_types = ["user_story"]
+schema = { minItems = 1, maxItems = 1 }
+
 [needs.links.satisfies]
 incoming = "satisfied_by"
 outgoing = "satisfies"
 
-# The software-requirement link: a `swreq` need's outgoing `refines` points at the
-# `arch` element whose behaviour it pins down. Deliberately NOT a second use of
-# `satisfies`: one link name per level keeps a trace query unambiguous about which
-# rung of the V it is walking.
+[needs.types.arch.links.satisfies]
+target_types = ["req"]
+schema = { minItems = 1 }
+
+# The software-requirement link: a `swreq` need's outgoing `refines` points at THE
+# `arch` element whose behaviour it pins down — one. Deliberately NOT a second use
+# of `satisfies`: one link name per level keeps a trace query unambiguous about
+# which rung of the V it is walking.
 [needs.links.refines]
 incoming = "refined_by"
 outgoing = "refines"
 
-# The implementation link: an `impl` need's outgoing `implements` points at the `swreq`
-# it realises; the swreq's incoming `implements_back` is what the `code` stage's trace
-# edge counts. Declared here so `ubc build` emits the field and the one-line marker's
-# `implements` list-field resolves to a real link (an undeclared link is silently
-# ignored at runtime).
+[needs.types.swreq.links.refines]
+target_types = ["arch"]
+schema = { minItems = 1, maxItems = 1 }
+
+# The implementation link: an `impl` need's outgoing `implements` points at the
+# `swreq` it realises; the swreq's incoming `implements_back` is what the `code`
+# stage's trace edge counts. Declared here so the one-line marker's `implements`
+# list-field resolves to a real link.
 [needs.links.implements]
 incoming = "implements_back"
 outgoing = "implements"
 
+[needs.types.impl.links.implements]
+target_types = ["swreq"]
+schema = { minItems = 1, maxItems = 1 }
+
 # The verification link: a `test` need's outgoing `verifies` points at the `swreq`
 # it covers; the swreq's incoming `verifies_back` is what the `tests` stage's trace
-# edge counts. Declared here so `ubc build` emits the field and the one-line marker's
-# `verifies` list-field resolves to a real link (an undeclared link is silently
-# ignored at runtime).
+# edge counts. Declared here so the one-line marker's `verifies` list-field
+# resolves to a real link.
 [needs.links.verifies]
 incoming = "verifies_back"
 outgoing = "verifies"
 
+[needs.types.test.links.verifies]
+target_types = ["swreq"]
+schema = { minItems = 1, maxItems = 1 }
+
 # The execution-evidence link: a `test_result` need's outgoing `results_for`
-# points at the `test` need whose run it records; the test's incoming `results`
-# is how a query gets from a test case to its last recorded outcome. The
-# `test_results` stage's trace edge names it, so this is the field the import
-# writes on every generated need.
+# points at the ONE `test` need whose run it records — a second target would make
+# the evidence unattributable; the test's incoming `results` is how a query gets
+# from a test case to its last recorded outcome.
 [needs.links.results_for]
 incoming = "results"
 outgoing = "results_for"
 
-# The decision link: a `decision` need's outgoing `affects` points at the `arch` it
-# constrains. The `decisions` stage's trace edge names it, so this is the field the
-# authoring prompt orders on that stage.
-[needs.links.affects]
-incoming = "affected_by"
-outgoing = "affects"
-
-[needs.links.motivates]
-incoming = "motivated_by"
-outgoing = "motivates"
+[needs.types.test_result.links.results_for]
+target_types = ["test"]
+schema = { minItems = 1, maxItems = 1 }
 
 # The risk link: a `risk` need's outgoing `mitigates` points at the `req` it bears on.
-# The `risks` stage's trace edge names it, so this is the field the authoring prompt
-# orders on that stage.
 [needs.links.mitigates]
 incoming = "mitigated_by"
 outgoing = "mitigates"
 
-# The gap link: a `gap` need's outgoing `gap_for` points at the need the gate
-# attributed the gap to, and that need's incoming `gaps` is what puts a red node
-# next to it in every `needflow` on `traceability.rst` and a non-empty `gaps` cell
-# in every level table.
+[needs.types.risk.links.mitigates]
+target_types = ["req"]
+schema = { minItems = 1 }
+
+# The decision link: a `decision` need's outgoing `affects` points at the `arch` it
+# constrains.
+[needs.links.affects]
+incoming = "affected_by"
+outgoing = "affects"
+
+[needs.types.decision.links.affects]
+target_types = ["arch"]
+schema = { minItems = 1 }
+
+# The gap link: a `gap` need's outgoing `gap_for` points at the ONE need the gate
+# attributed the gap to — of any type, so no `target_types` — and that need's
+# incoming `gaps` is what puts a red node next to it in every `needflow` on
+# `traceability.rst` and a non-empty `gaps` cell in every level table.
 #
 # It is deliberately NOT named in any `[[workflow.stages.trace]]` edge. A trace edge
 # is an OBLIGATION the gate counts, and an obligation to carry a gap is nonsense: it
@@ -720,80 +722,107 @@ outgoing = "mitigates"
 incoming = "gaps"
 outgoing = "gap_for"
 
+[needs.types.gap.links.gap_for]
+schema = { minItems = 1, maxItems = 1 }
+
+# WRITTEN BY NO NEED. No spec, marker, importer or skill in this repository sets
+# `motivates`, so no type narrows it.
+[needs.links.motivates]
+incoming = "motivated_by"
+outgoing = "motivates"
+
+# --- DERIVED: the upward chain as ONE link type ---
+# `trace_up` holds every link a need has UP the V — the union of the six chain
+# links, in V order — so a `needflow`, a `needtable` column, a filter or a Cypher
+# path follows "up" by one name instead of six, and `trace_up_back` is the view
+# down from a need. Derived: no author writes it (a value written is ignored and
+# reported), both tools compute it from the six members. `mitigates`, `affects` and
+# `gap_for` are not in it: a risk, a decision or a gap is ABOUT a need, not below it.
+[needs.links.trace_up]
+incoming = "traced up from"
+outgoing = "traces up to"
+derive = { kind = "union", fields = [
+  "traces_to",
+  "satisfies",
+  "refines",
+  "implements",
+  "verifies",
+  "results_for",
+] }
+
 # --- CHANGE REQUESTS: the fields and links a change request carries ---
 # Written by `ubc agent change`, never authored by hand except where the assessment
-# rules on the impact. `[needs.fields]` and `[needs.links]` are project-global, so
-# these names are legal on every type, which is why each one starts with `cr_`: none
-# can collide with a field of this project's own. What a change is FOR is written in
-# the record's body, under its **Purpose** heading, not in a field.
+# rules on the impact. They are declared on `change_request` ALONE: on a need of any
+# other type each field is null and each link empty, and a value written there is
+# ignored with a `needs.undeclared_for_type` warning. What a change is FOR is
+# written in the record's body, under its **Purpose** heading, not in a field.
 #
 # `cr_status` is the change request's status LOG, one `state | at | by | rationale`
 # line per step (approved, executed, closed, ...), deliberately not the core `status`
 # field: that one carries the spec lifecycle and its enum above.
 #
-# Each says `nullable = true`: the field is absent until the engine writes it. That
-# is also what a field declaring nothing defaults to, but sphinx-needs warns about
-# such a field ("has no 'schema', 'nullable' or 'default' defined"), and `-W` makes
-# the warning an error.
+# Every field is a nullable string, absent until the engine writes it; a field
+# declared on need types alone takes its `schema` `type` from its declaration.
 
-[needs.fields.cr_requester]
+[needs.types.change_request.fields.cr_requester]
 description = "Who asked for the change"
-nullable = true
+schema = { type = "string" }
 
-[needs.fields.cr_external_id]
+[needs.types.change_request.fields.cr_external_id]
 description = "The id the change carries in an external tracker"
-nullable = true
+schema = { type = "string" }
 
-[needs.fields.cr_approval_decision]
+[needs.types.change_request.fields.cr_approval_decision]
 description = "The recorded decision: approved, rejected or deferred"
-nullable = true
+schema = { type = "string" }
 
-[needs.fields.cr_approval_by]
+[needs.types.change_request.fields.cr_approval_by]
 description = "Who made the recorded decision"
-nullable = true
+schema = { type = "string" }
 
-[needs.fields.cr_approval_at]
+[needs.types.change_request.fields.cr_approval_at]
 description = "When the recorded decision was made"
-nullable = true
+schema = { type = "string" }
 
-[needs.fields.cr_status]
+[needs.types.change_request.fields.cr_status]
 description = "The change request's status log, one transition per line"
-nullable = true
+schema = { type = "string" }
 
 # The six sets a change request carries are links: the need `plan` was seeded from,
 # the two tiers its impact analysis computed, and the assessment's ruling on each
 # need the change reaches. They are NOT trace links: no `[[workflow.stages.trace]]`
 # edge names them, the impact walks never step into or out of a change request, and
-# the orphan gate does not count them as wiring. A change request records what was
-# true when it was assessed, so each allows dead links: a need a later change removes
-# or renames raises no warning and no gap on the record that once named it.
+# the orphan gate does not count them as wiring. Each may point at a need of ANY
+# type, so none has `target_types`. A change request records what was true when it
+# was assessed, so each allows dead links: a need a later change removes or renames
+# raises no warning and no gap on the record that once named it.
 
-[needs.links.cr_anchor]
+[needs.types.change_request.links.cr_anchor]
 incoming = "anchor_of"
 outgoing = "anchored_on"
 allow_dead_links = true
 
-[needs.links.cr_computed_impact]
+[needs.types.change_request.links.cr_computed_impact]
 incoming = "impact_computed_by"
 outgoing = "reaches"
 allow_dead_links = true
 
-[needs.links.cr_potentially_affected]
+[needs.types.change_request.links.cr_potentially_affected]
 incoming = "potentially_affected_by"
 outgoing = "may_affect"
 allow_dead_links = true
 
-[needs.links.cr_impact_modify]
+[needs.types.change_request.links.cr_impact_modify]
 incoming = "impact_modified_by"
 outgoing = "modifies"
 allow_dead_links = true
 
-[needs.links.cr_impact_remove]
+[needs.types.change_request.links.cr_impact_remove]
 incoming = "impact_removed_by"
 outgoing = "removes"
 allow_dead_links = true
 
-[needs.links.cr_impact_excluded]
+[needs.types.change_request.links.cr_impact_excluded]
 incoming = "impact_excluded_by"
 outgoing = "excludes"
 allow_dead_links = true
@@ -862,6 +891,12 @@ comment_type = "python"
 [codelinks.projects.tests.analyse]
 get_oneline_needs = true
 get_need_id_refs = false
+# A test need may also be written as a MULTI-LINE block in a comment, with a body
+# in its own markup: `# @need[md] test: <title>`, its `:id:` and `:verifies:`
+# option lines, a blank comment line, the body, `# @endneed`. The two tests of
+# tests/isolation_monitoring/test_monitor.py are written that way; every other
+# test keeps its one-line marker, and both forms live side by side.
+get_multiline_needs = true
 
 # The one-line marker grammar: `# @<title>, <TEST_ID>, [<SWREQ_ID>]`. The third
 # field is NAMED `verifies` (a `list[str]` link) so the materialised `test` need
@@ -880,6 +915,16 @@ needs_fields = [
   ] },
   { name = "type", type = "str", default = "test" },
 ]
+
+# --- TEST REPORTS (sphinx-test-reports and ubCode's `[test_reports]`) ---
+# The committed JUnit run, read a second way: `specs/_global/test_run.rst` reads
+# `reports/junit/testresults.xml` with a `test-file` directive, one need per file,
+# suite and case, beside the `test_result` needs `tools/import_test_results.py`
+# writes from the same file. An empty table is enough: it gives ubCode, Sphinx (with
+# `sphinx_test_reports` in `extensions`) and the converter the `testfile` /
+# `testsuite` / `testcase` types and their fields. Additive for now; replacing the
+# importer with it is the next step.
+[test_reports]
 
 # --- AGENT RUNNER (consumed by `ubc agent run`) ---
 # `ubc agent run` spawns an AI runner to author the next-stage artefact. The
@@ -957,8 +1002,8 @@ orphan_exempt_types = ["user_story", "req", "arch", "swreq", "gap", "change_requ
 #
 # The vocabulary is therefore enforced where it actually works: `[needs.fields.status]`
 # rejects `draft2` as a schema violation in both `ubc schema validate` and the build,
-# and `status-present-on-spec-needs` in schemas.json requires a status on exactly the
-# six types that owe one. Revisit if ubc grows a type-scoped lifecycle.
+# and the six authored need types each declare `status` required in their own entry,
+# which the four derived types do not. Revisit if ubc grows a type-scoped lifecycle.
 
 # The diagram SYNTAX the runner authors any diagram in. `format` is the authoring
 # directive injected into the runner prompt ("author it as a `needuml` directive");
@@ -1245,6 +1290,61 @@ parent_fit = 1
 
 [quality.type_configs.decision.required]
 context_present = 1
+
+# --- BUILD: the site and the PDF from ubc itself (`ubc build html` / `ubc build pdf`, beta) ---
+# The same sources, built by ubc without Sphinx: an HTML site and a PDF, branded
+# like the furo site. Paths are relative to this file. `_static/bms-ubc.css` sets
+# the logo's blue as the site accent through the `--ubc-*` custom properties.
+# Run from the repository root:
+#   ubc build html docs -o docs/_build/ubc-html
+#   ubc build pdf  docs -o docs/_build/ubc.pdf
+[build.html]
+title = "BMS"
+logo = "_static/bms-logo.svg"
+favicon = "_static/bms-logo.svg"
+copyright = "2026, useblocks GmbH"
+announcement = "This site is built by <code>ubc build html</code> (beta), from the same sources as the Sphinx site."
+extra_css = ["_static/bms-ubc.css"]
+
+[[build.html.footer_icons]]
+name = "BMS on GitHub"
+url = "https://github.com/useblocks/demo-bms"
+html = """<svg xmlns="http://www.w3.org/2000/svg" width="1em" height="1em" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>"""
+
+[build.pdf.cover]
+logo = "_static/bms-logo.svg"
+subtitle = "Battery Management System — specification, code and evidence"
+author = "useblocks"
+lines = ["https://github.com/useblocks/demo-bms"]
+
+[build.pdf.theme.palette]
+brand = "#1f6feb"
+accent = "#ea580c"
+
+# The palette's names, painted onto the PDF's theme tokens (the same names as the
+# site's `--ubc-*` properties): headings' brand, links and notes in the logo's blue,
+# link underlines in the accent.
+[build.pdf.theme.colors]
+brand = "@brand"
+link = "@brand"
+note = "@brand"
+link-underline = "@accent"
+
+# The diagrams, drawn by PlantUML for both builders (bring your own renderer):
+# the three `needuml` component diagrams and, with `needflow = true`, the six
+# `needflow`s. `[needs] flow_engine = "graphviz"` above stays the Sphinx build's
+# engine; for ubc it is only the low-precedence default this key overrides.
+# ubc always runs PlantUML under its SANDBOX security profile; nothing here
+# relaxes it. PlantUML 1.2026.2 or newer is required.
+#
+# `plantuml` is looked up on PATH, as the Sphinx build already requires (conf.py),
+# and must be 1.2026.2 or newer: CI installs 1.2026.8 in the publish job; locally,
+# `brew upgrade plantuml` (homebrew's 1.2026.1 is too old, and the diagrams then
+# stay placeholders with a warning).
+[build.plantuml]
+enabled = true
+command = ["plantuml"]
+needflow = true
 
 # --- REPORTS AND INSIGHTS (consumed by `ubc report` / the VS Code Reports view) ---
 # A plain report is a `.html.j2` template rendered from the needs index; an

@@ -210,21 +210,24 @@ uv run python tools/import_gaps.py --check         # CI guard: fail if it is sta
 The specification describes more than one product. The pack chemistry is the
 axis: [docs/variants/nmc.json](docs/variants/nmc.json) is the default profile and
 [docs/variants/lfp.json](docs/variants/lfp.json) the alternative, wired through
-`[needs] variant_data_file` in [docs/ubproject.toml](docs/ubproject.toml) and exposed as
-`var.*`. [`REQ_CELL_VOLTAGE_LIMITS`](docs/specs/cell-protection/requirements.rst)
-is the one requirement that reads it: its limits are `:variant:` references
-resolved from the profile, its `chemistry` field is injected with
-`<{ var.pack.chemistry }>`, and an `.. if::` block on the same page only
-renders for the LFP profile. Nothing else in the graph depends on the variant,
-so the diff between the two builds is exactly that one need:
+the shared `[variants]` table (`data_file`) in [docs/ubproject.toml](docs/ubproject.toml),
+which ubCode, Sphinx-Needs and sphinx-mounts all read, and exposed as `var.*`.
+[`REQ_CELL_VOLTAGE_LIMITS`](docs/specs/cell-protection/requirements.rst) reads it:
+its limits are `:variant:` references resolved from the profile and its `chemistry`
+field is injected with `<{ var.pack.chemistry }>`. The same page carries an `.. if::`
+block for the LFP profile and a `.. choose::` block with one charging paragraph per
+chemistry, and the LFP build alone reads one more page,
+[`lfp_charging.rst`](docs/specs/cell-protection/lfp_charging.rst) with
+`REQ_LFP_CHARGE_TAPER` (`[[source.variant_sources]]`). So the diff between the two
+builds is that one changed need and one added:
 
 ```bash
-ubc script --path docs variant-diff   # ubc diff -c "needs.variant_data_file = 'variants/lfp.json'"
+ubc script --path docs variant-diff   # ubc diff -c "variants.data_file = 'variants/lfp.json'"
 ubc script --path docs needs:lfp      # the LFP graph as docs/needs.lfp.json
 ```
 
 To flip the **whole project** — the IDE, every command, the Sphinx build — swap
-the commented `variant_data_file` line in [docs/ubproject.toml](docs/ubproject.toml)
+the commented `data_file` line under `[variants]` in [docs/ubproject.toml](docs/ubproject.toml)
 instead; the extension re-indexes on save and the cell-protection page reads
 3.65 V. Two resolution rules to know (ubc 0.33): a path given with `-c` is
 resolved against the **working directory**, not the toml, and a variant data
@@ -233,10 +236,11 @@ empty — which is why the scripts above run in `docs/`. Sphinx is the other way
 round: `-D needs_variant_data_file=variants/lfp.json` resolves against the
 source directory, so it works from the repository root, and a wrong path fails
 the build loudly.
-Per-variant *file* selection (`[[source.variant_sources]]`) is deliberately not
-used: the Sphinx side honours it only with `sphinx-mounts` installed, and the
-`-W` publish must build the same document set as `ubc`. The implementation and
-verification arms in this repository are the NMC build.
+Per-variant *file* selection (`[[source.variant_sources]]`) is read by `ubc`
+natively and by Sphinx through `sphinx-mounts`, which `docs/conf.py` loads, so the
+`-W` publish builds the same document set as `ubc` (without it the NMC build would
+read the LFP page too). The implementation and verification arms in this
+repository are the NMC build.
 
 ubTrace gets every variant: `[ubtrace.variants]` in
 [docs/ubproject.toml](docs/ubproject.toml) lists each one with its data file and
@@ -298,7 +302,7 @@ The sources have a **second consumer**. `ubc build needs` compiles
 sources through Sphinx into the artefact that
 [upload_ubtrace.sh](upload_ubtrace.sh) ships to
 [team.useblocks.com](https://team.useblocks.com). Both sides produce the same
-205 needs, because neither side owns the data model: the need types, the link
+259 needs, because neither side owns the data model: the need types, the link
 types and the extra options are declared once in
 [docs/ubproject.toml](docs/ubproject.toml) and read from there by both — `needs_from_toml`
 for the needs, `src_trace_config_from_toml` for the code markers. There is no
@@ -380,7 +384,7 @@ instead of an exception.
 `ubc` runs in its free open-source mode — ubCode grants that to projects under an
 [OSI licence](https://opensource.org/licenses) in a *publicly reachable* Git repo,
 and it probes the remote to decide. Without it, `ubc` caps indexing at **5 files
-and 100 needs**; this project has 26 and 205, so the gates would fail with
+and 100 needs**; this project has 28 and 259, so the gates would fail with
 `exceeds maximum without license`. The workflow passes no licence credentials and
 none need to be configured. See the
 [licence docs](https://ubcode.useblocks.com/usage/ublicense.html). Note the runner
@@ -434,6 +438,13 @@ snapshot of one real pytest run, and
 uv run python tools/import_test_results.py            # regenerate the needs from the XML
 uv run python tools/import_test_results.py --check    # CI guard: fail if it is stale
 ```
+
+The same report is also read a second way, without an importer:
+[docs/specs/_global/test_run.rst](docs/specs/_global/test_run.rst) holds one
+`test-file` directive (sphinx-test-reports, and ubCode's `[test_reports]`), which
+turns the XML into one need per file, suite and case — 54 needs beside the 52
+`test_result` ones. Nothing links those cases to the `test` needs yet; replacing
+the importer with them is the next step.
 
 The mapping is deterministic, not fuzzy. Every test function carries a marker
 above it, so the pair *(test module, function name)* identifies exactly one
@@ -506,21 +517,14 @@ the report shows them as separate facts — the structural half says the rung is
 missing, the evidence half says no outcome reaches it. That is the distinction the
 page exists to draw.
 
-**One thing to know if you write your own report template.** A template *cannot
-walk links.* `ubc report` builds each need in the Jinja context from that need's
-scalar fields — `id`, `type`, `title`, `status`, `tags`, `doctype` and the
-declared `[[needs.extra_options]]`. Every link field (`satisfies`, `refines`,
-`verifies`, `results_for`, …) is **absent**, and incoming links are never
-materialised in `needs.json` at all. Reading `n.verifies` yields undefined, and
-the idiomatic `(n.verifies or [])` guard turns that into an empty list — so a
-link-based coverage template renders perfectly cleanly and reports **0 %
-everywhere**. That failure is silent; nothing errors.
-
-This project works around it by moving the answer from a link into a field:
-`tools/import_test_results.py` resolves `test → swreq → arch → req` from the spec
-sources and stamps the result on each generated `test_result` as `chain_reqs`.
-The template then reads a field, which it can see. Derived data, on a derived
-need, regenerated on every import — nothing hand-maintained.
+**One thing to know if you write your own report template.** A template has no
+graph to walk: `ubc report` gives each need its fields and its outgoing link ids,
+but not its back links, and no way to look a linked need up. So a coverage
+template that has to know which requirements a result reaches reads a field
+instead: `chain_reqs`, which both tools DERIVE from the links (a rule per need
+type in `docs/ubproject.toml`: the arch copies the ids of the reqs it satisfies,
+every rung below collects the rung above). Nothing stamps it and nothing
+hand-maintains it.
 
 An **insight** is the way around the whole problem: it declares Cypher queries
 that the engine runs over the graph before the template, so the template renders
@@ -556,7 +560,7 @@ absence of evidence rather than as a special case anyone had to write down.
 ### Three insights, three personas
 
 The coverage report above is a **plain** template, which is why it has to work
-around the link blindness with the `chain_reqs` field. An **insight** is the
+with the derived `chain_reqs` field. An **insight** is the
 other half of the feature: it declares its Cypher queries in `ubproject.toml`,
 the engine runs them over the needs graph before the template renders, and the
 template receives the traversals as `queries.<name>`. The report can finally
@@ -656,10 +660,11 @@ Once a gap is a need, it shows up everywhere the graph does — and it is **red*
   [the coverage report](#the-coverage-report);
 - in the ubTrace export, where the `gap_for` edge is traversable like any other.
 
-The five `gap_*` extra options (`gap_category`, `gap_link`, `gap_shortfall`,
-`gap_need_id`, `gap_need_type`) exist for the same reason `chain_reqs` does: a
-report template can read fields but cannot follow links, so the `gap_for` link and
-the `gap_need_id` field carry the same fact for two different consumers.
+The five `gap_*` fields exist for the same reason `chain_reqs` does: a report
+template reads fields. `gap_category`, `gap_link` and `gap_shortfall` are the
+gate's own findings, stamped by the importer; `gap_need_id` and `gap_need_type`
+are derived from the `gap_for` link by both tools, so the link and the fields
+carry one fact for two consumers.
 
 Three things about this arrangement are worth knowing before you demo it:
 

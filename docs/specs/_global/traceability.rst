@@ -151,8 +151,9 @@ Recorded outcomes
 ~~~~~~~~~~~~~~~~~
 
 ``test_result`` needs are imported from a committed JUnit snapshot, so these are
-the outcomes of one real run, not of this build. ``chain_reqs`` is the resolved
-``test -> swreq -> arch -> req`` roll-up each one carries as a field.
+the outcomes of one real run, not of this build. ``chain_reqs`` is the
+``test -> swreq -> arch -> req`` roll-up each one carries, a field derived from the
+links by the build itself.
 
 .. needtable::
    :types: test_result

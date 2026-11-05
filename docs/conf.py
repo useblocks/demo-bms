@@ -46,6 +46,8 @@ extensions = [
     "sphinx_needs",
     "sphinx_codelinks",  # materialises the one-line markers in src/ and tests/
     "sphinxcontrib.plantuml",  # renders the `.. needuml::` component diagrams
+    "sphinx_mounts",  # [[source.variant_sources]]: the LFP-only page is read in the LFP build alone
+    "sphinx_test_reports",  # the `test-file` page, specs/_global/test_run.rst
     "ubt_sphinx",  # the `ubtrace` builder
 ]
 
