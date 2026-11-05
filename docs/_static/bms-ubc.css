@@ -1,0 +1,30 @@
+/*
+ * BMS branding for the `ubc build html` site: the logo's blue as the accent,
+ * through the documented `--ubc-*` custom properties only. Linked by
+ * `[build.html] extra_css` in ubproject.toml; the Sphinx (furo) site does not
+ * link it.
+ */
+:root {
+  --ubc-brand: #1f6feb;
+  --ubc-link: #1f6feb;
+  --ubc-note: #1f6feb;
+}
+
+@media not print {
+  :root[data-theme="dark"] {
+    --ubc-brand: #58a6ff;
+    --ubc-link: #58a6ff;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ubc-brand: #58a6ff;
+      --ubc-link: #58a6ff;
+    }
+  }
+}
+
+/* The logo is a 64 px square mark; keep it a mark beside the title. */
+.ub-brand-logo {
+  max-width: 3.5rem;
+}

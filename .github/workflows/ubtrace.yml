@@ -70,12 +70,13 @@ jobs:
   # graphviz and no PlantUML — it is the cheap, fast half of the pipeline and it
   # fails before the expensive build starts.
   #
-  # What it is actually defending. This project carries two IMPORTED artefacts,
-  # `test_result` and `gap`, and each is a three-link chain:
+  # What it is actually defending. This project carries one IMPORTED artefact,
+  # `gap`, as a three-link chain:
   #
   #     reality -> committed snapshot -> generated RST -> published artefact
   #
-  # The importers' `--check` modes have always been able to gate the second link
+  # (The test evidence has no generated link: `test_run.rst` reads the committed
+  # JUnit report itself.) The importer's `--check` mode gates the second link
   # (snapshot -> RST). The FIRST link had nothing gating it until this job: nothing
   # in CI could tell whether `docs/reports/gaps/gaps.json` still matched what the engine
   # actually reports, because there was no `ubc` on the runner. That is exactly the
@@ -103,7 +104,7 @@ jobs:
           version: ${{ env.UBC_VERSION }}
 
       - name: Set up Python
-        # Only for the two importers, which are standard-library-only by design.
+        # Only for the gaps importer, which is standard-library-only by design.
         uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
         with:
           python-version-file: ".python-version"
@@ -152,13 +153,10 @@ jobs:
           fi
           echo "gap snapshot is current"
 
-      - name: The generated specs still match their snapshots
+      - name: The generated gaps page still matches its snapshot
         id: generated
-        # The second link of both chains. These are the same `--check` modes the
-        # README documents; they were never wired into CI.
-        run: |
-          python3 tools/import_gaps.py --check
-          python3 tools/import_test_results.py --check
+        # The second link of the chain: the `--check` mode the README documents.
+        run: python3 tools/import_gaps.py --check
 
       - name: Report the trace matrix and the substance gate
         # INFORMATIONAL, never blocking, and both for the same reason: this repo is a
@@ -194,7 +192,7 @@ jobs:
             --ubc-version "$UBC_VERSION" \
             --result "Sources parse=${{ steps.parse.outcome }}" \
             --result "Gap snapshot matches reality=${{ steps.snapshot.outcome }}" \
-            --result "Generated specs match snapshots=${{ steps.generated.outcome }}" \
+            --result "Generated gaps page matches snapshot=${{ steps.generated.outcome }}" \
             --gaps "$RUNNER_TEMP/gaps.json" \
             --trace "$RUNNER_TEMP/trace.json" \
             --verdicts "$RUNNER_TEMP/verdicts.json" \
@@ -359,23 +357,19 @@ jobs:
       - name: Build the specification PDF
         id: pdf
         # `ubc build pdf` runs NO Sphinx and no LaTeX — it typesets the same index
-        # `ubc check` and the editor use — so it needs none of the uv / graphviz /
-        # PlantUML apparatus installed above, and it cannot be folded into the
-        # sphinx-build below. It is ALPHA: the layout and the options may still move
+        # `ubc check` and the editor use — so it needs none of the uv / graphviz
+        # apparatus installed above, only the PlantUML installed above, which
+        # `[build.plantuml]` names (`plantuml` on PATH) to draw the nine diagrams;
+        # and it cannot be folded into the sphinx-build below. It is ALPHA: the layout and the options may still move
         # between releases, which is another reason it is a run attachment and not
         # something published to team.useblocks.com.
         #
         # Placed BEFORE the ubTrace build on purpose. The two are independent, and in
         # this order a sphinx failure still leaves a PDF for the upload to attach.
         #
-        # THERE IS NO `--deny` OVERRIDE HERE, deliberately. The builder does not
-        # typeset `needflow` or `needuml` yet and draws each as a labelled placeholder
-        # box plus a warning — 8 of them in this project — which under the default
-        # `--deny warning` bar exits 1 on a perfectly healthy graph. `--deny error`
-        # would fix that by retiring the warning bar altogether; instead
-        # docs/ubproject.toml ignores exactly those two findings, so the bar here
-        # stays at `warning` and any other build warning still fails this step.
-        # `-w` prints the detail of whatever is left.
+        # THERE IS NO `--deny` OVERRIDE HERE, deliberately: the bar stays at
+        # `warning`, so a diagram PlantUML cannot draw (a placeholder) or any other
+        # build warning fails this step. `-w` prints the detail.
         env:
           PDF_NAME: ${{ steps.vars.outputs.pdf_name }}
         run: ubc build pdf docs -w -o "_build/pdf/${PDF_NAME}.pdf"
@@ -405,7 +399,9 @@ jobs:
         #
         # The variants come from `[ubtrace.variants]` in docs/ubproject.toml: one
         # build per entry, each in its own root, with the entry's data file and
-        # dimensions passed as `-D` flags. One line per variant: its name, then
+        # dimensions passed as `-D` flags. `needs_variant_data_file` is Sphinx's
+        # per-build switch and wins over the `[variants]` table the project
+        # declares (sphinx-needs documents it so), so each entry names its file. One line per variant: its name, then
         # the `-D` values, which contain no spaces. Read on fd 3 so sphinx-build
         # cannot consume the list from stdin.
         run: |

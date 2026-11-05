@@ -26,6 +26,8 @@ package = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+# xunit1 also writes each case's `file` and `line`, which the test-report needs carry.
+junit_family = "xunit1"
 
 # --- ubTRACE EXPORT ------------------------------------------------------------
 # The ubTrace export is a SECOND consumer of the same sources: `ubc build needs`
@@ -41,8 +43,10 @@ testpaths = ["tests"]
 [project.optional-dependencies]
 ubtrace = [
     "sphinx>=8.0,<9",
-    "sphinx-needs>=8.3,<9",     # reads [needs] from ubproject.toml
-    "sphinx-codelinks>=1.2",    # reads [codelinks] from ubproject.toml
+    "sphinx-needs>=9.1,<10",    # reads [needs] from ubproject.toml: types as tables, fields and links per type, derived fields
+    "sphinx-codelinks>=2.0.1",  # reads [codelinks] from ubproject.toml; multi-line need blocks
+    "sphinx-test-reports>=3.0.1",  # reads [test_reports]: the `test-file` page specs/_global/test_run.rst
+    "sphinx-mounts>=0.3",       # reads [[source.variant_sources]]: the LFP-only page
     "myst-parser>=4.0",         # the Markdown (MyST) stream, specs/isolation-monitoring/
     "furo>=2024.8",
     "ubt-sphinx==0.8.1",        # the `ubtrace` builder itself

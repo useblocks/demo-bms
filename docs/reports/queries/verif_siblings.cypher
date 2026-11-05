@@ -11,5 +11,5 @@ RETURN a.id AS arch, sib.id AS swreq, sib.title AS title,
        COUNT { (sib)<-[:implements]-() } AS impls,
        COUNT { (sib)<-[:verifies]-() } AS tests,
        COUNT { (sib)<-[:verifies]-()<-[:results_for]-() } AS results,
-       COUNT { (sib)<-[:verifies]-()<-[:results_for]-(tr) WHERE tr.outcome <> 'passed' } AS failing
+       COUNT { (sib)<-[:verifies]-()<-[:results_for]-(tr) WHERE tr.result <> 'passed' } AS failing
 ORDER BY swreq

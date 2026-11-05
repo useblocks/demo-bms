@@ -46,6 +46,8 @@ extensions = [
     "sphinx_needs",
     "sphinx_codelinks",  # materialises the one-line markers in src/ and tests/
     "sphinxcontrib.plantuml",  # renders the `.. needuml::` component diagrams
+    "sphinx_mounts",  # [[source.variant_sources]]: the LFP-only page is read in the LFP build alone
+    "sphinx_test_reports",  # the `test-file` page, specs/_global/test_run.rst
     "ubt_sphinx",  # the `ubtrace` builder
 ]
 
@@ -76,9 +78,9 @@ needs_show_link_title = False
 
 # NOTE: do NOT set `needs_json_remove_defaults = True` here.
 #
-# It looks like the right fix for the Elasticsearch problem described in
-# tools/import_test_results.py (the run label written as "" on every need that
-# has no test run), and it does close that hole — but it opens a worse one.
+# It looks like the right fix for the Elasticsearch problem described at
+# `[needs.fields.test_run_label]` in ubproject.toml (a field written as "" on every
+# need that does not use it), and it does close that hole — but it opens a worse one.
 # ubt-coverage discovers custom link types PER NEED, by looking for a
 # `<name>_back` key on the same need whose outgoing links it is counting
 # (`discover_custom_link_bases` in rust/ubt-coverage/src/needs.rs). Removing
@@ -90,7 +92,7 @@ needs_show_link_title = False
 #
 #   remove_defaults OFF: 206 edges, orphan_both = 0 for every type
 #   remove_defaults ON : 123 edges, orphan_both = 5 decisions, 5 risks,
-#                        50 test_results, 1 req
+#                        50 test results, 1 req
 #
 # The 83 lost edges are exactly the custom outgoing ones (19 traces_to,
 # 50 results_for, 7 affects, 7 mitigates). The graph/tree stays correct either
@@ -99,7 +101,7 @@ needs_show_link_title = False
 #
 # So the empty string is dealt with at the source instead: the run label is
 # formatted so Elasticsearch never types the field as a date. See
-# `_run_label` in tools/import_test_results.py.
+# `_test_run_label` in ../conftest.py.
 
 # `needs.deprecated` USED TO BE SUPPRESSED HERE and no longer needs to be. It was
 # emitted because sphinx-needs mapped `[[needs.extra_options]]` onto its own
