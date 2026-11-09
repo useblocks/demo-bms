@@ -1,0 +1,35 @@
+{
+  "agent": "pi",
+  "axes": {
+    "atomicity": {
+      "reason": "One obligation - detect an over-800 A current within 1 ms. The requirement that the report be independent of the periodic current measurement is a constraint on how that single detection is delivered, not an obligation that could ship without it.",
+      "score": 2
+    },
+    "comprehensibility": {
+      "reason": "Self-contained: threshold, magnitude, latency and the independence condition are all in the requirement, and 'contactor control' is a domain entity named as the receiver, no different from its sibling REQ_PACK_OVERCURRENT naming the contactors.",
+      "score": 2
+    },
+    "feasibility": {
+      "reason": "A comparator or hardware line off the shunt amplifier meets a 1 ms latency comfortably, and the requirement deliberately does not demand it of the periodic sampling path. Nothing else stated contradicts it - the 350 A / 100 ms condition in the cell-protection stream is a slower, separately-parented duty, not a conflicting one.",
+      "score": 2
+    },
+    "parent_fit": {
+      "reason": "Addresses the protection arm of US_CURRENT_SENSING directly: the story's 'a short circuit in the drive train opens the contactors instead of tripping the pack fuse' becomes a bounded detection latency (1 ms) reported on a path independent of the periodic measurement, which is what makes a fast cutoff possible.",
+      "score": 2
+    },
+    "unambiguity": {
+      "reason": "One reading. The title's 'above 800 A' is narrowed by the body's 'whose magnitude exceeds 800 A', so the direction question is settled, and 'within 1 ms of it first exceeding that value' fixes the timing reference.",
+      "score": 2
+    },
+    "verifiability": {
+      "reason": "Fully testable: inject a current step across 800 A in both directions, timestamp the overcurrent report, and confirm it arrives within 1 ms; blocking the periodic measurement path tests the independence clause. Threshold, magnitude and latency are all in the requirement.",
+      "score": 2
+    }
+  },
+  "criteria": "requirement",
+  "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
+  "need": "REQ_OVERCURRENT_DETECTION",
+  "reviewed_fingerprint": "d2632135c4941b6d8e75a7bf01abfb3df9ac986b5564cdb6d4c365e844d49312",
+  "schema": 2,
+  "summary": "The strongest of the nine: one obligation, fully quantified, independently observable and implementable as a hardware overcurrent line. Full marks on all six axes (12/12). One observation outside the axes: the project now offers two different overcurrent notions - 800 A within 1 ms here, 350 A persisted 100 ms in REQ_PACK_OVERCURRENT - and no need states how they relate."
+}

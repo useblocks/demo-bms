@@ -47,6 +47,23 @@ project was authored.
 
 .. toctree::
    :maxdepth: 2
+   :caption: Current sensing (make or buy still open)
+
+   specs/current-sensing/user_stories
+   specs/current-sensing/requirements
+   specs/current-sensing/architecture
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Cell voltage acquisition (supplier arm)
+
+   specs/cell-voltage-acquisition/user_stories
+   specs/cell-voltage-acquisition/requirements
+   specs/cell-voltage-acquisition/architecture
+   specs/cell-voltage-acquisition/supplier_specs
+
+.. toctree::
+   :maxdepth: 2
    :caption: Isolation monitoring (Markdown)
 
    specs/isolation-monitoring/user_stories

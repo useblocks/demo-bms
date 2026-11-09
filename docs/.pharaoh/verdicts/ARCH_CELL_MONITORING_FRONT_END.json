@@ -1,0 +1,32 @@
+{
+  "agent": "pi",
+  "axes": {
+    "completeness": {
+      "reason": "Every obligation is engaged but at a shallow level within the element's own text: the accuracy and cadence parents are covered only by 'measures the voltage of up to 16 series cells per module' - no error bound, no voltage span, no conversion interval - those numbers sit in the supplier specifications rather than here. The open-wire parent's second half is not covered at all: the element 'runs the open-wire diagnosis' but says nothing about the cell's voltage being reported invalid rather than as a measured value, which is the externally visible half of REQ_OPEN_WIRE_DETECTION.",
+      "score": 1,
+      "suggestion": "Carry the committed figures into the element (accuracy, voltage span, conversion interval, open-wire flag latency) with a pointer to the supplier specifications, and state the invalid-value contract: what the front end puts on the daisy-chain link for a faulted input, so the 'reported as invalid, not as a value' obligation is visible at this level."
+    },
+    "consistency": {
+      "reason": "Sole element on both of its parents, so there is no same-parent sibling to contradict. It also sits compatibly beside ARCH_CELL_MEASUREMENT_ACQ in the cell-protection stream: that element owns the cyclic software readout from the daisy-chained front-end devices, while this one is the device chain itself, so the two are complementary rather than overlapping.",
+      "score": 2
+    },
+    "design_clarity": {
+      "reason": "Names a concrete choice, not a goal: a bought front end covering up to 16 series cells per module, per-input open-wire diagnosis, results carried over an isolated daisy-chain link, with its behaviour pinned by this stream's supplier specifications (SUP_AFE_MEASUREMENT_ACCURACY and SUP_AFE_OPEN_WIRE_DIAGNOSIS fix the 1.5 mV over -40 degC to 105 degC, 5 ms conversion and 50 ms flag). The partition and interface are decisions, and the numbers live one hop downstream by design.",
+      "score": 2
+    },
+    "implementability": {
+      "reason": "A single, clearly bounded bought component: 16 cells per module, one isolated daisy-chain interface, per-input diagnosis, and behaviour fixed by named supplier specifications - realisable without further design judgement at the specification level.",
+      "score": 2
+    },
+    "parent_fit": {
+      "reason": "Addresses both parents substantively and at the right boundary: it is the acquisition element that measures every cell voltage (REQ_CELL_VOLTAGE_ACCURACY) and the element that diagnoses a broken sense input (REQ_OPEN_WIRE_DETECTION), and it correctly leaves the invalid-value and protection reactions to the consumers.",
+      "score": 2
+    }
+  },
+  "criteria": "arch",
+  "criteria_fingerprint": "48337dfa0b294b1882460a938500fa11eb3e8fd873d5cd9afa31ff1f7923f377",
+  "need": "ARCH_CELL_MONITORING_FRONT_END",
+  "reviewed_fingerprint": "28aeb04f16c8572ffe1c72702a2f03a0ce8228bf590aa9277aba8432a2658e10",
+  "schema": 2,
+  "summary": "The cleanest of the three architecture elements: one bounded bought part, a stated interface and supplier specifications pinning the numbers. Its only real shortfall is that the accuracy/cadence obligations are delegated rather than restated, and the invalid-value half of the open-wire requirement is not addressed inside the element. 9/10."
+}

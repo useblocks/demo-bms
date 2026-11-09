@@ -1,0 +1,36 @@
+{
+  "agent": "pi",
+  "axes": {
+    "atomicity": {
+      "reason": "The 'and' conjoins detection with what the measurement channel must then publish. Detection and the invalid-marking are separable duties - this project itself puts them in different places, since the cell-protection stream tags cell readings invalid in one element and diagnoses the sense input in another - so the clause could ship as its own requirement.",
+      "score": 1,
+      "suggestion": "Keep this requirement to the diagnosis alone ('detect an open cell sense input within 100 ms and flag that input') and let the invalid-value contract be stated wherever the voltage values are defined, or split it into two requirements tied to the same parent."
+    },
+    "comprehensibility": {
+      "reason": "Self-contained and intelligible on its own: the fault condition, its timing and its reporting consequence are all stated in the requirement, in domain terms (cell, sense wire, measurement input).",
+      "score": 2
+    },
+    "feasibility": {
+      "reason": "Open-wire diagnosis by bias current or pull-up on each sense input is standard front-end capability - the stream's own supplier part commits to 50 ms - and 100 ms leaves margin against it.",
+      "score": 2
+    },
+    "parent_fit": {
+      "reason": "Addresses the fault-reporting arm of US_CELL_VOLTAGE_ACQUISITION directly: the story's 'a broken sense wire is reported as a fault instead of as a plausible-looking voltage' becomes a 100 ms detection bound plus the instruction to mark that cell's reading invalid.",
+      "score": 2
+    },
+    "unambiguity": {
+      "reason": "One reading: a per-cell open-circuit condition on the sense input, a bounded detection time, and an explicit choice of invalid over a measured value, so the 'plausible-looking voltage' failure mode is closed off.",
+      "score": 2
+    },
+    "verifiability": {
+      "reason": "Concrete and testable: break one sense input while the pack is live, measure the time until the fault appears, and confirm the affected cell's reported voltage is flagged invalid rather than a number. The 100 ms bound and the per-cell scope are both stated.",
+      "score": 2
+    }
+  },
+  "criteria": "requirement",
+  "criteria_fingerprint": "941b3ec6f6e1c2e4311154b93f3652b2180f8965a70193734339da329202a428",
+  "need": "REQ_OPEN_WIRE_DETECTION",
+  "reviewed_fingerprint": "a958e769a25c1f22c931c8defaf15ee32f12b0e83794860372215bd9d859520e",
+  "schema": 2,
+  "summary": "Precise and clearly observable, with a detection bound the bought part can comfortably meet. It bundles the detection with the invalid-value contract, and those two duties already live in different elements elsewhere in the project. 10/12."
+}

@@ -1,0 +1,34 @@
+{
+  "agent": "pi",
+  "axes": {
+    "completeness": {
+      "reason": "The overcurrent arm is fully covered, but the accuracy parent is covered only by assertion: 'calibrated, temperature-compensated' carries no numeric counterpart to REQ_CURRENT_ACCURACY's 0.5 % of reading plus 0.1 A, no statement of the +-500 A span, and no allocated share of the error budget between the sensing element and whatever else touches the current path.",
+      "score": 1,
+      "suggestion": "Add the accuracy this element commits to and its slice of the system budget (e.g. 'its total error stays within 0.4 % of reading plus 0.08 A over +-500 A and the pack temperature range, leaving the remainder to the wiring and the counter'), so the requirement's numeric obligation has a design-level counterpart."
+    },
+    "consistency": {
+      "reason": "Cleanly reconciled with its sibling on REQ_CURRENT_ACCURACY: it takes measurement and calibration, ARCH_CHARGE_COUNTER takes the integration and says so explicitly ('It owns the integration, not the measurement'), and the overcurrent line is stated as separate from the periodic value rather than competing with it.",
+      "score": 2
+    },
+    "design_clarity": {
+      "reason": "The delivered behaviour is specified (calibrated temperature-compensated value every 10 ms, plus a hardware overcurrent line within 1 ms of 800 A), but the choice that decides what this element physically is, is left open in the element's own text: 'Whether it is a shunt with in-house measurement firmware or a bought current-sensor module is the open make-or-buy decision of this stream'. A design element that names both of its mutually exclusive implementations has not made its central choice.",
+      "score": 1,
+      "suggestion": "Move the make-or-buy fork out of the element and into a decision record, then state the choice the element commits to (e.g. 'a shunt on the negative main busbar with in-house measurement firmware', or 'a purchased current-sensor module, its behaviour pinned by the supplier specifications' as the cell-voltage stream does)."
+    },
+    "implementability": {
+      "reason": "Realisable either way, but two boundaries need a judgement call during implementation. First, build-vs-buy is unresolved, so an implementer cannot tell whether this element is a part to integrate or firmware to write. Second, the project now has two owners of pack-current acquisition at different rates - this element at 10 ms and ARCH_CURRENT_PATH_MONITOR 'sampled at 1 ms' - and this element does not say which of them feeds the calibration, nor whether its 10 ms value is the same signal the protection stream's shunt amplifier already produces.",
+      "score": 1,
+      "suggestion": "Resolve the make-or-buy fork, and state the relationship to the existing 1 ms pack-current acquisition: one shunt/amplifier chain with one sampling rate, or two paths with a stated reason. Name the physical input (shunt on the negative main busbar) and the rate the calibrated value is derived from."
+    },
+    "parent_fit": {
+      "reason": "Substantively owns a distinct part of both parents: for REQ_CURRENT_ACCURACY it is the measurement/calibration element that produces a temperature-compensated current value, and for REQ_OVERCURRENT_DETECTION it raises a separate hardware line within 1 ms - i.e. exactly the 'independently of the periodic current measurement' path the requirement demands.",
+      "score": 2
+    }
+  },
+  "criteria": "arch",
+  "criteria_fingerprint": "48337dfa0b294b1882460a938500fa11eb3e8fd873d5cd9afa31ff1f7923f377",
+  "need": "ARCH_PACK_CURRENT_SENSOR",
+  "reviewed_fingerprint": "bf98fbffc16f3b0e2be0a1c1a8cd7bed530b556277ef6bdbce27755929e81662",
+  "schema": 2,
+  "summary": "The measurement and fast-trip duties are well separated from the counting element, but the element still holds its own central make-or-buy choice open, commits to no accuracy figure against the 0.5 % requirement, and does not reconcile its 10 ms calibrated value with the 1 ms pack-current acquisition that ARCH_CURRENT_PATH_MONITOR already owns in the cell-protection stream (a different parent, so it scores on implementability rather than on consistency). 7/10."
+}

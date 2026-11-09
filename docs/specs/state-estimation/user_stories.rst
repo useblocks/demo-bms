@@ -4,6 +4,7 @@ State Estimation — User Stories
 .. user_story:: Report a trustworthy remaining charge and remaining capacity for the pack
    :id: US_STATE_ESTIMATION
    :status: draft
+   :sourcing: inhouse
 
    As a fleet operator, I want the battery pack to report how much energy it has
    left and how much of its original capacity it has lost, so that I can trust

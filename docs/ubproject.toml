@@ -405,7 +405,7 @@ default = ""
 nullable = false
 schema = { type = "string", pattern = "^$|^([A-Z]+_[A-Z][A-Z0-9_]*|CR_[0-9]{8}_[0-9A-F]{4})$" }
 
-# The eleven directives declared under `[[needs.types]]` below. Adding a type there
+# The fourteen directives declared under `[[needs.types]]` below. Adding a type there
 # means adding it here — the duplication is the price of letting a report group
 # gaps by V-model level from a plain field.
 [needs.fields.gap_need_type]
@@ -423,6 +423,9 @@ schema = { type = "string", enum = [
   "test_result",
   "risk",
   "decision",
+  "supplier_spec",
+  "acceptance_test",
+  "integration_test",
   "gap",
   "change_request",
 ] }
@@ -471,6 +474,22 @@ nullable = false
 parse_variants = true
 schema = { type = "string", enum = ["", "NMC", "LFP"] }
 
+# --- SOURCING (the answer to the workflow choice, see `[workflow.choice]`) ---
+# Whether a capability is built in-house or bought as a supplier component is a
+# human decision taken once per user story, after its architecture is drafted. The
+# answer is stored on the user story itself, never in this file.
+#
+# Declared globally as a plain nullable string (the workflow choice requires that
+# shape: no default, no dynamic functions, no variants), then narrowed to the
+# option ids on `user_story` under `[[needs.types]]` below. Unset is the decision
+# boundary: `ubc agent next` asks the question instead of guessing.
+[needs.fields.sourcing]
+description = "How a user story's capability is delivered: built in-house or bought as a supplier component."
+nullable = true
+parse_dynamic_functions = false
+parse_variants = false
+schema = { type = "string" }
+
 # BATTERY MANAGEMENT SYSTEM (BMS) — everything-as-code, MINIMIZED V-MODEL.
 #
 # The mandatory spine is exactly six stages:
@@ -515,6 +534,11 @@ title = "User Story"
 prefix = "US_"
 color="#FDE68A"
 style="usecase"
+
+# The workflow choice's answer, narrowed to the option ids of `[workflow.choice]`.
+[needs.types.fields.sourcing]
+description = "Human-selected delivery route for this capability: inhouse or supplier."
+schema = { enum = ["inhouse", "supplier"] }
 
 [[needs.types]]
 directive = "req"
@@ -594,6 +618,33 @@ title = "Decision"
 prefix = "DEC_"
 color="#D1D5DB"
 style="frame"
+
+# --- SUPPLIER ARM and JOIN (see `[workflow.choice]`) ---
+# A capability bought from a supplier skips the software arm. Its architecture
+# element is pinned down by a supplier specification (what the bought part shall
+# deliver at its interface), which an incoming-inspection acceptance test checks.
+[[needs.types]]
+directive = "supplier_spec"
+title = "Supplier Specification"
+prefix = "SUP_"
+color="#FCA5A5"
+style="card"
+
+[[needs.types]]
+directive = "acceptance_test"
+title = "Acceptance Test"
+prefix = "ATEST_"
+color="#A7F3D0"
+style="hexagon"
+
+# The JOIN: whichever arm a story took, an integration test validates its
+# requirements on the assembled pack.
+[[needs.types]]
+directive = "integration_test"
+title = "Integration Test"
+prefix = "ITEST_"
+color="#6EE7B7"
+style="hexagon"
 
 # The WORKFLOW-GATE need: one structural gap that `ubc agent gaps` reports, imported
 # from a committed JSON snapshot rather than authored by hand. It is the same idea as
@@ -705,6 +756,24 @@ outgoing = "motivates"
 [needs.links.mitigates]
 incoming = "mitigated_by"
 outgoing = "mitigates"
+
+# The supplier arm's links. A `supplier_spec` `specifies` the `arch` element it
+# buys, and an `acceptance_test` `accepts` the `supplier_spec` it inspects. Own
+# link names rather than reusing `refines` / `verifies`, so a trace query never
+# mixes the two arms.
+[needs.links.specifies]
+incoming = "specified_by"
+outgoing = "specifies"
+
+[needs.links.accepts]
+incoming = "accepted_by"
+outgoing = "accepts"
+
+# The join's link: an `integration_test` `validates` the `req` it exercises on the
+# assembled pack.
+[needs.links.validates]
+incoming = "validated_by"
+outgoing = "validates"
 
 # The gap link: a `gap` need's outgoing `gap_for` points at the need the gate
 # attributed the gap to, and that need's incoming `gaps` is what puts a red node
@@ -983,6 +1052,36 @@ granularity = "per-need"
 path = "specs/_global/change_requests/{id}.rst"
 scope = "global"
 
+# --- WORKFLOW CHOICE (make or buy, per user story) ---
+# Once a story's architecture is drafted, a person decides how the capability is
+# delivered, and only that arm of the V is worked for the story:
+#
+#     archs --(sourcing?)--> inhouse:  swreqs -> code -> tests ---------+
+#                       \--> supplier: supplier_specs -> acceptance_tests --+--> integration
+#
+# The answer is the `sourcing` field on the user story (`ubc agent choose sourcing
+# <option> --id <US_ID>`, or the Workflows panel in VS Code). Until it is set,
+# `ubc agent next` for that story returns `choice_required` with the question.
+# `integration` is the join: it waits for the chosen arm's terminal stage only.
+[workflow.choice]
+after = "archs"
+field = "sourcing"
+id = "sourcing"
+join = "integration"
+question = "Is this capability built in-house or bought as a supplier component?"
+
+[[workflow.choice.options]]
+id = "inhouse"
+label = "Build in-house (software requirements, code, tests)"
+stages = ["swreqs", "code", "tests"]
+terminal = "tests"
+
+[[workflow.choice.options]]
+id = "supplier"
+label = "Buy from a supplier (supplier specification, acceptance tests)"
+stages = ["supplier_specs", "acceptance_tests"]
+terminal = "acceptance_tests"
+
 # The route names `.rst`; the `isolation-monitoring` stream is authored in
 # Markdown and is complete, so no stage ever resolves an authoring route into it.
 [[workflow.stages]]
@@ -1112,6 +1211,66 @@ direction = "both"
 link = "verifies"
 min = 1
 up = "swreq"
+
+# --- SUPPLIER ARM (the `supplier` option of `[workflow.choice]`) ---
+# Every architecture element of a bought capability is pinned down by at least one
+# supplier specification, and every supplier specification is checked by at least
+# one acceptance test. Symmetric to `swreqs` -> `tests` on the in-house arm.
+[[workflow.stages]]
+authoring = "Write one supplier specification per architecture element: what the bought component shall deliver at its interface (signals, accuracy, timing, diagnostics, safety level), in terms a supplier can quote against and an incoming inspection can check."
+depends_on = ["archs"]
+id = "supplier_specs"
+produces = "supplier_spec"
+
+[workflow.stages.route]
+granularity = "per-root"
+path = "specs/{stream}/supplier_specs.rst"
+scope = "stream"
+
+[[workflow.stages.trace]]
+direction = "both"
+link = "specifies"
+min = 1
+up = "arch"
+
+[[workflow.stages]]
+authoring = "Write one acceptance test per supplier specification: the incoming-inspection check that a delivered component meets it, with the measurement, the pass criterion and the sample size."
+depends_on = ["supplier_specs"]
+id = "acceptance_tests"
+produces = "acceptance_test"
+
+[workflow.stages.route]
+granularity = "per-root"
+path = "specs/{stream}/acceptance_tests.rst"
+scope = "stream"
+
+[[workflow.stages.trace]]
+direction = "both"
+link = "accepts"
+min = 1
+up = "supplier_spec"
+
+# --- INTEGRATION STAGE (the join of `[workflow.choice]`) ---
+# Whichever arm a story took, it ends in integration tests on the assembled pack.
+# `depends_on` names BOTH arms' terminals; the engine waits only for the one the
+# story chose. `outgoing` like `risks`: every integration test must validate a req,
+# but a req does not owe one.
+[[workflow.stages]]
+authoring = "Write the integration tests that validate the story's requirements on the assembled pack: one per requirement whose behaviour is only observable with the real hardware, the real supplier part, or both."
+depends_on = ["tests", "acceptance_tests"]
+id = "integration"
+produces = "integration_test"
+
+[workflow.stages.route]
+granularity = "per-root"
+path = "specs/{stream}/integration_tests.rst"
+scope = "stream"
+
+[[workflow.stages.trace]]
+direction = "outgoing"
+link = "validates"
+min = 1
+up = "req"
 
 # --- TEST RESULTS STAGE (optional, IMPORTED not authored) ---
 # A `test_result` need `results_for` the `test` need whose run it records. This

@@ -1,0 +1,34 @@
+{
+  "agent": "pi",
+  "axes": {
+    "naming_clarity": {
+      "reason": "The capability sentences are stakeholder vocabulary (cell voltage, diagnostic read-out, sense wire, balancing, state estimation), but 'battery-monitoring front end', 'the supplier arm of the workflow', 'in-house software arm' and 'acceptance tests' are internal engineering/process terms that a fleet operator could not confirm.",
+      "score": 1,
+      "suggestion": "Replace the process vocabulary with the capability in plain terms, or delete that paragraph: an operator cares that every cell is measured and a bad sensor is reported, not which workflow arm produced the part."
+    },
+    "no_mechanism_leak": {
+      "reason": "The body commits to the implementation mechanism: cell voltages 'are measured by a supplier's battery-monitoring front end', and the stream 'follows the supplier arm of the workflow (supplier specifications, then acceptance tests)'. A named front-end component plus the internal process arm it routes through is a specific technology/process choice, not a user-visible capability statement.",
+      "score": 0,
+      "suggestion": "Remove the third paragraph from the story body: the sourcing route already lives in the `:sourcing: supplier` attribute and in the downstream supplier specifications. Keep the body to the capability and how a workshop observes it."
+    },
+    "parent_fit": {
+      "reason": "user_story is the root stage of this project V and carries no outgoing parent link, so per the pack scoring guide this axis is fully met by default.",
+      "score": 2
+    },
+    "single_user_capability": {
+      "reason": "Centred on one capability - a trustworthy picture of every cell voltage - with open-sense-wire fault reporting folded in as a closely related aspect: the story's own justification is that a broken wire otherwise reads as a plausible voltage. They are still separable (a front end can measure accurately without open-wire diagnosis, and the stream derives two independent requirements from it), so this is a facet that could arguably ship on its own rather than a single obligation.",
+      "score": 1,
+      "suggestion": "Either narrow the title and body to reliable cell-voltage measurement and let the open-wire fault be its own story, or state the fault report as part of the same capability explicitly ('a measurement the system can trust, including knowing when a cell cannot be measured')."
+    },
+    "user_observable": {
+      "reason": "Both effects are named from outside the software: a workshop diagnostic read-out showing every cell voltage, and a broken sense wire surfacing as a fault instead of a plausible-looking voltage.",
+      "score": 2
+    }
+  },
+  "criteria": "feat",
+  "criteria_fingerprint": "bb61c1a1cf63adcf67ee69adf932c3812909a595fa4b3037b66f097932231afe",
+  "need": "US_CELL_VOLTAGE_ACQUISITION",
+  "reviewed_fingerprint": "48a80405420307170cf036f4d742531cfba827c570d2ec7aeb0d784d4e704a6f",
+  "schema": 2,
+  "summary": "Genuinely user-observable and mostly in stakeholder vocabulary, but the closing paragraph names the bought front-end component and the internal V-model route (supplier arm, supplier specifications, acceptance tests), and open-wire fault reporting sits alongside the measurement capability as an arguably separable facet. 6/10."
+}

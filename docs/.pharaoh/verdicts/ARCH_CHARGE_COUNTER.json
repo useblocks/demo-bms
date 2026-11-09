@@ -1,0 +1,34 @@
+{
+  "agent": "pi",
+  "axes": {
+    "completeness": {
+      "reason": "REQ_CURRENT_ACCURACY's quantitative obligation that lands here - drift in counted charge over an 8 hour shift staying inside the budget - has no counterpart in the element: no allocated share of the 0.5 % budget, no statement of how accumulator resolution or sample loss contributes, and no handling for a tick with no valid current value.",
+      "score": 1,
+      "suggestion": "State the drift this element is allowed to contribute over 8 hours and the resolution that keeps it there, and what the accumulator does on an invalid or missing current sample."
+    },
+    "consistency": {
+      "reason": "Consistent with its sibling on REQ_CURRENT_ACCURACY: the split is explicit and non-overlapping - the sensor measures and calibrates, this element integrates and says it does not measure.",
+      "score": 2
+    },
+    "design_clarity": {
+      "reason": "Names the responsibility and its boundary ('It owns the integration, not the measurement', baseline since the last full charge) but not the choices that make the integration what it is: no integration rule, no tick or sample cadence, no accumulator unit or width, no invalidity or gap policy. 'Integrates the calibrated pack current over time' is close to restating the goal rather than recording a decision, whereas the counterpart element in the state-estimation stream names trapezoidal integration on a fixed 10 ms tick into a 64-bit fixed-point ampere-second accumulator.",
+      "score": 1,
+      "suggestion": "Name the mechanism: integration rule (trapezoidal vs rectangular), the tick, the accumulator unit and width, the full-charge baseline reset, and what the boundary to state estimation actually is (a charge in ampere-seconds, a delta, a throughput window)."
+    },
+    "implementability": {
+      "reason": "Realisable as one component, but the input contract is loose enough to need an implementation judgement call: the sensor upstream publishes a calibrated value 'every 10 ms' while this element integrates 'the calibrated pack current' with no tick stated, so it is undecided whether each tick consumes the latest 10 ms value, a mean of several, or the 1 ms samples the cell-protection stream acquires; stale or repeated samples are also unaddressed.",
+      "score": 1,
+      "suggestion": "Fix the integration tick and say exactly which current value each tick consumes, plus what the counter does when the upstream value is missing or unchanged for a tick."
+    },
+    "parent_fit": {
+      "reason": "Owns a distinct and explicitly bounded part of REQ_CURRENT_ACCURACY: the counting arm. The requirement is argued from 'charge counting over an 8 hour shift stays within the state of charge budget', and this element is where that counting happens, handing the accumulated charge to state estimation.",
+      "score": 2
+    }
+  },
+  "criteria": "arch",
+  "criteria_fingerprint": "48337dfa0b294b1882460a938500fa11eb3e8fd873d5cd9afa31ff1f7923f377",
+  "need": "ARCH_CHARGE_COUNTER",
+  "reviewed_fingerprint": "2e242f86ce786f59c76aae37b7fc8666455079c53dc5c43ff7891575f4eb395a",
+  "schema": 2,
+  "summary": "The ownership boundary against the sensor is honest and clean, but the element is thin where it matters: the integration mechanism is not chosen, the error budget it serves is not engaged, and the input cadence is undefined. Note outside the axes: ARCH_COULOMB_COUNTER in the state-estimation stream already states that it 'owns the charge integral of the pack' - this element claims the same responsibility, which is a genuine conflict of ownership in the project even though the two do not share a parent requirement. 7/10."
+}
