@@ -1322,3 +1322,6 @@ risks = { file = "queries/health_risks.cypher" }
 gaps = { file = "queries/health_gaps.cypher" }
 failing = { file = "queries/health_failing.cypher" }
 variant = { file = "queries/health_variant.cypher" }
+
+
+[codelinks_coverage]
