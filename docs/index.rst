@@ -47,7 +47,7 @@ project was authored.
 
 .. toctree::
    :maxdepth: 2
-   :caption: Current sensing (make or buy still open)
+   :caption: Current sensing (one make-or-buy decision open)
 
    specs/current-sensing/user_stories
    specs/current-sensing/requirements

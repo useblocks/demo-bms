@@ -474,17 +474,18 @@ nullable = false
 parse_variants = true
 schema = { type = "string", enum = ["", "NMC", "LFP"] }
 
-# --- SOURCING (the answer to the workflow choice, see `[workflow.choice]`) ---
-# Whether a capability is built in-house or bought as a supplier component is a
-# human decision taken once per user story, after its architecture is drafted. The
-# answer is stored on the user story itself, never in this file.
+# --- SOURCING (the answer to the `sourcing` workflow decision, see `[[workflow.decisions]]`) ---
+# Whether an architecture element is built in-house or bought as a supplier
+# component is a human decision taken per element, once it is drafted. The answer
+# is stored on the arch need itself, never in this file, so one stream can mix
+# both: a bought front end next to an in-house estimator.
 #
-# Declared globally as a plain nullable string (the workflow choice requires that
-# shape: no default, no dynamic functions, no variants), then narrowed to the
-# option ids on `user_story` under `[[needs.types]]` below. Unset is the decision
-# boundary: `ubc agent next` asks the question instead of guessing.
+# Declared globally as a plain nullable string (a decision field must be nullable,
+# with no default and no derive rule), then narrowed to the decision's values on
+# `arch` under `[[needs.types]]` below. Unset is the decision boundary: once the
+# element's downstream work is due, `ubc agent next` asks instead of guessing.
 [needs.fields.sourcing]
-description = "How a user story's capability is delivered: built in-house or bought as a supplier component."
+description = "How an architecture element is delivered: built in-house or bought as a supplier component."
 nullable = true
 parse_dynamic_functions = false
 parse_variants = false
@@ -535,11 +536,6 @@ prefix = "US_"
 color="#FDE68A"
 style="usecase"
 
-# The workflow choice's answer, narrowed to the option ids of `[workflow.choice]`.
-[needs.types.fields.sourcing]
-description = "Human-selected delivery route for this capability: inhouse or supplier."
-schema = { enum = ["inhouse", "supplier"] }
-
 [[needs.types]]
 directive = "req"
 title = "Requirement"
@@ -553,6 +549,13 @@ title = "Architecture"
 prefix = "ARCH_"
 color="#818CF8"
 style="node"
+
+# The `sourcing` decision's answer. The enum is the decision's option list: the
+# Workflows panel offers one button per value, and every value must gate at least
+# one conditional trace (`select`) in `[workflow]`.
+[needs.types.fields.sourcing]
+description = "Human-selected delivery route for this architecture element: inhouse or supplier."
+schema = { enum = ["inhouse", "supplier"] }
 
 # The BOTTOM of the decomposition arm. A software requirement states the testable
 # behaviour of ONE architecture element: what the component shall do, across which
@@ -619,7 +622,7 @@ prefix = "DEC_"
 color="#D1D5DB"
 style="frame"
 
-# --- SUPPLIER ARM and JOIN (see `[workflow.choice]`) ---
+# --- SUPPLIER ARM and JOIN (see `[[workflow.decisions]]`) ---
 # A capability bought from a supplier skips the software arm. Its architecture
 # element is pinned down by a supplier specification (what the bought part shall
 # deliver at its interface), which an incoming-inspection acceptance test checks.
@@ -1052,35 +1055,32 @@ granularity = "per-need"
 path = "specs/_global/change_requests/{id}.rst"
 scope = "global"
 
-# --- WORKFLOW CHOICE (make or buy, per user story) ---
-# Once a story's architecture is drafted, a person decides how the capability is
-# delivered, and only that arm of the V is worked for the story:
+# --- WORKFLOW DECISION (make or buy, per architecture element) ---
+# Once an architecture element is drafted, a person decides how it is delivered,
+# and only that arm of the V is owed for the element:
 #
-#     archs --(sourcing?)--> inhouse:  swreqs -> code -> tests ---------+
-#                       \--> supplier: supplier_specs -> acceptance_tests --+--> integration
+#     arch --(sourcing = inhouse)-->  swreqs -> code -> tests ---------+
+#          \--(sourcing = supplier)--> supplier_specs -> acceptance_tests --+--> integration
 #
-# The answer is the `sourcing` field on the user story (`ubc agent choose sourcing
-# <option> --id <US_ID>`, or the Workflows panel in VS Code). Until it is set,
-# `ubc agent next` for that story returns `choice_required` with the question.
-# `integration` is the join: it waits for the chosen arm's terminal stage only.
-[workflow.choice]
-after = "archs"
+# The answer is the `sourcing` field on the arch need (`ubc agent choose sourcing
+# <value> --id <ARCH_ID>`, or the Workflows panel in VS Code). There is no branch
+# block: the two entry traces carry `select = { sourcing = "..." }`, so `swreqs`
+# owes a `refines` only to in-house elements and `supplier_specs` owes a
+# `specifies` only to bought ones. Until an element's answer is set, the
+# conditional work under it waits with the question. A stage with no element
+# selecting it is `not_applicable` for the stream, so `integration` joins both arms
+# with a plain `depends_on`. The conditional traces are also generated into the
+# schema rules `ubc check` runs, so `schemas.json` carries no unconditional
+# arch-refines coverage rule.
+[[workflow.decisions]]
 field = "sourcing"
 id = "sourcing"
-join = "integration"
-question = "Is this capability built in-house or bought as a supplier component?"
+need_type = "arch"
+question = "Is this architecture element built in-house or bought as a supplier component?"
 
-[[workflow.choice.options]]
-id = "inhouse"
-label = "Build in-house (software requirements, code, tests)"
-stages = ["swreqs", "code", "tests"]
-terminal = "tests"
-
-[[workflow.choice.options]]
-id = "supplier"
-label = "Buy from a supplier (supplier specification, acceptance tests)"
-stages = ["supplier_specs", "acceptance_tests"]
-terminal = "acceptance_tests"
+[workflow.decisions.labels]
+inhouse = "Build in-house"
+supplier = "Buy from a supplier"
 
 # The route names `.rst`; the `isolation-monitoring` stream is authored in
 # Markdown and is complete, so no stage ever resolves an authoring route into it.
@@ -1155,6 +1155,11 @@ scope = "stream"
 direction = "both"
 link = "refines"
 min = 1
+# The two authored schemas.json rules for this edge (backward, then forward). The
+# binding keeps their id, severity and message and adds the `sourcing = inhouse`
+# condition, so `ubc check` and `ubc agent next` judge the same obligation.
+schema_rules = ["coverage-arch-refines-back", "trace-swreq-refines"]
+select = { sourcing = "inhouse" }
 up = "arch"
 
 # --- CODE STAGE (the implementation arm) ---
@@ -1212,7 +1217,7 @@ link = "verifies"
 min = 1
 up = "swreq"
 
-# --- SUPPLIER ARM (the `supplier` option of `[workflow.choice]`) ---
+# --- SUPPLIER ARM (`sourcing = "supplier"`, see `[[workflow.decisions]]`) ---
 # Every architecture element of a bought capability is pinned down by at least one
 # supplier specification, and every supplier specification is checked by at least
 # one acceptance test. Symmetric to `swreqs` -> `tests` on the in-house arm.
@@ -1231,6 +1236,7 @@ scope = "stream"
 direction = "both"
 link = "specifies"
 min = 1
+select = { sourcing = "supplier" }
 up = "arch"
 
 [[workflow.stages]]
@@ -1250,10 +1256,10 @@ link = "accepts"
 min = 1
 up = "supplier_spec"
 
-# --- INTEGRATION STAGE (the join of `[workflow.choice]`) ---
-# Whichever arm a story took, it ends in integration tests on the assembled pack.
-# `depends_on` names BOTH arms' terminals; the engine waits only for the one the
-# story chose. `outgoing` like `risks`: every integration test must validate a req,
+# --- INTEGRATION STAGE (the join of both sourcing arms) ---
+# Whichever arm each element took, the story ends in integration tests on the
+# assembled pack. `depends_on` names BOTH arms' terminals; an arm no element chose
+# is `not_applicable` and does not hold the join. `outgoing` like `risks`: every integration test must validate a req,
 # but a req does not owe one.
 [[workflow.stages]]
 authoring = "Write the integration tests that validate the story's requirements on the assembled pack: one per requirement whose behaviour is only observable with the real hardware, the real supplier part, or both."

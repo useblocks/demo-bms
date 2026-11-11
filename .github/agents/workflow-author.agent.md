@@ -60,6 +60,10 @@ authored yet", since a fully populated project reports it too. `done` says no
 stage of this stream is actionable, so check `$.open_streams` before calling the
 project finished, because `done` is vacuous for an anchor no stage produces.
 `blocked` says a dependency stage is unmet, so resolve that stage first.
+`choice_required` means a decision-bearing need blocks the next stage.
+Read its entry in `choices[]`, ask the user to select one of that entry's exact
+`options[].id` values, then save it with
+`ubc agent choose <decision-id> <value> --id <NEED_ID>` before rereading `next`.
 
 ## How you work
 
@@ -77,8 +81,14 @@ project finished, because `done` is vacuous for an anchor no stage produces.
    line carrying NEITHER prefix is not a resolved action, so report it verbatim
    and stop.
    On the `NO ACTION (` branch the text under that line names the one action
-   the state calls for, and that action is a separate invocation of this agent
-   rather than part of this one. Report what it named, and stop. On the
+   the state calls for. For `choice_required`, read the pending decision in
+   `choices[]`, ask the user to choose one of its exact `options[].id`
+   values, and never infer or select an answer yourself. Wait for the answer,
+   run `ubc agent choose <decision-id> <value> --id <NEED_ID> -p <project path>`,
+   then reread `ubc agent next --id <NEED_ID> -p <project path>` before doing
+   any work. If the answer is not one of the listed values, ask again and do
+   not write config. For
+   every other `NO ACTION` state, report the named action and stop. On the
    `=== WORKING DIRECTORY ===` branch, run every command the instruction gives
    you FROM the directory that second line names, and resolve every relative
    path AGAINST it.

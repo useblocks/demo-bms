@@ -20,6 +20,7 @@ Elements
    :id: ARCH_CHARGE_COUNTER
    :status: draft
    :satisfies: REQ_CURRENT_ACCURACY
+   :sourcing: inhouse
 
    The Charge Counter element integrates the calibrated pack current over time
    into the charge moved since the last full charge, and hands it to the state

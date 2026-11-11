@@ -54,9 +54,12 @@ next pass re-authors the same behaviours under fresh ids.
 
 Build the needs index first, so the RST the recovery skill just wrote is
 materialized into a `needs.json` you can read. Change into the project
-directory (`cd <project path>`) and run `ubc build needs . -o <tmp>/needs.json`,
+directory (`cd <project path>`) and run
+`ubc build needs . --deny none -o <tmp>/needs.json`,
 where `<tmp>` is a new temporary directory outside the repository (for example
-from `mktemp -d`). Run it from inside the project because `ubc build needs`
+from `mktemp -d`). `--deny none` because this build is only to read the index,
+and a project being recovered still carries warnings that the default bar would
+fail on. Run it from inside the project because `ubc build needs`
 finds the project by searching upward from `.` for its `ubproject.toml`, so
 from outside the project it finds another project or none. `-o` writes the
 index to `<tmp>` and nowhere else, so the build leaves nothing in the

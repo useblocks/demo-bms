@@ -8,6 +8,7 @@ Elements
    :id: ARCH_CELL_MONITORING_FRONT_END
    :status: draft
    :satisfies: REQ_CELL_VOLTAGE_ACCURACY, REQ_OPEN_WIRE_DETECTION
+   :sourcing: supplier
 
    The Cell Monitoring Front End element measures the voltage of up to 16
    series cells per module, runs the open-wire diagnosis on every sense input,

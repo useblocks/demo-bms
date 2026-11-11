@@ -6,6 +6,7 @@
 :id: ARCH_ISOLATION_MONITOR
 :status: draft
 :satisfies: REQ_ISOLATION_FAULT
+:sourcing: inhouse
 
 The Isolation Monitor element owns the isolation picture of the pack. Once per
 measurement cycle it takes the isolation resistance from the insulation

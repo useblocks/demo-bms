@@ -87,10 +87,11 @@ same decision. Read it when you want the state rather than the instruction.
   `$.stage.route.resolved_path` (falling back to `$.stage.route.path` when no
   stream resolved), and `$.stage.skill`. The output field names are not the
   `ubproject.toml` key names, so read the JSON paths.
+- `$.arm` is the action the engine chose: `author`, `review`, `refix` (re-author
+  the needs whose fresh verdict fails), `fix_diagnostics`, or `none` when no
+  stage is owed work. `ubc agent prompt` acts on the same choice.
 - `$.stage.gates_to_pass` says what is still open. A synthetic `review` token
-  means the artefact is authored and the pending action is to review it. When
-  `review` sits alongside other gates, the structural gates close first.
-  A `diagnostics` token means `ubc` reports a diagnostic on one of the stage's
+  means the artefact is authored and is held for review. A `diagnostics` token means `ubc` reports a diagnostic on one of the stage's
   needs, or on a need that failed to build (a code marker that failed to parse,
   or a field value that cannot be converted). `$.stage.diagnostics` lists at most
   50 findings and `$.stage.diagnostics_omitted` counts the rest: fix the listed
@@ -114,5 +115,8 @@ same decision. Read it when you want the state rather than the instruction.
   - `id_not_found`: the `--id` is not a need in the graph. Fix the id.
   - `stage_not_found`: the `--stage` is not a stage of this workflow. Fix the
     stage name.
-- The last two reasons come with `$.ok` false and a non-zero exit. Never read
-  either as progress.
+  - `unknown_gate: <name>`: the stage carries a gate this `ubc` has no action
+    for, so it names none. Report it verbatim and stop; do not pick an action
+    yourself.
+- The last three reasons come with `$.ok` false and a non-zero exit. Never read
+  any of them as progress.

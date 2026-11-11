@@ -44,9 +44,15 @@ you install yourself. With no path given, use the `ubc` on your PATH.
    and stop.
    On the `NO ACTION (` branch there is nothing to author or review. The
    parenthesised token names the state, and the text under it names the one
-   action that state calls for. That action may itself be a command to run, and
-   running it is your NEXT step, not part of this one. Nothing is authored
-   within THIS step. Report what the text named, and stop.
+   action that state calls for. For `choice_required`, read the pending decision
+   in `choices[]`, ask the user to choose exactly one of its `options[].id`
+   values, and never infer or select an answer yourself. Wait for the user's
+   answer, then run `ubc agent choose <decision-id> <value> --id <NEED_ID> -p <project path>`
+   and read `ubc agent next --id <NEED_ID> -p <project path>` again before doing
+   any work. If the answer is not one of the listed values, ask again and do not
+   save an answer. For every
+   other `NO ACTION` state, follow the named action and stop;
+   nothing is authored within this step.
    On the `=== WORKING DIRECTORY ===` branch, run every command the instruction
    gives you FROM the directory that second line names, and resolve every
    relative path it gives you AGAINST that same directory.
@@ -136,6 +142,7 @@ Before ending, run this hard-stop check:
 only when your harness reads the JSON of
 `ubc agent next --id <need_id> -p <project path>` directly instead.
 
+`$.arm` is always present and names the one row below that applies.
 `$.stage` is one object or `null`, never an array. `id`, `produces`, `skill`,
 `review`, `route`, `gates_to_pass` and `verdicts_dir` are ALWAYS present, so
 test their VALUE (`== null`, or `""` for `$.stage.verdicts_dir`, whose resolved value
@@ -153,28 +160,23 @@ skill as `$.stage.review`.
 
 | payload | the one action |
 | --- | --- |
-| `$.stage` is `null`, `$.reason` is `"empty"` | The workflow configuration derives no stages. Define `[[workflow.stages]]`. NOT "author the first artefact": a fully populated project reports `empty` too. |
-| `$.stage` is `null`, `$.reason` is `"done"` | No open stage remains on THIS stream. Every call here carries `--id`, and an ANCHORED call reports `done`, never `empty`, so `done` also covers a project that derives no stages at all. Before reporting a green finish, run the whole-graph census `ubc agent status -p <project path>`: if it lists NO stages, define `[[workflow.stages]]` instead. A non-empty `$.open_streams` means other roots still carry gaps, so report those roots and STOP. Resuming one of them is the NEXT step, run as `ubc agent prompt --id <root> -p <project path>`. |
-| `$.stage` is `null`, `$.reason` is `"gaps"` | The stream carries gaps that NO workflow stage owns, because no stage produces those needs' type. `$.unattributed_gaps` lists them, each with the `gap` record and the `gate` it fails. No stage clears them, so authoring is not the answer: close each one on the need itself (answer a clarification marker in the need body, add a missing link to it), or declare a `[[workflow.stages]]` entry producing that type. Never read this as `done`. |
-| `$.stage` is `null`, `$.reason` is `"blocked"` | Resolve the dependency stage first. Inspect the stream with `ubc agent gaps --scope <anchor_id> -p <project path>` and the whole graph with `ubc agent status -p <project path>`. |
-| `$.ok` is `false`, or a non-zero exit | Fix the id or the stage name. Do NOT infer progress. |
-| `$.stage` is set, and `$.stage.gates_to_pass` holds `"diagnostics"` | FIX the findings in `$.stage.diagnostics`, do NOT author or review. `$.stage.diagnostics` lists at most 50 findings and `$.stage.diagnostics_omitted` counts the rest, so fix the listed ones and re-run `next` for the next batch. Each entry names the finding's `path` and `line`, its code in `link`, its `message`, and the need in `id` (for a need that failed to build, such as a code marker that failed to parse, `id` is the file). Edit the need, its option or the code marker in place, and never delete a need to silence a finding. Then run `ubc check` until none of them remain. If a fix needs a value or a decision you cannot take from the need, its links or the code (an owner, a safety level, which of two needs keeps a duplicate id), stop and ask the user; never make one up to clear the gate. A finding that is intended is the user's call: stop and ask them to allow its code under `[workflow.diagnostics]` or to ignore it under `[lint]`. |
-| `$.stage` is set, `$.stage.gates_to_pass` does not hold `"diagnostics"`, and `$.stage.gates_to_pass` is empty OR holds any entry other than `"review"` | AUTHOR, structural gates first. Invoke the skill named by `$.stage.skill`, however your harness loads skills, and hand it `$.stage.route.resolved_path`, `$.stage.id_prefix`, `$.stage.authoring` and `$.stage.gate.link`, each when the payload carries it, because the authoring skills are told NOT to re-discover the project. Hand it the new need's `:status:` too: `$.stage.default_status`, or `draft` when the payload carries no such key. The skills ask for the status they were TOLD to open the need in, and you are the only thing telling them on this route. Copy the trace link field name from `$.stage.gate.link` verbatim, never a synonym. A `null` `$.stage.skill` names no skill: author from the payload's own route and gate, and invent no skill name. |
-| `$.stage` is set, `$.stage.gates_to_pass` is NON-EMPTY, every entry is `"review"`, and `$.stage.review_needs` is non-empty | REVIEW exactly the ids it lists, do NOT author. Their content fingerprints are in `$.stage.fingerprints`, and step 4 above already carries the submit rules for this JSON route, `$.stage.review_brief.submit_command` among them. |
-| `$.stage` is set, `$.stage.gates_to_pass` is NON-EMPTY, every entry is `"review"`, and `$.stage.review_needs` is absent or empty | The verdicts exist and are FAILING. RE-AUTHOR those needs. Their ids are in `$.stage.review_brief.fresh_skipped` while the verdicts are still fresh, and in `$.stage.review_brief.review_needs` once the need changed after it failed. Each id's verdict under `$.stage.review_brief.verdicts_dir` says why, in the `reason` and optional `suggestion` on each entry of its `axes` map, plus an optional top-level `summary`. Re-authoring invokes the same skill as the AUTHOR row, so hand it the same facts, `$.stage.default_status` (or `draft`) among them: this stage's payload carries that key exactly as an authoring stage's does, and the skill asks for the status whether it is writing the need for the first time or rewriting it. |
+| `$.arm` is `"none"`, `$.reason` is `"empty"` | The workflow configuration derives no stages. Define `[[workflow.stages]]`. NOT "author the first artefact": a fully populated project reports `empty` too. |
+| `$.arm` is `"none"`, `$.reason` is `"done"` | No open stage remains on THIS stream. Every call here carries `--id`, and an ANCHORED call reports `done`, never `empty`, so `done` also covers a project that derives no stages at all. Before reporting a green finish, run the whole-graph census `ubc agent status -p <project path>`: if it lists NO stages, define `[[workflow.stages]]` instead. A non-empty `$.open_streams` means other roots still carry gaps, so report those roots and STOP. Resuming one of them is the NEXT step, run as `ubc agent prompt --id <root> -p <project path>`. |
+| `$.arm` is `"none"`, `$.reason` is `"gaps"` | The stream carries gaps that NO workflow stage owns, because no stage produces those needs' type. `$.unattributed_gaps` lists them, each with the `gap` record and the `gate` it fails. No stage clears them, so authoring is not the answer: close each one on the need itself (answer a clarification marker in the need body, add a missing link to it), or declare a `[[workflow.stages]]` entry producing that type. Never read this as `done`. |
+| `$.arm` is `"none"`, `$.reason` is `"blocked"` | Resolve the dependency stage first. Inspect the stream with `ubc agent gaps --scope <anchor_id> -p <project path>` and the whole graph with `ubc agent status -p <project path>`. |
+| `$.stage` is `null`, `$.reason` is `"choice_required"` | Find the pending decision in `$.choices[]`; ask the user to select one of its exact `options[].id` values. Persist it with `ubc agent choose <decision-id> <value> --id <NEED_ID> -p <project path>`, then read `next --id <NEED_ID>` again before proceeding. |
+| `$.decision_refusal` is present | Stop and report the typed refusal. Do not infer a decision or continue past invalid ownership or an unresolved answer. |
+| `$.ok` is `false`, or a non-zero exit | Do NOT infer progress. Report the refusal or reason verbatim and stop. For `unknown_gate: <name>`, report that reason and stop. Otherwise fix the rejected id or stage name. |
+| `$.arm` is `"fix_diagnostics"` | FIX the findings in `$.stage.diagnostics`, do NOT author or review. `$.stage.diagnostics` lists at most 50 findings and `$.stage.diagnostics_omitted` counts the rest, so fix the listed ones and re-run `next` for the next batch. Each entry names the finding's `path` and `line`, its code in `link`, its `message`, and the need in `id` (for a need that failed to build, such as a code marker that failed to parse, `id` is the file). Edit the need, its option or the code marker in place, and never delete a need to silence a finding. Then run `ubc check` until none of them remain. If a fix needs a value or a decision you cannot take from the need, its links or the code (an owner, a safety level, which of two needs keeps a duplicate id), stop and ask the user; never make one up to clear the gate. A finding that is intended is the user's call: stop and ask them to allow its code under `[workflow.diagnostics]` or to ignore it under `[lint]`. |
+| `$.arm` is `"author"` | AUTHOR, structural gates first. Invoke the skill named by `$.stage.skill`, however your harness loads skills, and hand it `$.stage.route.resolved_path`, `$.stage.id_prefix`, `$.stage.authoring` and `$.stage.gate.link`, each when the payload carries it, because the authoring skills are told NOT to re-discover the project. Hand it the new need's `:status:` too: `$.stage.default_status`, or `draft` when the payload carries no such key. The skills ask for the status they were TOLD to open the need in, and you are the only thing telling them on this route. Copy the trace link field name from `$.stage.gate.link` verbatim, never a synonym. A `null` `$.stage.skill` names no skill: author from the payload's own route and gate, and invent no skill name. |
+| `$.arm` is `"review"` | REVIEW exactly the ids `$.stage.review_needs` lists, do NOT author. Their content fingerprints are in `$.stage.fingerprints`, and step 4 above already carries the submit rules for this JSON route, `$.stage.review_brief.submit_command` among them. |
+| `$.arm` is `"refix"` | The verdicts exist and are FAILING. RE-AUTHOR those needs. Their ids are in `$.stage.review_brief.fresh_skipped` while the verdicts are still fresh, and in `$.stage.review_brief.review_needs` once the need changed after it failed. Each id's verdict under `$.stage.review_brief.verdicts_dir` says why, in the `reason` and optional `suggestion` on each entry of its `axes` map, plus an optional top-level `summary`. Re-authoring invokes the same skill as the AUTHOR row, so hand it the same facts, `$.stage.default_status` (or `draft`) among them: this stage's payload carries that key exactly as an authoring stage's does, and the skill asks for the status whether it is writing the need for the first time or rewriting it. |
 
-An EMPTY `$.stage.gates_to_pass` is an AUTHOR payload. The engine enters its
-review arm only when that list BOTH carries `review` and holds nothing else,
-so "every entry is `review`" is vacuously true for an empty list and is no
-review signal on its own.
-
-Once a payload meets the review conditions, `$.stage.review_needs` alone
-decides WHICH of the last two rows applies. It is the only list the engine
-builds by EXCLUDING a failing need, which is what separates reviewing from
-fixing. It never replaces the `$.stage.gates_to_pass` guard those rows state,
-it only splits them. Take the one action the matching row names, then rejoin
-the steps above at the independent review. The table yields exactly one action
-and never chains into a second stage.
+`$.arm` is the engine's own choice, the same one `ubc agent prompt` acts on,
+so read it and never re-derive it from `$.stage.gates_to_pass`,
+`$.stage.review_needs` or the verdicts. Take the one action the matching row
+names, then rejoin the steps above at the independent review. The table yields
+exactly one action and never chains into a second stage.
 
 ## Notes
 

@@ -15,6 +15,8 @@ Current Sensing — User Stories
    short circuit in the drive train opens the contactors instead of tripping
    the pack fuse.
 
-   This stream is left at the make-or-buy decision on purpose: its architecture
-   is drafted, and whether the current sensor is built in-house or bought as a
-   supplier module is still open, so the workflow asks for the choice.
+   This stream is left half-way through its make-or-buy decisions on purpose.
+   The decision is taken per architecture element: the Charge Counter is built
+   in-house, so its software requirements are owed, while whether the Pack
+   Current Sensor is built in-house or bought as a supplier module is still
+   open, so the workflow asks for that element's answer.

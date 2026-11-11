@@ -29,6 +29,7 @@ Elements
    :id: ARCH_THERMAL_STATE_EVALUATOR
    :status: draft
    :satisfies: REQ_COOLING_REQUEST, REQ_HEATING_REQUEST, REQ_CELL_TEMP_SPREAD
+   :sourcing: inhouse
 
    The Thermal State Evaluator element owns the thermal picture of the pack. Once
    per 100 ms cycle it reduces the valid cell temperatures to three figures —
@@ -42,6 +43,7 @@ Elements
    :id: ARCH_COOLANT_ACTUATOR_IF
    :status: draft
    :satisfies: REQ_COOLING_REQUEST, REQ_HEATING_REQUEST, REQ_THERMAL_ACTUATOR_FAILSAFE
+   :sourcing: inhouse
 
    The Coolant Actuator Interface element owns the conversation with the coolant
    pump and the pack heater. It forwards the evaluator's request as a setpoint
@@ -54,6 +56,7 @@ Elements
    :id: ARCH_POWER_LIMIT_CALCULATOR
    :status: draft
    :satisfies: REQ_POWER_DERATING, REQ_THERMAL_ACTUATOR_FAILSAFE
+   :sourcing: inhouse
 
    The Thermal Power Limit Calculator element owns the permitted discharge power
    the vehicle sees. It computes the temperature-driven limit as a linear ramp
