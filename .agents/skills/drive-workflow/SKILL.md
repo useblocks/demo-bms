@@ -39,9 +39,11 @@ you install yourself. With no path given, use the `ubc` on your PATH.
 2. EMPTY stdout means the verb printed only an error, so READ that error and
    fix what it names. Otherwise branch on the PREFIX of the FIRST line.
    `NO ACTION (` is the stop signal. `=== WORKING DIRECTORY ===` means there IS
-   an action, and the line after it names the resolved project root. A first
-   line carrying NEITHER prefix is not a resolved action, so report it verbatim
-   and stop.
+   an action, and the line after it names the resolved project root.
+   `STOP (unreadable_sources)` means ubc could not read one or more sources, so
+   the needs they define are missing from the graph. A first line carrying NONE
+   of those three prefixes is not a resolved action, so report it verbatim and
+   stop.
    On the `NO ACTION (` branch there is nothing to author or review. The
    parenthesised token names the state, and the text under it names the one
    action that state calls for. For `choice_required`, read the pending decision
@@ -50,9 +52,20 @@ you install yourself. With no path given, use the `ubc` on your PATH.
    answer, then run `ubc agent choose <decision-id> <value> --id <NEED_ID> -p <project path>`
    and read `ubc agent next --id <NEED_ID> -p <project path>` again before doing
    any work. If the answer is not one of the listed values, ask again and do not
-   save an answer. For every
-   other `NO ACTION` state, follow the named action and stop;
-   nothing is authored within this step.
+   save an answer. For every other `NO ACTION` state, follow the named action.
+   That action may itself be a command to run, and running it is your NEXT step,
+   not part of this one. Nothing is authored within THIS step. Report what the
+   text named, and stop.
+   On the `STOP (unreadable_sources)` branch, do EXACTLY what the text says:
+   fix each source it lists as its fix lines say (re-save a file that is not
+   UTF-8 as UTF-8 without changing its content, for an include the file the
+   message names; a needs.json fetched from a URL is fixed where it is
+   published, or its source removed; a file that cannot be read at all is
+   restored or removed), run `ubc check` until it reports none of them, then
+   run `ubc agent prompt` again. Never author, review or rewrite a
+   need while this branch is present: the design an instruction would order
+   written may already be on the unreadable page, and writing it again
+   duplicates it.
    On the `=== WORKING DIRECTORY ===` branch, run every command the instruction
    gives you FROM the directory that second line names, and resolve every
    relative path it gives you AGAINST that same directory.
@@ -133,6 +146,11 @@ Before ending, run this hard-stop check:
   does not read verdicts.
   The authoritative advance condition is a fresh passing verdict plus the final
   `next` read.
+- Could ubc read every source? If a first line was `STOP (unreadable_sources)`,
+  a source could not be read: a page, an include target, a codelinks source or
+  a needs.json that is not UTF-8, or a file that cannot be read at all. Fix it
+  as the STOP text says (re-save a local file as UTF-8), never re-author its
+  needs.
 - Did I avoid starting the next stage? If no, stop immediately.
 - Did I report the next stage name and return control to the user? If no, do it now.
 
@@ -166,6 +184,7 @@ skill as `$.stage.review`.
 | `$.arm` is `"none"`, `$.reason` is `"blocked"` | Resolve the dependency stage first. Inspect the stream with `ubc agent gaps --scope <anchor_id> -p <project path>` and the whole graph with `ubc agent status -p <project path>`. |
 | `$.stage` is `null`, `$.reason` is `"choice_required"` | Find the pending decision in `$.choices[]`; ask the user to select one of its exact `options[].id` values. Persist it with `ubc agent choose <decision-id> <value> --id <NEED_ID> -p <project path>`, then read `next --id <NEED_ID>` again before proceeding. |
 | `$.decision_refusal` is present | Stop and report the typed refusal. Do not infer a decision or continue past invalid ownership or an unresolved answer. |
+| `$.reason` is `"unreadable_sources"` | STOP. ubc could not read the files `$.unreadable_sources` lists, each with its `path`, `line`, `code` and `message`, so the needs they define are missing from the graph. Fix each one: re-save a file that is not UTF-8 as UTF-8 without changing its content (for an include, the file the message names); an entry with a `url` is a needs.json fetched from that URL, fixed where it is published or its source removed from the project; a `read_error` with a `null` line is a file that cannot be read at all, restored or removed. Then run `ubc check` until it reports none of them, and re-run `next`. Never author, review or rewrite a need until then: the design the graph seems to lack may be on the unreadable page. |
 | `$.ok` is `false`, or a non-zero exit | Do NOT infer progress. Report the refusal or reason verbatim and stop. For `unknown_gate: <name>`, report that reason and stop. Otherwise fix the rejected id or stage name. |
 | `$.arm` is `"fix_diagnostics"` | FIX the findings in `$.stage.diagnostics`, do NOT author or review. `$.stage.diagnostics` lists at most 50 findings and `$.stage.diagnostics_omitted` counts the rest, so fix the listed ones and re-run `next` for the next batch. Each entry names the finding's `path` and `line`, its code in `link`, its `message`, and the need in `id` (for a need that failed to build, such as a code marker that failed to parse, `id` is the file). Edit the need, its option or the code marker in place, and never delete a need to silence a finding. Then run `ubc check` until none of them remain. If a fix needs a value or a decision you cannot take from the need, its links or the code (an owner, a safety level, which of two needs keeps a duplicate id), stop and ask the user; never make one up to clear the gate. A finding that is intended is the user's call: stop and ask them to allow its code under `[workflow.diagnostics]` or to ignore it under `[lint]`. |
 | `$.arm` is `"author"` | AUTHOR, structural gates first. Invoke the skill named by `$.stage.skill`, however your harness loads skills, and hand it `$.stage.route.resolved_path`, `$.stage.id_prefix`, `$.stage.authoring` and `$.stage.gate.link`, each when the payload carries it, because the authoring skills are told NOT to re-discover the project. Hand it the new need's `:status:` too: `$.stage.default_status`, or `draft` when the payload carries no such key. The skills ask for the status they were TOLD to open the need in, and you are the only thing telling them on this route. Copy the trace link field name from `$.stage.gate.link` verbatim, never a synonym. A `null` `$.stage.skill` names no skill: author from the payload's own route and gate, and invent no skill name. |

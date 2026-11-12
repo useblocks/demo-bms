@@ -45,14 +45,22 @@ you install yourself. With no path given, use the `ubc` on your PATH.
 2. EMPTY stdout means the verb printed only an error, so READ that error and
    fix what it names. Otherwise branch on the PREFIX of the FIRST line.
    `NO ACTION (` is the stop signal. `=== WORKING DIRECTORY ===` means there IS
-   an action, and the line after it names the resolved project root. A first
-   line carrying NEITHER prefix is not a resolved action, so report it verbatim
-   and stop.
+   an action, and the line after it names the resolved project root.
+   `STOP (unreadable_sources)` means ubc could not read one or more sources, so
+   the needs they define are missing from the graph. A first line carrying NONE
+   of those three prefixes is not a resolved action, so report it verbatim and
+   stop.
    On the `NO ACTION (` branch the text under that line names the one action
    the state calls for, which may itself be a command to run as your NEXT step.
    Report it and stop. On the `=== WORKING DIRECTORY ===` branch, run every
    command the instruction gives you FROM the directory that second line names,
    and resolve every relative path AGAINST it.
+   On the `STOP (unreadable_sources)` branch author and review nothing: fix
+   each source it lists as its fix lines say (re-save a file that is not UTF-8
+   as UTF-8 without changing its content; a needs.json fetched from a URL is
+   fixed where it is published), run `ubc check` until it reports none of them,
+   and run `ubc agent prompt` again. Never re-author the needs those sources
+   hold.
 3. Follow the instruction as written. The engine has already picked the arm
    (author, review, or fix the needs that failed review), so do not re-derive
    which one applies and do not widen the task.
@@ -118,5 +126,10 @@ same decision. Read it when you want the state rather than the instruction.
   - `unknown_gate: <name>`: the stage carries a gate this `ubc` has no action
     for, so it names none. Report it verbatim and stop; do not pick an action
     yourself.
-- The last three reasons come with `$.ok` false and a non-zero exit. Never read
+  - `unreadable_sources`: ubc could not read the sources
+    `$.unreadable_sources` lists, so the needs they define are missing from the
+    graph, and the report carries no `$.stage` at all. Author and review
+    nothing: fix them as `prompt`'s STOP text says, run `ubc check` until it
+    reports none, and run `next` again.
+- The last four reasons come with `$.ok` false and a non-zero exit. Never read
   any of them as progress.

@@ -72,14 +72,17 @@ Read its entry in `choices[]`, ask the user to select one of that entry's exact
    action comes next and written out how to do it, as plain text rather than
    JSON. `<ID>` is a need id, not a stage name. A non-zero `prompt` most often
    means the id was wrong: fix what the error names, and do not infer the stage
-   is resolved. `prompt` executes nothing and spawns nothing, so it needs no
+   is resolved. A non-zero `prompt` that prints `STOP (unreadable_sources)` is
+   not about the id: step 2 says what to do. `prompt` executes nothing and spawns nothing, so it needs no
    runner configured.
 2. EMPTY stdout means the verb printed only an error, so READ that error and
    fix what it names. Otherwise branch on the PREFIX of the FIRST line.
    `NO ACTION (` is the stop signal. `=== WORKING DIRECTORY ===` means there IS
-   an action, and the line after it names the resolved project root. A first
-   line carrying NEITHER prefix is not a resolved action, so report it verbatim
-   and stop.
+   an action, and the line after it names the resolved project root.
+   `STOP (unreadable_sources)` means ubc could not read one or more sources, so
+   the needs they define are missing from the graph. A first line carrying NONE
+   of those three prefixes is not a resolved action, so report it verbatim and
+   stop.
    On the `NO ACTION (` branch the text under that line names the one action
    the state calls for. For `choice_required`, read the pending decision in
    `choices[]`, ask the user to choose one of its exact `options[].id`
@@ -92,6 +95,12 @@ Read its entry in `choices[]`, ask the user to select one of that entry's exact
    `=== WORKING DIRECTORY ===` branch, run every command the instruction gives
    you FROM the directory that second line names, and resolve every relative
    path AGAINST it.
+   On the `STOP (unreadable_sources)` branch author and review nothing: fix
+   each source it lists as its fix lines say (re-save a file that is not UTF-8
+   as UTF-8 without changing its content; a needs.json fetched from a URL is
+   fixed where it is published), run `ubc check` until it reports none of them,
+   and run `ubc agent prompt` again. Never re-author the needs those sources
+   hold.
 3. The instruction quotes the stage's own authoring skill under its
    `=== SKILL (<stage>) ===` block, frontmatter included, so the `name` in that
    frontmatter is the Copilot agent to delegate to. Invoke `@<skill>` to work
@@ -189,7 +198,8 @@ Before ending, run this hard-stop check:
   inbox.
 - `ubc agent prompt --id` and `ubc agent next --id` take a need id, never a
   stage or stream name. A non-zero exit from either means the `--id` was
-  rejected, or, when you passed one, the `--stage`. Read the error and the
+  rejected, or, when you passed one, the `--stage`, or, with the reason
+  `unreadable_sources`, that a source could not be read. Read the error and the
   `reason` before assuming the stage is resolved.
 - Flags follow the verb's job. The gate verbs (`gaps`, `trace`, `status`,
   `release-check`) gate the whole graph and never accept `--id`. Narrow `gaps`
