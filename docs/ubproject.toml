@@ -896,6 +896,19 @@ needs_fields = [
   { name = "type", type = "str", default = "test" },
 ]
 
+# --- CODE TRACE COVERAGE (alpha, ubc >= 0.39) ---
+# Breaks the production code down below file level: every function and method in
+# ../src becomes a unit that is traced (a marker on it, its class or its file),
+# justified, or untraced. Shown by `ubc codelinks coverage`, the MCP tool
+# `untraced_symbols`, and in VS Code via "ubCode: Show Code Trace Coverage".
+# Only `code` is listed: ../tests is test code, which the inventory leaves out anyway.
+# `gap` stays at its default (false), so untraced functions do NOT become
+# `code_untraced` gaps in `ubc agent gaps` / `release-check`.
+# NOTE: this does not change the "Intent from Code" panel, which recovers per file
+# and per directory only (symbol-level recovery is not built in ubc 0.39).
+[codelinks_coverage]
+projects = ["code"]
+
 # --- AGENT RUNNER (consumed by `ubc agent run`) ---
 # `ubc agent run` spawns an AI runner to author the next-stage artefact. The
 # prompt (recommended skill + the anchor need's context briefing + the resolved
