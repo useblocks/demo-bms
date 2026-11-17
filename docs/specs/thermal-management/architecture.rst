@@ -5,6 +5,9 @@ Component overview
 ------------------
 
 .. needuml::
+   :config: arch_diagram
+
+   left to right direction
 
    rectangle "Cell AFE chain\n(hardware)" as AFE <<external>>
    rectangle "Coolant pump / heater\n(hardware)" as PUMP <<external>>

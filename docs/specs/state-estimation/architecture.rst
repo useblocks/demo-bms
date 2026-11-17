@@ -5,13 +5,9 @@ Component overview
 ------------------
 
 .. needuml::
+   :config: arch_diagram
 
    left to right direction
-   hide stereotype
-   skinparam rectangle<<external>> {
-     BackgroundColor #F3F4F6
-     BorderStyle dashed
-   }
 
    rectangle "Pack current shunt\n(hardware)" as SHUNT <<external>>
    rectangle "Cell AFE chain\n(hardware)" as AFE <<external>>

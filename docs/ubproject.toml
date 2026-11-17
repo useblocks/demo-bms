@@ -137,6 +137,70 @@ id_regex = "^([A-Z]+_[A-Z][A-Z0-9_]*|CR_[0-9]{8}_[0-9A-F]{4})$"
 # missing rather than letting the diagrams degrade silently.
 flow_engine = "graphviz"
 
+# --- NEEDUML LOOK ---
+# The `needuml` component diagrams under specs/*/architecture.rst are drawn by TWO
+# renderers, and they honour different things:
+#
+# - The Sphinx build runs PlantUML, which honours everything below.
+# - ubCode's live preview ALWAYS converts the diagram to Mermaid (its own docs say
+#   so; `[build.html.plantuml]` does not reach it). The conversion keeps a box's
+#   FILL — from an inline colour, e.g. the type colour `{{ flow() }}` appends, or
+#   from a `skinparam <shape><<stereotype>> BackgroundColor` — and an inline
+#   `line:` / `line.dashed`, and drops every other skinparam. Text colour is then
+#   always the Mermaid theme's: near-white in a dark editor, near-black in a light
+#   one.
+#
+# So no box may have an opaque light (or dark) fill, or its text vanishes in one of
+# the two editor themes. Instead:
+# - the `arch` type colour is SEMI-TRANSPARENT (see `[[needs.types]]` arch): it
+#   tints whatever is behind it, so it is a dark indigo under light text in a dark
+#   editor and a light lavender under dark text in a light one;
+# - external boxes are `transparent`, so the theme draws them in its own colours.
+#
+# In the Sphinx build the canvas is white, so the tints settle on white (lavender
+# boxes, ghost externals) and dark text is right everywhere — furo's dark mode shows
+# the diagram as a white card, which stays legible.
+#
+# Each diagram opts in with `:config: arch_diagram`. `node` is the `arch` type's
+# shape, so its border here matches the arch colour; change both together.
+flow_configs.arch_diagram = '''
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam roundCorner 8
+skinparam defaultFontSize 13
+skinparam nodesep 45
+skinparam ranksep 70
+hide stereotype
+skinparam ArrowColor #64748B
+skinparam ArrowThickness 1.3
+skinparam ArrowFontColor #475569
+skinparam ArrowFontSize 12
+skinparam node {
+  BorderColor #6366F1
+  BorderThickness 1
+  FontColor #1E1B4B
+}
+skinparam rectangle<<external>> {
+  BackgroundColor transparent
+  BorderColor #64748B
+  BorderStyle dashed
+  BorderThickness 1
+  FontColor #475569
+}
+'''
+
+# The box text `{{ flow("ID") }}` draws in a needuml diagram (the graphviz needflow
+# does not use it). Same as the sphinx-needs default, except the type name is a small
+# caps kicker and titles wrap at 24 instead of 15 characters, so boxes come out wide
+# and short instead of narrow and tall.
+diagram_template = '''
+{%- if is_need -%}
+<size:10>{{type_name|upper}}</size>\n**{{title|wordwrap(24, wrapstring='**\\n**')}}**\n<size:10>{{id}}</size>
+{%- else -%}
+<size:10>{{type_name|upper}} (PART)</size>\n**{{content|wordwrap(24, wrapstring='**\\n**')}}**\n<size:10>{{id_parent}}.**{{id}}**</size>
+{%- endif -%}
+'''
+
 # --- ONTOLOGY SCHEMA ---
 # The structural rules the graph must hold to, checked by `ubc schema validate` and
 # by the sphinx-needs build. JSON carries no comments, so each rule in `schemas.json`
@@ -445,11 +509,15 @@ prefix = "REQ_"
 color="#FDBA74"
 style="file"
 
+# The colour is indigo-400 (#818CF8) at 40 % opacity (the trailing `66`), not opaque,
+# because ubCode's preview draws the `needuml` diagrams with the editor theme's text
+# colour; see NEEDUML LOOK above. On white (the Sphinx diagrams, the needflow PNGs)
+# it settles to a soft lavender #CDD1FC.
 [[needs.types]]
 directive = "arch"
 title = "Architecture"
 prefix = "ARCH_"
-color="#818CF8"
+color="#818CF866"
 style="node"
 
 # The BOTTOM of the decomposition arm. A software requirement states the testable
