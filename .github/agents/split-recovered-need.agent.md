@@ -181,9 +181,12 @@ over with no `retired` and say so in your report.
 ## Confirm
 
 After replacing the block, change into the project directory
-(`cd <project path>`) and run `ubc build needs . -o <tmp>/needs.json`,
+(`cd <project path>`) and run
+`ubc build needs . --deny none -o <tmp>/needs.json`,
 where `<tmp>` is a new temporary directory outside the repository (for
-example from `mktemp -d`). Then run `ubc agent gaps -p <project path>`,
+example from `mktemp -d`). `--deny none` because this build is only to read the
+index, and a project being recovered still carries warnings. Then run
+`ubc agent gaps -p <project path>`,
 to confirm the build is still clean and the up-link trace edges still
 resolve for every atom. `gaps` exits 1 whenever any gap exists anywhere in
 the project, which is normal partway through a recovery, so do not read the
